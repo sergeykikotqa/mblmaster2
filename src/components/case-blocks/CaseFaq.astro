@@ -1,0 +1,22 @@
+---
+import FAQ from '~/components/projects/FAQ.astro';
+
+type FaqItem = { question: string; answer: string };
+
+type Props = {
+  city: string;
+  service: string;
+  items: FaqItem[];
+};
+
+const { city, service, items } = Astro.props as Props;
+const hasItems = Array.isArray(items) && items.length > 0;
+---
+
+{
+  hasItems && (
+    <section class="section project-section">
+      <FAQ city={city} service={service} customFaq={items} />
+    </section>
+  )
+}

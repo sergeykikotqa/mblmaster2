@@ -1,0 +1,43 @@
+---
+import Button from '~/components/ui/Button.astro';
+import { getBusinessInfo } from '~/config/business-info';
+
+export interface Props {
+  id?: string;
+  class?: string;
+}
+
+const { id, class: cls = '' } = Astro.props as Props;
+const businessInfo = getBusinessInfo();
+const phoneHref = `tel:${businessInfo.phoneHref}`;
+---
+
+<section id={id} class={`py-8 md:py-12 bg-gradient-to-r from-[#08121a] to-[#0d1720] text-white ${cls}`}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="max-w-3xl">
+        <h2 class="text-2xl md:text-3xl font-bold">Закажите кухню в Октябрьском районе — замер бесплатно</h2>
+        <p class="text-sm text-white/80 mt-2">
+          Выезд замерщика в удобное для вас время. Дизайн-проект в подарок при заказе.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <Button
+          href="#contact"
+          variant="primary"
+          data-cta="cta_block_primary"
+          data-cta-type="primary"
+          data-cta-placement="section">Оставить заявку</Button
+        >
+        <a
+          href={phoneHref}
+          class="ui-btn-state rounded-sm text-sm font-medium underline"
+          data-cta="cta_block_phone"
+          data-cta-type="phone"
+          data-cta-placement="section">{businessInfo.phone}</a
+        >
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,92 @@
+---
+import merge from 'lodash.merge';
+import { AstroSeo } from '@astrolib/seo';
+
+import type { Props as AstroSeoProps } from '@astrolib/seo';
+
+import { SITE, METADATA, I18N } from 'astrowind:config';
+import type { MetaData } from '~/types';
+import { getCanonicalUrl } from '~/lib/canonical';
+
+import { adaptOpenGraphImages } from '~/utils/images';
+
+export interface Props extends MetaData {
+  dontUseTitleTemplate?: boolean;
+}
+
+const {
+  title,
+  ignoreTitleTemplate = false,
+  robots = {},
+  description,
+  keywords,
+  openGraph = {},
+  twitter = {},
+} = Astro.props;
+
+const fallbackTitle =
+  (typeof METADATA?.title?.default === 'string' ? METADATA.title.default.trim() : '') ||
+  (typeof SITE?.name === 'string' ? SITE.name.trim() : '') ||
+  'мбл мастер';
+const resolvedTitle = typeof title === 'string' ? title.trim() || undefined : title;
+const finalTitle = (resolvedTitle as string | undefined) || fallbackTitle;
+
+function resolveOpenGraphUrl(value: unknown, fallbackUrl: string): string {
+  if (typeof value !== 'string' || !value.trim()) {
+    return fallbackUrl;
+  }
+
+  try {
+    return new URL(value, fallbackUrl).toString();
+  } catch {
+    return fallbackUrl;
+  }
+}
+
+const canonicalUrl = getCanonicalUrl(new URL(Astro.url));
+const openGraphUrl = resolveOpenGraphUrl(openGraph?.url, canonicalUrl);
+const normalizedKeywords = typeof keywords === 'string' ? keywords : Array.isArray(keywords) ? keywords.join(', ') : '';
+
+const seoProps: AstroSeoProps = merge(
+  {
+    title: '',
+    titleTemplate: '%s',
+    canonical: canonicalUrl,
+    noindex: true,
+    nofollow: true,
+    description: undefined,
+    openGraph: {
+      url: canonicalUrl,
+      site_name: SITE?.name,
+      images: [],
+      locale: I18N?.language || 'en',
+      type: 'website',
+    },
+    twitter: {
+      cardType: openGraph?.images?.length ? 'summary_large_image' : 'summary',
+    },
+  },
+  {
+    title: METADATA?.title?.default,
+    titleTemplate: METADATA?.title?.template,
+    noindex: typeof METADATA?.robots?.index !== 'undefined' ? !METADATA.robots.index : undefined,
+    nofollow: typeof METADATA?.robots?.follow !== 'undefined' ? !METADATA.robots.follow : undefined,
+    description: METADATA?.description,
+    openGraph: METADATA?.openGraph,
+    twitter: METADATA?.twitter,
+  },
+  {
+    title: finalTitle,
+    titleTemplate: ignoreTitleTemplate ? '%s' : undefined,
+    canonical: canonicalUrl,
+    noindex: typeof robots?.index !== 'undefined' ? !robots.index : undefined,
+    nofollow: typeof robots?.follow !== 'undefined' ? !robots.follow : undefined,
+    description: description,
+    openGraph: { ...openGraph, url: openGraphUrl },
+    twitter: twitter,
+  }
+);
+---
+
+<AstroSeo {...{ ...seoProps, openGraph: await adaptOpenGraphImages(seoProps?.openGraph, Astro.site) }} />
+{normalizedKeywords && <meta name="keywords" content={normalizedKeywords} />}

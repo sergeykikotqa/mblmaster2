@@ -1,0 +1,185 @@
+---
+import { getCollection } from 'astro:content';
+import Breadcrumb from '~/components/Breadcrumb.astro';
+import ProjectsGrid from '~/components/projects/ProjectsGrid.astro';
+import ProjectModal from '~/components/projects/ProjectModal.astro';
+import PageLayout from '~/layouts/PageLayout.astro';
+import { buildProjectCards } from '~/lib/projects/project-adapters';
+import { toCanonical } from '~/lib/url-builder';
+import '~/styles/pages/projects-index.css';
+
+const sortByPublishDate = (a, b) => {
+  const diff = Number(new Date(b.data.publishDate || 0)) - Number(new Date(a.data.publishDate || 0));
+  if (diff !== 0) return diff;
+  return (a.slug || '').localeCompare(b.slug || '');
+};
+const projects = (await getCollection('projects'))
+  .filter((entry) => !entry.data.draft)
+  .sort(sortByPublishDate);
+const projectCards = buildProjectCards(projects);
+
+const kitchenProjects = projects.filter((entry) => String(entry.data.service || '') === 'kuhni');
+const kitchenPriceSamples = kitchenProjects
+  .map((entry) => ({ area: Number(entry.data.area), price: Number(entry.data.price) }))
+  .filter((item) => Number.isFinite(item.area) && Number.isFinite(item.price));
+
+const formatRuble = (value: number) =>
+  new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(value);
+
+const priceBuckets = [
+  {
+    id: 'lt6',
+    label: 'До 6 м²',
+    range: kitchenPriceSamples.filter((item) => item.area <= 6),
+    fallback: 'от 150 000 ₽',
+  },
+  {
+    id: '6-8',
+    label: '6–8 м²',
+    range: kitchenPriceSamples.filter((item) => item.area > 6 && item.area <= 8),
+    fallback: '200 000 – 300 000 ₽',
+  },
+  {
+    id: 'gt8',
+    label: '8+ м²',
+    range: kitchenPriceSamples.filter((item) => item.area > 8),
+    fallback: 'от 300 000 ₽',
+  },
+].map((bucket) => {
+  if (bucket.range.length === 0) {
+    return { ...bucket, value: bucket.fallback };
+  }
+  const prices = bucket.range.map((item) => item.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    return { ...bucket, value: bucket.fallback };
+  }
+  if (min === max) {
+    return { ...bucket, value: `около ${formatRuble(min)} ₽` };
+  }
+  return { ...bucket, value: `${formatRuble(min)} – ${formatRuble(max)} ₽` };
+});
+
+const metadata = {
+  title: 'Кейсы: кухни, шкафы и гардеробные на заказ',
+  description: 'Реальные проекты с фото, сроками и бюджетом по Иркутску, Ангарску и Шелехову.',
+  canonical: toCanonical('/projects', Astro.site),
+};
+---
+
+<PageLayout metadata={metadata}>
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-14">
+    <Breadcrumb items={[{ label: 'Кейсы', href: '/projects' }]} />
+    <div class="projects-head ds-section-head">
+      <div class="projects-pill ds-pill">РЕАЛЬНЫЕ ПРОЕКТЫ</div>
+      <h1>Кейсы по выполненным заказам</h1>
+      <p>Кухни, шкафы и гардеробные: показываем планировку, материалы, сроки и бюджет.</p>
+    </div>
+
+    <div class="projects-filters" data-filter-root>
+      <div class="projects-filters-bar">
+        <div class="projects-filters-head">
+          <h2>Подберите проект под вашу задачу</h2>
+          <p>Быстро отфильтруйте кейсы по метражу, планировке и бюджету.</p>
+        </div>
+        <button
+          type="button"
+          class="projects-filters-toggle"
+          data-filters-toggle
+          aria-expanded="false"
+          aria-controls="projects-filters-panel"
+        >
+          <span class="filters-burger" aria-hidden="true"></span>
+          Фильтры
+        </button>
+      </div>
+      <div class="projects-filter-selected" data-filter-selected></div>
+      <div class="projects-filter-result" data-filter-result hidden>Показаны все кейсы</div>
+
+      <div
+        class="projects-filters-panel"
+        id="projects-filters-panel"
+        data-filters-panel
+        aria-hidden="true"
+      >
+        <div class="projects-filters-panel-inner">
+          <div class="projects-filters-panel-head">
+            <strong>Фильтры</strong>
+            <button type="button" class="projects-filters-close" data-filters-close>Закрыть</button>
+          </div>
+          <div class="filter-group" data-filter-group="service">
+            <span>Тип:</span>
+            <button type="button" class="filter-chip is-active" data-filter-value="">Все</button>
+            <button type="button" class="filter-chip" data-filter-value="kuhni">Кухни</button>
+            <button type="button" class="filter-chip" data-filter-value="shkafy">Шкафы</button>
+            <button type="button" class="filter-chip" data-filter-value="garderobnye">Гардеробные</button>
+          </div>
+          <div class="filter-group" data-filter-group="area">
+            <span>Площадь:</span>
+            <button type="button" class="filter-chip is-active" data-filter-value="">Все</button>
+            <button type="button" class="filter-chip" data-filter-value="lt6">до 6 м²</button>
+            <button type="button" class="filter-chip" data-filter-value="6-8">6–8 м²</button>
+            <button type="button" class="filter-chip" data-filter-value="gt8">8+ м²</button>
+          </div>
+          <div class="filter-group" data-filter-group="layout">
+            <span>Планировка:</span>
+            <button type="button" class="filter-chip is-active" data-filter-value="">Все</button>
+            <button type="button" class="filter-chip" data-filter-value="straight">Прямая</button>
+            <button type="button" class="filter-chip" data-filter-value="corner">Угловая</button>
+            <button type="button" class="filter-chip" data-filter-value="u-shape">П‑образная</button>
+          </div>
+          <div class="filter-group" data-filter-group="price">
+            <span>Бюджет:</span>
+            <button type="button" class="filter-chip is-active" data-filter-value="">Все</button>
+            <button type="button" class="filter-chip" data-filter-value="lt200">до 200k</button>
+            <button type="button" class="filter-chip" data-filter-value="200-300">200–300k</button>
+            <button type="button" class="filter-chip" data-filter-value="gt300">300k+</button>
+          </div>
+          <div class="projects-filters-actions">
+            <button type="button" class="filters-clear" data-filters-clear>Сбросить</button>
+            <button type="button" class="filters-apply" data-filters-close>Закрыть</button>
+          </div>
+        </div>
+      </div>
+      <div class="projects-filters-backdrop" data-filters-backdrop></div>
+      <div class="projects-filter-empty" data-filter-empty hidden>
+        <p>Ничего не нашли по выбранным фильтрам.</p>
+        <button type="button" class="filters-clear" data-filters-clear>Сбросить фильтры</button>
+      </div>
+    </div>
+
+    <ProjectsGrid projects={projectCards} useModal />
+
+    <div class="projects-collections">
+      <strong>Подборки под ваш запрос:</strong>
+      <a class="projects-collection" href="/kuhni-3-metra">Кухни 3 метра →</a>
+      <a class="projects-collection" href="/articles/malenkaya-kuhnya-na-zakaz-irkutsk">Маленькие кухни →</a>
+      <a class="projects-collection" href="/kuhni">Все кухни на заказ →</a>
+    </div>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 pb-12 sm:pb-16">
+    <div class="projects-price">
+      <div class="projects-price-head">
+        <h2>Средняя стоимость кухонь по метражу</h2>
+        <p>Ориентиры по выполненным проектам. Точный расчет зависит от планировки и материалов.</p>
+      </div>
+      <div class="projects-price-grid">
+        {priceBuckets.map((item) => (
+          <div class="projects-price-card ds-card">
+            <strong>{item.label}</strong>
+            <span>{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <ProjectModal
+    leadContext={{ pageType: 'projects', pageSlug: '/projects' }}
+    successLink={{ label: 'Пока ждёте, посмотрите похожие проекты →', href: '/projects' }}
+  />
+</PageLayout>
+<script src="/scripts/projects-filters.js" defer></script>
+<script src="/scripts/project-modal.js" defer></script>

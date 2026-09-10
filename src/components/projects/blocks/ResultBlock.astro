@@ -1,0 +1,30 @@
+---
+import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
+import type { ProjectBlockProps } from './types';
+
+const { block, viewModel, Content } = Astro.props as ProjectBlockProps;
+const ContentComponent = Content as AstroComponentFactory | undefined;
+const { hasBodyContent } = viewModel;
+const title = (block as { title?: string }).title || 'Итог проекта';
+const shouldRender = Boolean(hasBodyContent && ContentComponent);
+---
+
+{
+  shouldRender && (
+    <section id="result" class="section project-section project-result">
+      <p class="project-section-kicker">{title}</p>
+      <div class="project-result-card" data-result-card>
+        <h3>Что получил клиент</h3>
+        <div class="project-result-body">
+          <div class="project-content prose prose-lg max-w-none">
+            {ContentComponent && <ContentComponent />}
+          </div>
+          <span class="project-result-fade" aria-hidden="true"></span>
+        </div>
+        <button type="button" class="project-result-toggle" data-result-toggle aria-expanded="false">
+          Показать полностью
+        </button>
+      </div>
+    </section>
+  )
+}

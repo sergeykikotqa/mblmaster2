@@ -1,0 +1,44 @@
+---
+import type { ProjectBlockProps } from './types';
+
+const { block, viewModel } = Astro.props as ProjectBlockProps;
+const { task } = viewModel;
+
+const text = (block as { text?: string }).text || task.text;
+const title = (block as { title?: string }).title || 'Задача клиента';
+const taskBullets = task.bullets;
+const constraintBullets = task.constraints;
+const shouldRender = Boolean(text);
+---
+
+{
+  shouldRender && (
+    <section id="task" class="section project-section project-task">
+      <p class="project-section-kicker">{title}</p>
+      <div class="project-task-card">
+        <div>
+          <h3>Что требовалось</h3>
+          {taskBullets.length > 0 ? (
+            <ol>
+              {taskBullets.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ol>
+          ) : (
+            <p>{text}</p>
+          )}
+        </div>
+        {constraintBullets.length > 0 && (
+          <div>
+            <h3>Ограничения</h3>
+            <ul>
+              {constraintBullets.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}

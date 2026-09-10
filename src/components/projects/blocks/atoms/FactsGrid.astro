@@ -1,0 +1,41 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { ProjectSummaryFact } from '~/types/project';
+
+interface Props {
+  items: ProjectSummaryFact[];
+  variant?: 'main' | 'rail';
+}
+
+const { items, variant = 'main' } = Astro.props as Props;
+---
+
+{
+  variant === 'rail' ? (
+    <dl class="project-summary-list">
+      {items.map((item) => (
+        <div class="project-summary-item" data-tone={item.tone ?? undefined}>
+          <dt class="project-summary-term">
+            <span class="project-summary-icon">
+              <Icon name={item.icon} class="icon" />
+            </span>
+            <span class="project-summary-label">{item.label}</span>
+          </dt>
+          <dd class="project-summary-value">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  ) : (
+    <div class="project-key-facts-grid">
+      {items.map((item) => (
+        <div class="project-key-facts-item" data-tone={item.tone ?? undefined}>
+          <span class="project-key-facts-icon">
+            <Icon name={item.icon} class="icon" />
+          </span>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+        </div>
+      ))}
+    </div>
+  )
+}

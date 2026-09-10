@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "files": [
+    ".astro/types.d.ts",
+    "src/types/astro-modules.d.ts",
+    "src/types/astrolib-seo-typecheck.d.ts"
+  ],
+  "compilerOptions": {
+    "paths": {
+      "~/*": ["src/*"],
+      "@/*": ["src/*"],
+      "@astrolib/seo": ["src/types/astrolib-seo-typecheck.d.ts"]
+    }
+  }
+}

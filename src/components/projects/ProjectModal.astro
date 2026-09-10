@@ -1,0 +1,88 @@
+---
+import ContactForm from '~/components/ContactForm.astro';
+
+interface Props {
+  leadContext?: {
+    pageType?: string;
+    pageSlug?: string;
+  };
+  successLink?: { label: string; href: string };
+}
+
+const { leadContext = { pageType: 'projects', pageSlug: '/projects' }, successLink } = Astro.props as Props;
+---
+
+<template data-project-modal-template-root>
+  <div class="project-modal mbl-modal" data-project-modal hidden aria-hidden="true">
+    <div class="project-modal-backdrop mbl-modal-backdrop" data-project-modal-close></div>
+    <div
+      class="project-modal-panel mbl-modal-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="project-modal-title"
+    >
+      <button class="project-modal-close" type="button" data-project-modal-close>Закрыть</button>
+      <div class="project-modal-layout">
+        <div class="project-modal-left">
+          <p class="project-modal-kicker">Вы выбрали</p>
+          <p class="project-modal-title" id="project-modal-title" data-project-modal-title>Проект</p>
+          <p class="project-modal-meta" data-project-modal-meta hidden></p>
+          <div class="project-modal-preview" data-project-modal-preview hidden>
+            <img class="project-modal-image" data-project-modal-image alt="" loading="lazy" />
+            <div class="project-modal-price" data-project-modal-price></div>
+          </div>
+
+          <div class="project-modal-block">
+            <p class="project-modal-section">Почему этот проект подходит</p>
+            <ul class="project-modal-list" data-project-modal-proof></ul>
+          </div>
+
+          <div class="project-modal-block">
+            <p class="project-modal-section">Что вы получите</p>
+            <ul class="project-modal-list">
+              <li>Планировку под ваши размеры с учётом техники</li>
+              <li>Расчёт стоимости в 2–3 вариантах</li>
+              <li>Где можно сэкономить без потери качества</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="project-modal-right">
+          <div class="project-modal-template">
+            <div>
+              <strong>Не хотите писать вручную?</strong>
+              <p>Вставьте готовый шаблон и допишите детали, если нужно.</p>
+            </div>
+            <button type="button" class="project-modal-template-btn" data-project-modal-template>
+              Вставить шаблон
+            </button>
+          </div>
+
+          <ContactForm
+            formContext="project-modal"
+            title="Рассчитать такой же проект"
+            subtitle="Подготовим расчёт и предложим планировку под ваши размеры."
+            cta="Получить расчёт →"
+            preCtaNote="Без выезда • расчёт по вашим размерам • за 1 день"
+            ctaNote="Ответим в течение дня • без обязательств"
+            successItems={[
+              'Пример планировки под ваши размеры',
+              'Ориентир по стоимости и срокам',
+              'Подбор материалов под ваш бюджет',
+            ]}
+            successLink={successLink}
+            leadContext={leadContext}
+            extraHiddenFields={[
+              { name: 'project_slug' },
+              { name: 'project_name' },
+              { name: 'project_area' },
+              { name: 'project_price' },
+              { name: 'project_service' },
+              { name: 'project_href' },
+            ]}
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

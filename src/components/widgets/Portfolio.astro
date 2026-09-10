@@ -1,0 +1,338 @@
+---
+type PortfolioCategory = 'kuhni' | 'shkafy' | 'garderobnye';
+type PortfolioFilterId = 'all' | PortfolioCategory;
+
+type PortfolioItem = {
+  src: string;
+  alt: string;
+  title?: string;
+  style?: string;
+  facade?: string;
+  area?: string;
+  price?: string;
+  oldPrice?: string;
+  category?: PortfolioCategory;
+  badge?: string;
+  href?: string;
+};
+
+import Image from '~/components/common/Image.astro';
+
+const {
+  items = [],
+  id,
+  title = '',
+  subtitle = '',
+  showHeader = false,
+  ctaHref = '#contact',
+  ctaText = 'Рассчитать проект',
+  showCta = true,
+} = Astro.props as {
+  items?: PortfolioItem[];
+  id?: string;
+  title?: string;
+  subtitle?: string;
+  showHeader?: boolean;
+  ctaHref?: string;
+  ctaText?: string;
+  showCta?: boolean;
+};
+const cards = items.map((item) => ({
+  title: item.title || item.alt,
+  style: item.style || 'Индивидуально',
+  facade: item.facade || 'Под ваш проект',
+  area: item.area || 'Индивидуально',
+  price: item.price || 'Рассчитать',
+  oldPrice: item.oldPrice || '',
+  category: item.category || 'kuhni',
+  badge: item.badge || 'Проект',
+  href: item.href || '/projects',
+  ...item,
+}));
+
+const filters = [
+  { id: 'all', label: 'Все' },
+  { id: 'kuhni', label: 'Кухни' },
+  { id: 'shkafy', label: 'Шкафы' },
+  { id: 'garderobnye', label: 'Гардеробные' },
+] as const satisfies ReadonlyArray<{ id: PortfolioFilterId; label: string }>;
+---
+
+<section id={id} class="portfolio-section" data-portfolio>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6">
+    {
+      showHeader && (
+        <div class="portfolio-head ds-section-head">
+          <div class="portfolio-pill ds-pill">ПОРТФОЛИО</div>
+          <h2>{title || 'Примеры наших работ'}</h2>
+          <p>{subtitle || 'Посмотрите проекты, которые мы реализовали в Иркутске под реальные планировки клиентов.'}</p>
+        </div>
+      )
+    }
+
+    <div class="portfolio-toolbar">
+      <div class="portfolio-filters" role="group" aria-label="Фильтры портфолио">
+        {
+          filters.map((filter, idx) => (
+            <button
+              type="button"
+              class:list={['portfolio-filter ui-btn-state', { active: idx === 0 }]}
+              data-portfolio-filter
+              data-filter={filter.id}
+              aria-pressed={idx === 0 ? 'true' : 'false'}
+            >
+              {filter.label}
+            </button>
+          ))
+        }
+      </div>
+      <div class="portfolio-arrows">
+        <button type="button" class="portfolio-arrow" data-portfolio-prev aria-label="Прокрутить влево" disabled
+          >‹</button
+        >
+        <button type="button" class="portfolio-arrow" data-portfolio-next aria-label="Прокрутить вправо">›</button>
+      </div>
+    </div>
+
+    <div class="portfolio-grid" data-portfolio-track>
+      {
+        cards.map((card, idx) => (
+          <article class="portfolio-card ds-card ds-card-interactive" data-portfolio-card data-category={card.category}>
+            <div class="portfolio-image-wrap">
+              <span class="portfolio-badge">{card.badge}</span>
+              <Image src={card.src} alt={card.alt} width={1200} height={704} layout="responsive" />
+            </div>
+            <div class="portfolio-body">
+              <h3>{card.title}</h3>
+              <ul class="portfolio-meta">
+                <li>{card.style}</li>
+                <li>{card.facade}</li>
+                <li>{card.area}</li>
+              </ul>
+              <div class="portfolio-footer">
+                <p class="portfolio-price">
+                  <strong>{card.price}</strong>
+                  {card.oldPrice && <span>{card.oldPrice}</span>}
+                </p>
+                <a
+                  href={card.href}
+                  data-cta-placement="section"
+                  data-cta={`portfolio_card_${idx + 1}`}
+                  data-cta-type="primary"
+                  class="portfolio-btn ds-action-primary"
+                >
+                  Смотреть кейс
+                </a>
+              </div>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+    <p class="portfolio-empty" data-portfolio-empty hidden>По этому фильтру пока нет проектов. Выберите другой.</p>
+
+    {
+      showCta && (
+        <div class="portfolio-cta-wrap">
+          <a
+            href={ctaHref}
+            data-cta-placement="section"
+            data-cta="portfolio_cta"
+            data-cta-type="primary"
+            class="portfolio-cta ds-action-primary"
+          >
+            {ctaText}
+          </a>
+        </div>
+      )
+    }
+  </div>
+</section>
+
+<script src="/scripts/portfolio-filter.js" defer></script>
+
+<style is:inline>
+  .portfolio-section {
+    padding: 0.5rem 0 0.25rem;
+  }
+  .portfolio-head h2 {
+    margin: 0;
+    font-size: clamp(1.65rem, 2.7vw, 2.2rem);
+    color: #151515;
+  }
+  .portfolio-head p {
+    margin: 0.75rem auto 0;
+    max-width: 42rem;
+    color: #635b56;
+    line-height: 1.55;
+  }
+  .portfolio-toolbar {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .portfolio-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+  .portfolio-filter {
+    border: 1px solid #d7c3b4;
+    background: #fff;
+    border-radius: 999px;
+    color: #614f41;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-height: 2.5rem;
+    padding: 0.55rem 0.95rem;
+  }
+  .portfolio-filter.active {
+    background: #8b5a3c;
+    border-color: #8b5a3c;
+    color: #fff;
+  }
+  .portfolio-arrows {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .portfolio-arrow {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid #d8c5b7;
+    border-radius: 0.45rem;
+    background: #fff;
+    color: #6e5d52;
+    font-size: 1.25rem;
+  }
+  .portfolio-arrow:disabled {
+    opacity: 0.45;
+  }
+  .portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .portfolio-card {
+    overflow: hidden;
+  }
+  .portfolio-image-wrap {
+    position: relative;
+  }
+  .portfolio-badge {
+    position: absolute;
+    top: 0.6rem;
+    left: 0.6rem;
+    z-index: 2;
+    border-radius: 999px;
+    background: rgb(22 19 17 / 82%);
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 700;
+    padding: 0.2rem 0.45rem;
+  }
+  .portfolio-image-wrap img {
+    width: 100%;
+    aspect-ratio: 1.72 / 1;
+    object-fit: cover;
+    display: block;
+  }
+  .portfolio-body {
+    padding: 0.9rem 0.9rem 1rem;
+  }
+  .portfolio-body h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+  .portfolio-meta {
+    margin: 0.55rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .portfolio-meta li {
+    border-radius: 999px;
+    border: 1px solid #e7dfd9;
+    background: #f9f6f4;
+    color: #726965;
+    font-size: 0.66rem;
+    padding: 0.2rem 0.4rem;
+  }
+  .portfolio-footer {
+    margin-top: 0.8rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.65rem;
+  }
+  .portfolio-price {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+  }
+  .portfolio-price strong {
+    font-size: 1.08rem;
+    line-height: 1;
+    color: #26211d;
+  }
+  .portfolio-price span {
+    color: #746d68;
+    font-size: 0.72rem;
+    text-decoration: line-through;
+  }
+  .portfolio-btn {
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-height: 2.5rem;
+    padding: 0.55rem 0.85rem;
+  }
+  .portfolio-empty {
+    margin: 1rem 0 0;
+    text-align: center;
+    color: #746d68;
+    font-size: 0.9rem;
+  }
+  .portfolio-cta-wrap {
+    margin-top: 1.4rem;
+    text-align: center;
+  }
+  .portfolio-cta {
+    font-weight: 700;
+    padding-inline: 1.5rem;
+  }
+  @media (min-width: 961px) {
+    .portfolio-arrows {
+      display: none;
+    }
+  }
+  @media (max-width: 960px) {
+    .portfolio-grid {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 0.25rem;
+      margin-right: -0.35rem;
+      padding-right: 0.35rem;
+    }
+    .portfolio-card {
+      min-width: min(82vw, 320px);
+      max-width: min(82vw, 320px);
+      scroll-snap-align: start;
+    }
+  }
+  @media (max-width: 640px) {
+    .portfolio-card {
+      min-width: 87vw;
+      max-width: 87vw;
+    }
+    .portfolio-cta {
+      width: 100%;
+    }
+  }
+</style>

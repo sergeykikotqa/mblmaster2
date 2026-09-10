@@ -1,0 +1,35 @@
+---
+interface AdvantageItem {
+  title: string;
+  body?: string;
+  desc?: string;
+  description?: string;
+}
+
+interface Props {
+  title?: string;
+  items?: AdvantageItem[];
+  id?: string;
+}
+
+const { title = 'Почему выбирают нас в этом районе', items = [], id } = Astro.props as Props;
+---
+
+<section id={id} class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+  <div class="rounded-2xl bg-gradient-to-r from-blue-50 to-slate-50 border border-blue-100 p-6 sm:p-8">
+    <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">{title}</h2>
+    <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {
+        items.map((item) => {
+          const text = item.description || item.body || item.desc || '';
+          return (
+            <li class="bg-white rounded-xl border border-slate-200 p-5">
+              <h3 class="text-lg font-semibold text-slate-900 mb-1">{item.title}</h3>
+              {text && <p class="text-sm text-slate-600">{text}</p>}
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</section>

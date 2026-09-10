@@ -1,0 +1,274 @@
+name: GitHub Actions
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://ci.example.invalid' }}
+    strategy:
+      matrix:
+        node-version:
+          - 18
+          - 20
+          - 22
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js v${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # - run: npm test
+
+  pr-gate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Setup Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Export CHROME_PATH
+        run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      - run: npm ci
+      - run: npm run check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run check:e2e:smoke
+      - run: npm run check:accessibility
+      - run: npm run check:seo:smoke
+      - run: npm run check:lighthouse:smoke
+      - name: Upload Lighthouse artifacts (smoke)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .lighthouseci/*.html
+            .lighthouseci/*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  full-audit:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://ci.example.invalid' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Setup Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Export CHROME_PATH
+        run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      - run: npm ci
+      - run: npm run check:architecture
+      - run: npm run check:generated-pages-sync
+      - run: npm run check:slugs
+      - run: npm run check:no-district-left
+      - run: npm run check:secrets-scope
+      - run: npm run check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run check:image-policy
+      - run: npm run build
+      - run: npm run check:performance-budgets
+      - run: npm run check:redirects-sitemap
+      - run: npm run check:no-admin-in-sitemap
+      - run: npm run check:no-legacy-index
+      - run: npm run check:indexability-runtime-consistency
+      - run: npm run check:indexable-link-coverage
+      - run: npm run check:admin-token-storage
+      - run: npm run check:contact-hidden-fields
+      - name: Check Metrics Smoke
+        env:
+          METRICS_ADMIN_TOKEN: ci-metrics-token
+        run: npm run check:metrics-smoke
+      - run: npm run check:metrics-health-smoke
+      - run: npm run check:metrics-health-state-store
+      - run: npm run check:metrics-health-fallback
+      - run: npm run check:metrics-health-fallback-alert
+      - run: npm run check:lead-api
+      - run: npm run check:redis-outage
+      - name: Check Webhook Delivery
+        env:
+          CONTACT_WORKER_TOKEN: ci-worker-token
+        run: npm run check:webhook-delivery
+      - run: npm run check:accessibility:full
+      - run: npm run check:e2e
+      - run: npm run check:seo
+      - run: npm run check:lighthouse
+      - run: npm run check:audit
+      - name: Upload Visual Audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .tmp/design-audit/**
+            .tmp/mobile-audit/**
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload Lighthouse artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .lighthouseci/*.html
+            .lighthouseci/*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  check-production:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: full-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate Production Runtime Env
+        env:
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+          PUBLIC_YANDEX_VERIFICATION: ${{ vars.PUBLIC_YANDEX_VERIFICATION || secrets.PUBLIC_YANDEX_VERIFICATION }}
+          PUBLIC_YANDEX_METRIKA_ID: ${{ vars.PUBLIC_YANDEX_METRIKA_ID || secrets.PUBLIC_YANDEX_METRIKA_ID }}
+          UPSTASH_REDIS_REST_URL: ${{ vars.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          CONTACT_WORKER_URL: ${{ vars.CONTACT_WORKER_URL }}
+          CONTACT_WORKER_TOKEN: ${{ secrets.CONTACT_WORKER_TOKEN }}
+          CONTACT_WEBHOOK_URL: ${{ vars.CONTACT_WEBHOOK_URL }}
+          CONTACT_WEBHOOK_SECRET: ${{ secrets.CONTACT_WEBHOOK_SECRET }}
+          CONTACT_ALERT_WEBHOOK_URL: ${{ vars.CONTACT_ALERT_WEBHOOK_URL }}
+          CONTACT_ALERT_WEBHOOK_URL_SECONDARY: ${{ vars.CONTACT_ALERT_WEBHOOK_URL_SECONDARY }}
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          METRICS_ADMIN_TOKEN: ${{ secrets.METRICS_ADMIN_TOKEN }}
+          ADMIN_ALLOWLIST_IPS: ${{ vars.ADMIN_ALLOWLIST_IPS }}
+          DEPLOY_SMOKE_BASE_URL: ${{ vars.DEPLOY_SMOKE_BASE_URL }}
+          DEPLOY_SMOKE_WORKER_TOKEN: ${{ secrets.CONTACT_WORKER_TOKEN }}
+          DEPLOY_SMOKE_EXPECT_TURNSTILE: ${{ vars.DEPLOY_SMOKE_EXPECT_TURNSTILE }}
+          DEPLOY_SMOKE_TURNSTILE_TOKEN: ${{ secrets.DEPLOY_SMOKE_TURNSTILE_TOKEN }}
+        run: |
+          missing=0
+          for key in UPSTASH_REDIS_REST_URL UPSTASH_REDIS_REST_TOKEN CONTACT_WORKER_URL CONTACT_WORKER_TOKEN CONTACT_WEBHOOK_URL CONTACT_WEBHOOK_SECRET PUBLIC_SITE_URL PUBLIC_TURNSTILE_SITE_KEY TURNSTILE_SECRET_KEY DEPLOY_SMOKE_BASE_URL PUBLIC_YANDEX_VERIFICATION PUBLIC_YANDEX_METRIKA_ID; do
+            value="$(printenv "$key")"
+            if [ -z "$value" ]; then
+              echo "Missing required env: $key"
+              missing=1
+            fi
+          done
+          primary_alert="$(printenv CONTACT_ALERT_WEBHOOK_URL)"
+          secondary_alert="$(printenv CONTACT_ALERT_WEBHOOK_URL_SECONDARY)"
+          if [ -z "$primary_alert" ] && [ -z "$secondary_alert" ]; then
+            echo "Missing required env: CONTACT_ALERT_WEBHOOK_URL or CONTACT_ALERT_WEBHOOK_URL_SECONDARY"
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+          metrics_token="$(printenv METRICS_ADMIN_TOKEN)"
+          if [ -z "$metrics_token" ]; then
+            echo "Missing admin auth config: set METRICS_ADMIN_TOKEN"
+            exit 1
+          fi
+          allow_dev_bypass="$(printenv ALLOW_DEV_BYPASS | tr '[:upper:]' '[:lower:]')"
+          if [ "$allow_dev_bypass" = "1" ] || [ "$allow_dev_bypass" = "true" ] || [ "$allow_dev_bypass" = "yes" ] || [ "$allow_dev_bypass" = "on" ]; then
+            echo "ALLOW_DEV_BYPASS must be false in production runtime."
+            exit 1
+          fi
+      - run: npm run check:yandex-release-env
+        env:
+          PUBLIC_YANDEX_VERIFICATION: ${{ vars.PUBLIC_YANDEX_VERIFICATION || secrets.PUBLIC_YANDEX_VERIFICATION }}
+          PUBLIC_YANDEX_METRIKA_ID: ${{ vars.PUBLIC_YANDEX_METRIKA_ID || secrets.PUBLIC_YANDEX_METRIKA_ID }}
+      - run: npm run check:runtime-config
+        env:
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+          PUBLIC_YANDEX_VERIFICATION: ${{ vars.PUBLIC_YANDEX_VERIFICATION || secrets.PUBLIC_YANDEX_VERIFICATION }}
+          PUBLIC_YANDEX_METRIKA_ID: ${{ vars.PUBLIC_YANDEX_METRIKA_ID || secrets.PUBLIC_YANDEX_METRIKA_ID }}
+          UPSTASH_REDIS_REST_URL: ${{ vars.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          CONTACT_WORKER_URL: ${{ vars.CONTACT_WORKER_URL }}
+          CONTACT_WORKER_TOKEN: ${{ secrets.CONTACT_WORKER_TOKEN }}
+          CONTACT_WEBHOOK_URL: ${{ vars.CONTACT_WEBHOOK_URL }}
+          CONTACT_WEBHOOK_SECRET: ${{ secrets.CONTACT_WEBHOOK_SECRET }}
+          CONTACT_ALERT_WEBHOOK_URL: ${{ vars.CONTACT_ALERT_WEBHOOK_URL }}
+          CONTACT_ALERT_WEBHOOK_URL_SECONDARY: ${{ vars.CONTACT_ALERT_WEBHOOK_URL_SECONDARY }}
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          METRICS_ADMIN_TOKEN: ${{ secrets.METRICS_ADMIN_TOKEN }}
+          ADMIN_ALLOWLIST_IPS: ${{ vars.ADMIN_ALLOWLIST_IPS }}
+          DEPLOY_SMOKE_BASE_URL: ${{ vars.DEPLOY_SMOKE_BASE_URL }}
+          DEPLOY_SMOKE_WORKER_TOKEN: ${{ secrets.CONTACT_WORKER_TOKEN }}
+          DEPLOY_SMOKE_EXPECT_TURNSTILE: ${{ vars.DEPLOY_SMOKE_EXPECT_TURNSTILE }}
+          DEPLOY_SMOKE_TURNSTILE_TOKEN: ${{ secrets.DEPLOY_SMOKE_TURNSTILE_TOKEN }}
+      - run: npm run check:prod-runtime
+        env:
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+          PUBLIC_YANDEX_VERIFICATION: ${{ vars.PUBLIC_YANDEX_VERIFICATION || secrets.PUBLIC_YANDEX_VERIFICATION }}
+          PUBLIC_YANDEX_METRIKA_ID: ${{ vars.PUBLIC_YANDEX_METRIKA_ID || secrets.PUBLIC_YANDEX_METRIKA_ID }}
+          UPSTASH_REDIS_REST_URL: ${{ vars.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          CONTACT_WORKER_URL: ${{ vars.CONTACT_WORKER_URL }}
+          CONTACT_WORKER_TOKEN: ${{ secrets.CONTACT_WORKER_TOKEN }}
+          CONTACT_WEBHOOK_URL: ${{ vars.CONTACT_WEBHOOK_URL }}
+          CONTACT_WEBHOOK_SECRET: ${{ secrets.CONTACT_WEBHOOK_SECRET }}
+          CONTACT_ALERT_WEBHOOK_URL: ${{ vars.CONTACT_ALERT_WEBHOOK_URL }}
+          CONTACT_ALERT_WEBHOOK_URL_SECONDARY: ${{ vars.CONTACT_ALERT_WEBHOOK_URL_SECONDARY }}
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          METRICS_ADMIN_TOKEN: ${{ secrets.METRICS_ADMIN_TOKEN }}
+          ADMIN_ALLOWLIST_IPS: ${{ vars.ADMIN_ALLOWLIST_IPS }}
+          DEPLOY_SMOKE_BASE_URL: ${{ vars.DEPLOY_SMOKE_BASE_URL }}
+          DEPLOY_SMOKE_WORKER_TOKEN: ${{ secrets.CONTACT_WORKER_TOKEN }}
+          DEPLOY_SMOKE_EXPECT_TURNSTILE: ${{ vars.DEPLOY_SMOKE_EXPECT_TURNSTILE }}
+          DEPLOY_SMOKE_TURNSTILE_TOKEN: ${{ secrets.DEPLOY_SMOKE_TURNSTILE_TOKEN }}
+      - run: npm run check:deployed-runtime
+        env:
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+          PUBLIC_YANDEX_VERIFICATION: ${{ vars.PUBLIC_YANDEX_VERIFICATION || secrets.PUBLIC_YANDEX_VERIFICATION }}
+          PUBLIC_YANDEX_METRIKA_ID: ${{ vars.PUBLIC_YANDEX_METRIKA_ID || secrets.PUBLIC_YANDEX_METRIKA_ID }}
+          UPSTASH_REDIS_REST_URL: ${{ vars.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          CONTACT_WORKER_URL: ${{ vars.CONTACT_WORKER_URL }}
+          CONTACT_WORKER_TOKEN: ${{ secrets.CONTACT_WORKER_TOKEN }}
+          CONTACT_WEBHOOK_URL: ${{ vars.CONTACT_WEBHOOK_URL }}
+          CONTACT_WEBHOOK_SECRET: ${{ secrets.CONTACT_WEBHOOK_SECRET }}
+          CONTACT_ALERT_WEBHOOK_URL: ${{ vars.CONTACT_ALERT_WEBHOOK_URL }}
+          CONTACT_ALERT_WEBHOOK_URL_SECONDARY: ${{ vars.CONTACT_ALERT_WEBHOOK_URL_SECONDARY }}
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          METRICS_ADMIN_TOKEN: ${{ secrets.METRICS_ADMIN_TOKEN }}
+          ADMIN_ALLOWLIST_IPS: ${{ vars.ADMIN_ALLOWLIST_IPS }}
+          DEPLOY_SMOKE_BASE_URL: ${{ vars.DEPLOY_SMOKE_BASE_URL }}
+          DEPLOY_SMOKE_WORKER_TOKEN: ${{ secrets.CONTACT_WORKER_TOKEN }}
+          DEPLOY_SMOKE_EXPECT_TURNSTILE: ${{ vars.DEPLOY_SMOKE_EXPECT_TURNSTILE }}
+          DEPLOY_SMOKE_TURNSTILE_TOKEN: ${{ secrets.DEPLOY_SMOKE_TURNSTILE_TOKEN }}

@@ -1,0 +1,122 @@
+---
+import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
+import type { Testimonials as Props } from '~/types';
+
+const {
+  title = '',
+  subtitle = '',
+  testimonials = [],
+  callToAction,
+
+  id,
+  isDark = false,
+  classes = {},
+} = Astro.props;
+
+const hasBgSlot = Astro.slots.has('bg');
+
+const defaultTestimonials = [
+  {
+    name: 'Мария Иванова',
+    job: 'Октябрьский район',
+    testimonial:
+      'Кухня 7 м² в хрущевке. Нужно было уместить технику и хранение, не потеряв проход. Сделали проект и установку без переделок — кухня встала точно по размерам.',
+    title: 'Кухня 7 м² в хрущевке',
+  },
+  {
+    name: 'Александр Петров',
+    job: 'Свердловский район',
+    testimonial:
+      'Шкаф-купе в нишу 2,4 м. Важно было спрятать коммуникации и оставить удобный доступ к вещам. Подобрали наполнение и настроили двери — ход плавный, без перекосов.',
+    title: 'Шкаф-купе 2,4 м в нишу',
+  },
+  {
+    name: 'Елена Сидорова',
+    job: 'Правобережный район',
+    testimonial:
+      'Гардеробная 4 м². Хотели разделить повседневную одежду и сезонное хранение. Спроектировали секции и полки так, что все вещи уместились в одной системе.',
+    title: 'Гардеробная 4 м²',
+  },
+];
+
+const finalTestimonials = testimonials.length > 0 ? testimonials : defaultTestimonials;
+---
+
+<WidgetWrapper
+  id={id}
+  isDark={isDark}
+  containerClass={`max-w-7xl mx-auto py-0 md:py-0 lg:py-0 ${classes?.container ?? ''}`}
+>
+  {hasBgSlot && (
+    <Fragment slot="bg">
+      <slot name="bg" />
+    </Fragment>
+  )}
+  {
+    (title || subtitle) && (
+      <div class="mb-10 text-center sm:mb-12">
+        <div class="mb-4 inline-flex items-center rounded-full border border-[#e0c9b8] bg-[#f2e5dc] px-4 py-2">
+          <span class="text-sm font-semibold text-[#7f5438]">ОТЗЫВЫ</span>
+        </div>
+        {title && <h2 class="mb-3 text-3xl font-bold text-slate-900 sm:text-4xl">{title}</h2>}
+        {subtitle && <p class="text-lg text-slate-600">{subtitle}</p>}
+      </div>
+    )
+  }
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+    {
+      finalTestimonials &&
+        finalTestimonials.map(({ title, testimonial, name, job }) => (
+          <div class="group relative">
+            <div class="absolute inset-0 rounded-xl bg-[#e7d6ca]/40 blur-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div class="relative h-full rounded-xl border border-[#e8d8cb] bg-white p-6 transition-all duration-300 hover:border-[#cfab91] hover:shadow-lg sm:p-8 flex flex-col">
+              {title && (
+                <div class="mb-4">
+                  <div class="text-[#8b5a3c] text-lg">★★★★★</div>
+                  <p class="text-sm font-semibold text-slate-900 mt-2">{title}</p>
+                </div>
+              )}
+
+              {testimonial && (
+                <blockquote class="flex-1 mb-6">
+                  <p class="text-slate-800 text-base leading-relaxed">"{testimonial}"</p>
+                </blockquote>
+              )}
+
+              <div class="flex items-center gap-4 pt-6 border-t border-[#efe4db]">
+                <div class="w-12 h-12 rounded-full bg-[#f2e5dc] text-[#7f5438] flex items-center justify-center font-bold text-lg">
+                  {name ? name.charAt(0) : 'К'}
+                </div>
+                <div>
+                  {name && <p class="font-semibold text-slate-900 text-sm">{name}</p>}
+                  {job && <p class="text-xs text-slate-800">{job}</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))
+    }
+  </div>
+
+  {
+    callToAction && (
+      <div class="flex justify-center mx-auto w-fit mt-12 sm:mt-16 font-medium">
+        {typeof callToAction === 'string' ? (
+          <span>{callToAction}</span>
+        ) : (
+          <a
+            href={callToAction.href}
+            data-cta-placement="section"
+            data-cta="testimonials_cta"
+            data-cta-type="primary"
+            class="ui-btn-state inline-flex items-center justify-center rounded-md bg-[#8b5a3c] px-8 py-3.5 font-semibold text-white no-underline transition-colors hover:bg-[#7f5438]"
+          >
+            {callToAction.text}
+          </a>
+        )}
+      </div>
+    )
+  }
+</WidgetWrapper>
+

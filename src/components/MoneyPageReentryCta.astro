@@ -1,0 +1,114 @@
+---
+import { getBusinessInfo } from '~/config/business-info';
+
+export interface Props {
+  kicker?: string;
+  title: string;
+  subtitle: string;
+  contactHref?: string;
+}
+
+const {
+  kicker = 'СЛЕДУЮЩИЙ ШАГ',
+  title,
+  subtitle,
+  contactHref = '#contact',
+} = Astro.props as Props;
+
+const businessInfo = getBusinessInfo();
+const phoneHref = `tel:${businessInfo.phoneHref}`;
+---
+
+<section class="section section-inner cv-auto money-reentry">
+  <div class="money-reentry__content ds-card">
+    <div class="money-reentry__copy">
+      <p class="money-reentry__kicker">{kicker}</p>
+      <h2>{title}</h2>
+      <p>{subtitle}</p>
+    </div>
+    <div class="money-reentry__actions">
+      <a
+        href={contactHref}
+        class="ui-btn-state ds-action-primary"
+        data-cta="service_reentry_primary"
+        data-cta-type="primary"
+        data-cta-placement="reentry"
+      >
+        Рассчитать стоимость
+      </a>
+      <a
+        href={phoneHref}
+        class="ui-btn-state ds-action-secondary"
+        data-cta="service_reentry_call"
+        data-cta-type="phone"
+        data-cta-placement="reentry"
+      >
+        Позвонить
+      </a>
+    </div>
+  </div>
+</section>
+
+<style is:inline>
+  .money-reentry__content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid #eaded4;
+    background: linear-gradient(180deg, #fff8f2 0%, #f8efe6 100%);
+  }
+
+  .money-reentry__copy {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .money-reentry__copy h2 {
+    margin: 0;
+    color: #261d18;
+    font-size: clamp(1.25rem, 1.8vw, 1.55rem);
+    line-height: 1.2;
+  }
+
+  .money-reentry__copy p:not(.money-reentry__kicker) {
+    margin: 0;
+    color: #5d544d;
+    line-height: 1.55;
+  }
+
+  .money-reentry__kicker {
+    margin: 0;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #7f5438;
+  }
+
+  .money-reentry__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.55rem;
+  }
+
+  @media (max-width: 900px) {
+    .money-reentry__content {
+      grid-template-columns: 1fr;
+      padding: 0.95rem;
+    }
+
+    .money-reentry__actions {
+      justify-content: stretch;
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .money-reentry__actions > a {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>

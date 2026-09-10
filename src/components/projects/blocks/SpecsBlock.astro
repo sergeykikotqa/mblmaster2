@@ -1,0 +1,29 @@
+---
+import CaseSpecs from '~/components/case-blocks/CaseSpecs.astro';
+import type { ProjectBlockProps } from './types';
+
+const { viewModel } = Astro.props as ProjectBlockProps;
+const { data } = viewModel;
+const exactPrice = Number(data.price);
+const estimatedPrice = Number((data as { estimatedPrice?: number }).estimatedPrice);
+const hasExactPrice = Number.isFinite(exactPrice);
+const hasEstimatedPrice = !hasExactPrice && Number.isFinite(estimatedPrice);
+const estimatedPriceNote = hasEstimatedPrice
+  ? String((data as { estimatedPriceNote?: string }).estimatedPriceNote || '').trim()
+  : '';
+---
+
+<div id="specs" class="project-section-anchor">
+  <p class="project-section-kicker">Характеристики</p>
+  <CaseSpecs
+    city={data.city}
+    service={data.service}
+    area={data.area}
+    duration={data.duration}
+    price={data.price}
+    estimatedPrice={hasEstimatedPrice ? estimatedPrice : undefined}
+    priceIsEstimated={hasEstimatedPrice}
+    priceNote={estimatedPriceNote}
+    materials={data.materials}
+  />
+</div>

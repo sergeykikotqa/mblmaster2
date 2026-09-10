@@ -1,0 +1,38 @@
+---
+import type { ProjectBlockProps } from './types';
+import CostActions from './atoms/CostActions.astro';
+import CostBreakdown from './atoms/CostBreakdown.astro';
+import CostSummary from './atoms/CostSummary.astro';
+
+const { block, viewModel } = Astro.props as ProjectBlockProps;
+const { cost, data, contact, project } = viewModel;
+
+const label = (block as { label?: string }).label || cost.label;
+const note = (block as { note?: string }).note || cost.note;
+const estimatedPriceNote = project.hasEstimatedPrice
+  ? String((data as { estimatedPriceNote?: string }).estimatedPriceNote || '').trim()
+  : '';
+const shouldRender = Boolean(label || note);
+---
+
+{
+  shouldRender && (
+    <section id="cost" class="section project-section project-cost">
+      <p class="project-section-kicker">Стоимость проекта</p>
+      <div class="project-cost-card">
+        <CostSummary
+          label={label}
+          note={note}
+          aside={
+            project.hasEstimatedPrice
+              ? estimatedPriceNote ||
+                'Оценка собрана по фото проекта и близким кейсам. Точная смета формируется после замера.'
+              : 'Цена актуальна для аналогичных проектов похожей площади и наполнения.'
+          }
+        />
+        <CostBreakdown items={cost.breakdown} />
+        <CostActions service={data.service} phoneHref={contact.phoneHref} />
+      </div>
+    </section>
+  )
+}

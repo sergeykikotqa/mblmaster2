@@ -1,0 +1,88 @@
+---
+const {
+  lat = 52.326639,
+  lon = 104.363083,
+  zoom = 12,
+  width = '100%',
+  height = '300px',
+  title = 'мбл мастер',
+  address = '',
+  yandexUrl = '',
+  googleUrl = '',
+} = Astro.props;
+const encodedQuery = encodeURIComponent([title, address].filter(Boolean).join(', '));
+const resolvedYandexUrl =
+  yandexUrl ||
+  `https://yandex.ru/maps/?ll=${lon}%2C${lat}&mode=search&pt=${lon},${lat},pm2rdm&text=${encodedQuery}&z=${zoom}`;
+const resolvedGoogleUrl =
+  googleUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lon}`)}`;
+const mapSrc = `https://yandex.ru/map-widget/v1/?ll=${lon}%2C${lat}&mode=search&pt=${lon},${lat},pm2rdm&text=${encodedQuery}&z=${zoom}`;
+const mapPreviewUrl = '/images/figma/map-preview.png';
+const placeholderStyle = `background-image: linear-gradient(rgba(247, 241, 236, 0.86), rgba(247, 241, 236, 0.86)), url('${mapPreviewUrl}');`;
+---
+
+<div
+  class="w-full relative overflow-hidden rounded-xl border border-[#e7d9ce] bg-[#f4ede7]"
+  style={`width:${width};height:${height};`}
+  data-yandex-map
+  data-map-src={mapSrc}
+>
+  <div
+    class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-cover bg-center p-6 text-center"
+    style={placeholderStyle}
+    data-map-placeholder
+  >
+    <p class="text-slate-800 font-semibold">Карта и маршрут до шоурума</p>
+    {address && <p class="max-w-[32rem] text-slate-700 text-sm leading-6">{address}</p>}
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <button
+        type="button"
+        data-cta="map_load"
+        data-cta-type="secondary"
+        data-cta-placement="section"
+        class="ui-btn-state inline-flex items-center justify-center rounded-md bg-[#8b5a3c] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#7f5438]"
+        data-map-load-btn
+      >
+        Показать карту
+      </button>
+      <a
+        href={resolvedYandexUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="ui-btn-state inline-flex items-center justify-center rounded-md border border-[#d8c6b6] bg-white px-5 py-3 text-sm font-semibold text-[#7f5438] transition hover:border-[#8b5a3c] hover:text-[#6f4b35]"
+      >
+        Яндекс Карты
+      </a>
+      <a
+        href={resolvedGoogleUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="ui-btn-state inline-flex items-center justify-center rounded-md border border-[#d8c6b6] bg-white px-5 py-3 text-sm font-semibold text-[#7f5438] transition hover:border-[#8b5a3c] hover:text-[#6f4b35]"
+      >
+        Google Maps
+      </a>
+    </div>
+  </div>
+
+  <iframe
+    class="absolute inset-0 h-full w-full hidden"
+    data-map-frame
+    loading="lazy"
+    style="border:0;width:100%;height:100%;"
+    title="Карта проезда"
+    allowfullscreen></iframe>
+
+  <noscript>
+    <iframe
+      loading="lazy"
+      src={mapSrc}
+      style={`border:0;width:100%;height:${height};`}
+      title="Карта проезда"
+      allowfullscreen
+    >
+    </iframe>
+  </noscript>
+</div>
+
+<script src="/scripts/yandex-map.js" defer></script>
+

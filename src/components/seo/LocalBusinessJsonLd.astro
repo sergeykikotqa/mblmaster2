@@ -1,0 +1,48 @@
+---
+import JsonLd from '~/components/seo/JsonLd.astro';
+import { getBusinessInfo } from '~/config/business-info';
+
+export interface Props {
+  offerCatalog?: Record<string, unknown>;
+}
+
+const { offerCatalog } = Astro.props;
+
+const siteUrl = Astro.site ? new URL(Astro.site).toString().replace(/\/$/, '') : '';
+const companyName = process.env.SITE_NAME || 'мбл мастер';
+const businessInfo = getBusinessInfo(siteUrl);
+const addressRegion = businessInfo.addressRegion || 'Иркутская область';
+const areaServed = ['Иркутск', 'Ангарск', 'Шелехов'];
+
+const businessId = siteUrl ? `${siteUrl}/#business` : '#business';
+
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'KitchenCabinetStore',
+  '@id': businessId,
+  name: companyName,
+  url: siteUrl || undefined,
+  telephone: businessInfo.phone,
+  image: businessInfo.imageUrl ? [businessInfo.imageUrl] : undefined,
+  priceRange: businessInfo.priceRange,
+  address: {
+    '@type': 'PostalAddress',
+    addressCountry: 'RU',
+    addressRegion,
+    addressLocality: businessInfo.addressLocality,
+    postalCode: businessInfo.postalCode,
+    streetAddress: businessInfo.streetAddress,
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: businessInfo.latitude,
+    longitude: businessInfo.longitude,
+  },
+  openingHours: businessInfo.openingHours,
+  areaServed,
+  sameAs: businessInfo.sameAs.length > 0 ? businessInfo.sameAs : undefined,
+  hasOfferCatalog: offerCatalog || undefined,
+};
+---
+
+<JsonLd schema={localBusinessSchema} />

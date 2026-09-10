@@ -1,0 +1,23 @@
+---
+import type { ProjectCostBreakdownItem } from '~/types/project';
+
+interface Props {
+  items: ProjectCostBreakdownItem[];
+}
+
+const { items } = Astro.props as Props;
+---
+
+{
+  items.length > 0 && (
+    <div class="project-cost-breakdown">
+      {items.map((item) => (
+        <div class="project-cost-breakdown-item">
+          <p>{item.label}</p>
+          <strong>{item.value}</strong>
+          <span>{item.note}</span>
+        </div>
+      ))}
+    </div>
+  )
+}

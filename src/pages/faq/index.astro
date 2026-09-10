@@ -1,0 +1,60 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '~/layouts/PageLayout.astro';
+import Breadcrumb from '~/components/Breadcrumb.astro';
+import ContactForm from '~/components/ContactForm.astro';
+
+const faqs = await getCollection('faq', ({ data }) => !data.draft);
+
+const metadata = {
+  title: 'Часто задаваемые вопросы (FAQ)',
+  description: 'Ответы на популярные вопросы о заказе, доставке и установке мебели в Иркутске',
+};
+
+const breadcrumbItems = [{ label: 'FAQ', href: '/faq' }];
+---
+
+<PageLayout metadata={metadata}>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    <header class="ds-section-head left mb-12">
+      <div class="ds-pill">FAQ</div>
+      <h1 class="text-4xl font-bold">Часто задаваемые вопросы</h1>
+      <p class="text-xl text-[#665f5a]">Ответы на популярные вопросы о мебели на заказ в Иркутске</p>
+    </header>
+
+    {
+      faqs.length > 0 ? (
+        <div class="space-y-6 mb-12">
+          {faqs.map((faqPage) => {
+            const slug = faqPage.id.replace(/\.mdx?$/, '');
+            return (
+              <a href={`/faq/${slug}`} class="group ui-btn-state block ds-card ds-card-interactive bg-[#faf5f1] p-6">
+                <h2 class="mb-2 text-xl font-bold text-gray-900 group-hover:text-[#7f5438]">{faqPage.data.title}</h2>
+                <p class="text-[#665f5a] mb-4">{faqPage.data.description}</p>
+                {faqPage.data.questions && (
+                  <div class="text-sm text-[#7a6f68]">
+                    <span class="font-semibold">{faqPage.data.questions.length}</span> вопросов
+                  </div>
+                )}
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="text-center py-12">
+          <p class="text-gray-600">FAQ еще не добавлены</p>
+        </div>
+      )
+    }
+
+    <!-- Quick Answer Section -->
+    <section class="my-12 ds-card-soft p-8">
+      <h2 class="text-2xl font-bold mb-2">Вопрос не найден?</h2>
+      <p class="mb-6 text-[#665f5a]">Напишите нам или позвоните, и наш специалист ответит в течение 10 минут</p>
+      <ContactForm />
+    </section>
+  </div>
+</PageLayout>
+

@@ -1,0 +1,5 @@
+---
+const rumEnabled = String(import.meta.env.PUBLIC_ENABLE_RUM_WEB_VITALS ?? 'true') !== 'false';
+---
+
+{rumEnabled && <script type="module" src="/scripts/web-vitals.js" defer></script>}

@@ -1,0 +1,52 @@
+name: Full Audit
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    env:
+      PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://ci.example.invalid' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Setup Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Export CHROME_PATH
+        run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+      - run: npm ci
+      - run: npm run build
+      - run: npm run check:accessibility:full
+      - run: npm run check:e2e
+      - run: npm run check:seo
+      - run: npm run check:lighthouse
+      - name: Upload Visual Audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-audit-nightly-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .tmp/design-audit/**
+            .tmp/mobile-audit/**
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload Lighthouse artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report-nightly-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .lighthouseci/*.html
+            .lighthouseci/*.json
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,0 +1,269 @@
+---
+import type { ImageMetadata } from 'astro';
+import type { HTMLAttributes } from 'astro/types';
+import { Image as AstroImage, Picture } from 'astro:assets';
+import { findImage } from '~/utils/images';
+
+type Layout = 'fixed' | 'constrained' | 'fullWidth' | 'cover' | 'responsive' | 'contained';
+
+interface ImageProps extends Omit<HTMLAttributes<'img'>, 'src'> {
+  src?: string | ImageMetadata | null;
+  width?: string | number | null;
+  height?: string | number | null;
+  alt?: string | null;
+  loading?: 'eager' | 'lazy' | null;
+  decoding?: 'sync' | 'async' | 'auto' | null;
+  sizes?: string | null;
+  fetchpriority?: 'high' | 'low' | 'auto' | null;
+
+  layout?: Layout;
+  widths?: number[] | null;
+  aspectRatio?: string | number | null;
+  objectPosition?: string;
+
+  format?: string;
+  quality?: number | null;
+}
+
+const props = Astro.props as ImageProps;
+
+if (props.alt === undefined || props.alt === null) {
+  throw new Error();
+}
+
+const normalizeDimension = (value: string | number | null | undefined): number | undefined => {
+  if (value === null || value === undefined) return undefined;
+  const numeric = typeof value === 'string' ? Number(value) : value;
+  return Number.isFinite(numeric) ? numeric : undefined;
+};
+
+const rawWidth = normalizeDimension(props.width);
+const rawHeight = normalizeDimension(props.height);
+
+const parseAspectRatio = (value?: string | number | null): number | undefined => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const match = value.match(/(\d+)\s*[/:]\s*(\d+)/);
+    if (match) {
+      const [, num, den] = match.map(Number);
+      if (den && !Number.isNaN(num)) return num / den;
+    }
+    const numeric = Number(value);
+    if (!Number.isNaN(numeric)) return numeric;
+  }
+  return undefined;
+};
+
+const aspectRatio = parseAspectRatio(props.aspectRatio);
+let width: number | undefined = rawWidth;
+let height: number | undefined = rawHeight;
+if (aspectRatio) {
+  if (width && !height) {
+    height = Math.round(width / aspectRatio);
+  } else if (height && !width) {
+    width = Math.round(height * aspectRatio);
+  }
+}
+
+const layout = props.layout ?? 'constrained';
+const toAstroLayout = (value: Layout): 'fixed' | 'constrained' | 'full-width' | 'none' => {
+  if (value === 'fixed') return 'fixed';
+  if (value === 'fullWidth') return 'full-width';
+  if (value === 'responsive') return 'constrained';
+  if (value === 'cover') return 'constrained';
+  if (value === 'contained') return 'constrained';
+  return 'constrained';
+};
+
+const astroLayout = toAstroLayout(layout);
+const fit = layout === 'cover' ? 'cover' : layout === 'contained' ? 'contain' : undefined;
+const position = props.objectPosition ?? undefined;
+
+const getSizes = (value?: number, activeLayout?: Layout): string | undefined => {
+  if (!value || !activeLayout) return undefined;
+  switch (activeLayout) {
+    case 'constrained':
+      return `(min-width: ${value}px) ${value}px, 100vw`;
+    case 'fixed':
+      return `${value}px`;
+    case 'fullWidth':
+      return '100vw';
+    default:
+      return undefined;
+  }
+};
+
+const sizes = props.sizes ?? getSizes(width, layout);
+const loading = props.loading ?? 'lazy';
+const decoding = props.decoding ?? 'async';
+const priority = props.fetchpriority === 'high';
+const defaultQuality = props.quality ?? 75;
+const widthsBase = props.widths ?? (layout === 'fixed' ? undefined : [480, 960, 1400]);
+const defaultWidths =
+  !props.widths && typeof width === 'number' && width > 0 && width < 480 ? [Math.round(width)] : widthsBase;
+
+const pixelate = (value?: number) => (value || value === 0 ? `${value}px` : undefined);
+const buildFallbackStyle = () => {
+  const entries: Array<[string, string | undefined]> = [];
+
+  if (layout === 'fixed') {
+    entries.push(['width', pixelate(width)]);
+    entries.push(['height', pixelate(height)]);
+    entries.push(['object-position', 'top left']);
+  }
+  if (layout === 'constrained') {
+    entries.push(['max-width', pixelate(width)]);
+    entries.push(['max-height', pixelate(height)]);
+    entries.push(['aspect-ratio', aspectRatio ? `${aspectRatio}` : undefined]);
+    entries.push(['width', '100%']);
+  }
+  if (layout === 'fullWidth') {
+    entries.push(['width', '100%']);
+    entries.push(['aspect-ratio', aspectRatio ? `${aspectRatio}` : undefined]);
+    entries.push(['height', pixelate(height)]);
+  }
+  if (layout === 'responsive') {
+    entries.push(['width', '100%']);
+    entries.push(['height', 'auto']);
+    entries.push(['aspect-ratio', aspectRatio ? `${aspectRatio}` : undefined]);
+  }
+  if (layout === 'contained') {
+    entries.push(['max-width', '100%']);
+    entries.push(['max-height', '100%']);
+    entries.push(['object-fit', 'contain']);
+    entries.push(['aspect-ratio', aspectRatio ? `${aspectRatio}` : undefined]);
+  }
+  if (layout === 'cover') {
+    entries.push(['max-width', '100%']);
+    entries.push(['max-height', '100%']);
+  }
+
+  if (props.objectPosition) {
+    entries.push(['object-position', props.objectPosition]);
+  }
+
+  return entries
+    .filter(([, value]) => value)
+    .map(([key, value]) => `${key}: ${value};`)
+    .join(' ');
+};
+
+const styleParts = [props.style].filter(Boolean).join(' ');
+const fallbackStyle = [buildFallbackStyle(), props.style].filter(Boolean).join(' ');
+const resolvedImage = await findImage(props.src);
+const isDev = import.meta.env.DEV;
+const resolvedImageSrc =
+  typeof resolvedImage === 'string'
+    ? resolvedImage
+    : resolvedImage && typeof resolvedImage === 'object' && 'src' in resolvedImage
+      ? String((resolvedImage as ImageMetadata).src || '')
+      : '';
+const resolvedWidth =
+  width ?? (typeof resolvedImage === 'object' && resolvedImage ? (resolvedImage as ImageMetadata).width : undefined);
+const resolvedHeight =
+  height ?? (typeof resolvedImage === 'object' && resolvedImage ? (resolvedImage as ImageMetadata).height : undefined);
+const canGenerateFormats =
+  typeof resolvedImage !== 'string' &&
+  Boolean(resolvedImage) &&
+  !['svg', 'gif'].includes(String(resolvedImage?.format || '').toLowerCase());
+
+const alt = props.alt;
+const widths = defaultWidths;
+const format = props.format;
+
+const rest = { ...props } as Record<string, unknown>;
+[
+  'src',
+  'width',
+  'height',
+  'alt',
+  'sizes',
+  'loading',
+  'decoding',
+  'fetchpriority',
+  'layout',
+  'widths',
+  'aspectRatio',
+  'objectPosition',
+  'format',
+  'quality',
+  'style',
+].forEach((key) => {
+  delete rest[key];
+});
+---
+
+{
+  !resolvedImage ? (
+    <Fragment />
+  ) : typeof resolvedImage === 'string' || isDev ? (
+    <img
+      src={resolvedImageSrc}
+      alt={alt}
+      width={resolvedWidth ?? undefined}
+      height={resolvedHeight ?? undefined}
+      loading={loading}
+      decoding={decoding}
+      sizes={sizes ?? undefined}
+      fetchpriority={props.fetchpriority ?? undefined}
+      style={fallbackStyle || undefined}
+      {...rest}
+    />
+  ) : format ? (
+    <AstroImage
+      src={resolvedImage}
+      alt={alt}
+      width={width ?? undefined}
+      height={height ?? undefined}
+      layout={astroLayout}
+      fit={fit}
+      position={position}
+      sizes={sizes ?? undefined}
+      widths={widths ?? undefined}
+      quality={defaultQuality}
+      loading={loading}
+      decoding={decoding}
+      priority={priority}
+      style={styleParts || undefined}
+      format={format}
+      {...rest}
+    />
+  ) : canGenerateFormats ? (
+    <Picture
+      src={resolvedImage}
+      alt={alt}
+      width={width ?? undefined}
+      height={height ?? undefined}
+      layout={astroLayout}
+      fit={fit}
+      position={position}
+      sizes={sizes ?? undefined}
+      widths={widths ?? undefined}
+      quality={defaultQuality}
+      loading={loading}
+      decoding={decoding}
+      priority={priority}
+      style={styleParts || undefined}
+      formats={['avif', 'webp']}
+      {...rest}
+    />
+  ) : (
+    <AstroImage
+      src={resolvedImage}
+      alt={alt}
+      width={width ?? undefined}
+      height={height ?? undefined}
+      layout={astroLayout}
+      fit={fit}
+      position={position}
+      sizes={sizes ?? undefined}
+      widths={widths ?? undefined}
+      quality={defaultQuality}
+      loading={loading}
+      decoding={decoding}
+      priority={priority}
+      style={styleParts || undefined}
+      {...rest}
+    />
+  )
+}

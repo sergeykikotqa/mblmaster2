@@ -1,0 +1,5282 @@
+[
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2026-03",
+    "impressionsP50": 1369,
+    "impressionsP90": 1848,
+    "clicksP50": 92,
+    "clicksP90": 149,
+    "leadsP50": 2.35,
+    "leadsP90": 5.7
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-03",
+    "impressionsP50": 1352,
+    "impressionsP90": 1825,
+    "clicksP50": 91,
+    "clicksP90": 147,
+    "leadsP50": 2.32,
+    "leadsP90": 5.62
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2026-03",
+    "impressionsP50": 1391,
+    "impressionsP90": 1878,
+    "clicksP50": 93,
+    "clicksP90": 151,
+    "leadsP50": 2.37,
+    "leadsP90": 5.78
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2026-03",
+    "impressionsP50": 1391,
+    "impressionsP90": 1878,
+    "clicksP50": 93,
+    "clicksP90": 151,
+    "leadsP50": 2.37,
+    "leadsP90": 5.78
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2026-03",
+    "impressionsP50": 658,
+    "impressionsP90": 888,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2026-03",
+    "impressionsP50": 601,
+    "impressionsP90": 811,
+    "clicksP50": 18,
+    "clicksP90": 29,
+    "leadsP50": 0.08,
+    "leadsP90": 0.25
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2026-03",
+    "impressionsP50": 601,
+    "impressionsP90": 811,
+    "clicksP50": 18,
+    "clicksP90": 29,
+    "leadsP50": 0.08,
+    "leadsP90": 0.25
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2026-03",
+    "impressionsP50": 592,
+    "impressionsP90": 799,
+    "clicksP50": 18,
+    "clicksP90": 29,
+    "leadsP50": 0.08,
+    "leadsP90": 0.25
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2026-03",
+    "impressionsP50": 601,
+    "impressionsP90": 811,
+    "clicksP50": 18,
+    "clicksP90": 29,
+    "leadsP50": 0.08,
+    "leadsP90": 0.25
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2026-03",
+    "impressionsP50": 601,
+    "impressionsP90": 811,
+    "clicksP50": 18,
+    "clicksP90": 29,
+    "leadsP50": 0.08,
+    "leadsP90": 0.25
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2026-03",
+    "impressionsP50": 625,
+    "impressionsP90": 844,
+    "clicksP50": 19,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2026-03",
+    "impressionsP50": 658,
+    "impressionsP90": 888,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-03",
+    "impressionsP50": 1308,
+    "impressionsP90": 1766,
+    "clicksP50": 88,
+    "clicksP90": 142,
+    "leadsP50": 2.24,
+    "leadsP90": 5.43
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2026-03",
+    "impressionsP50": 581,
+    "impressionsP90": 784,
+    "clicksP50": 17,
+    "clicksP90": 28,
+    "leadsP50": 0.07,
+    "leadsP90": 0.24
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2026-03",
+    "impressionsP50": 601,
+    "impressionsP90": 811,
+    "clicksP50": 18,
+    "clicksP90": 29,
+    "leadsP50": 0.08,
+    "leadsP90": 0.25
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2026-03",
+    "impressionsP50": 601,
+    "impressionsP90": 811,
+    "clicksP50": 18,
+    "clicksP90": 29,
+    "leadsP50": 0.08,
+    "leadsP90": 0.25
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2026-03",
+    "impressionsP50": 613,
+    "impressionsP90": 828,
+    "clicksP50": 18,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2026-03",
+    "impressionsP50": 622,
+    "impressionsP90": 840,
+    "clicksP50": 19,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2026-03",
+    "impressionsP50": 622,
+    "impressionsP90": 840,
+    "clicksP50": 19,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2026-03",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2026-03",
+    "impressionsP50": 1413,
+    "impressionsP90": 1908,
+    "clicksP50": 95,
+    "clicksP90": 153,
+    "leadsP50": 2.42,
+    "leadsP90": 5.85
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2026-03",
+    "impressionsP50": 1391,
+    "impressionsP90": 1878,
+    "clicksP50": 93,
+    "clicksP90": 151,
+    "leadsP50": 2.37,
+    "leadsP90": 5.78
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2026-03",
+    "impressionsP50": 1391,
+    "impressionsP90": 1878,
+    "clicksP50": 93,
+    "clicksP90": 151,
+    "leadsP50": 2.37,
+    "leadsP90": 5.78
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2026-03",
+    "impressionsP50": 1413,
+    "impressionsP90": 1908,
+    "clicksP50": 95,
+    "clicksP90": 153,
+    "leadsP50": 2.42,
+    "leadsP90": 5.85
+  },
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2026-04",
+    "impressionsP50": 1443,
+    "impressionsP90": 1948,
+    "clicksP50": 97,
+    "clicksP90": 157,
+    "leadsP50": 2.47,
+    "leadsP90": 6.01
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-04",
+    "impressionsP50": 1426,
+    "impressionsP90": 1925,
+    "clicksP50": 96,
+    "clicksP90": 155,
+    "leadsP50": 2.45,
+    "leadsP90": 5.93
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2026-04",
+    "impressionsP50": 1467,
+    "impressionsP90": 1980,
+    "clicksP50": 98,
+    "clicksP90": 159,
+    "leadsP50": 2.5,
+    "leadsP90": 6.08
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2026-04",
+    "impressionsP50": 1467,
+    "impressionsP90": 1980,
+    "clicksP50": 98,
+    "clicksP90": 159,
+    "leadsP50": 2.5,
+    "leadsP90": 6.08
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2026-04",
+    "impressionsP50": 694,
+    "impressionsP90": 937,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2026-04",
+    "impressionsP50": 633,
+    "impressionsP90": 855,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2026-04",
+    "impressionsP50": 633,
+    "impressionsP90": 855,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2026-04",
+    "impressionsP50": 625,
+    "impressionsP90": 844,
+    "clicksP50": 19,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2026-04",
+    "impressionsP50": 633,
+    "impressionsP90": 855,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2026-04",
+    "impressionsP50": 633,
+    "impressionsP90": 855,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2026-04",
+    "impressionsP50": 659,
+    "impressionsP90": 890,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2026-04",
+    "impressionsP50": 694,
+    "impressionsP90": 937,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-04",
+    "impressionsP50": 1379,
+    "impressionsP90": 1862,
+    "clicksP50": 92,
+    "clicksP90": 150,
+    "leadsP50": 2.35,
+    "leadsP90": 5.74
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2026-04",
+    "impressionsP50": 612,
+    "impressionsP90": 826,
+    "clicksP50": 18,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2026-04",
+    "impressionsP50": 633,
+    "impressionsP90": 855,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2026-04",
+    "impressionsP50": 633,
+    "impressionsP90": 855,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2026-04",
+    "impressionsP50": 646,
+    "impressionsP90": 872,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2026-04",
+    "impressionsP50": 656,
+    "impressionsP90": 886,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2026-04",
+    "impressionsP50": 656,
+    "impressionsP90": 886,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2026-04",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2026-04",
+    "impressionsP50": 1490,
+    "impressionsP90": 2012,
+    "clicksP50": 100,
+    "clicksP90": 162,
+    "leadsP50": 2.55,
+    "leadsP90": 6.2
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2026-04",
+    "impressionsP50": 1467,
+    "impressionsP90": 1980,
+    "clicksP50": 98,
+    "clicksP90": 159,
+    "leadsP50": 2.5,
+    "leadsP90": 6.08
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2026-04",
+    "impressionsP50": 1467,
+    "impressionsP90": 1980,
+    "clicksP50": 98,
+    "clicksP90": 159,
+    "leadsP50": 2.5,
+    "leadsP90": 6.08
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2026-04",
+    "impressionsP50": 1490,
+    "impressionsP90": 2012,
+    "clicksP50": 100,
+    "clicksP90": 162,
+    "leadsP50": 2.55,
+    "leadsP90": 6.2
+  },
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2026-05",
+    "impressionsP50": 1548,
+    "impressionsP90": 2090,
+    "clicksP50": 104,
+    "clicksP90": 168,
+    "leadsP50": 2.65,
+    "leadsP90": 6.43
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-05",
+    "impressionsP50": 1529,
+    "impressionsP90": 2064,
+    "clicksP50": 102,
+    "clicksP90": 166,
+    "leadsP50": 2.6,
+    "leadsP90": 6.35
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2026-05",
+    "impressionsP50": 1572,
+    "impressionsP90": 2122,
+    "clicksP50": 105,
+    "clicksP90": 171,
+    "leadsP50": 2.68,
+    "leadsP90": 6.54
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2026-05",
+    "impressionsP50": 1572,
+    "impressionsP90": 2122,
+    "clicksP50": 105,
+    "clicksP90": 171,
+    "leadsP50": 2.68,
+    "leadsP90": 6.54
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2026-05",
+    "impressionsP50": 744,
+    "impressionsP90": 1004,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2026-05",
+    "impressionsP50": 679,
+    "impressionsP90": 917,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2026-05",
+    "impressionsP50": 679,
+    "impressionsP90": 917,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2026-05",
+    "impressionsP50": 670,
+    "impressionsP90": 905,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2026-05",
+    "impressionsP50": 679,
+    "impressionsP90": 917,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2026-05",
+    "impressionsP50": 679,
+    "impressionsP90": 917,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2026-05",
+    "impressionsP50": 706,
+    "impressionsP90": 953,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2026-05",
+    "impressionsP50": 744,
+    "impressionsP90": 1004,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-05",
+    "impressionsP50": 1479,
+    "impressionsP90": 1997,
+    "clicksP50": 99,
+    "clicksP90": 161,
+    "leadsP50": 2.52,
+    "leadsP90": 6.16
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2026-05",
+    "impressionsP50": 656,
+    "impressionsP90": 886,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2026-05",
+    "impressionsP50": 679,
+    "impressionsP90": 917,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2026-05",
+    "impressionsP50": 679,
+    "impressionsP90": 917,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2026-05",
+    "impressionsP50": 693,
+    "impressionsP90": 936,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2026-05",
+    "impressionsP50": 703,
+    "impressionsP90": 949,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2026-05",
+    "impressionsP50": 703,
+    "impressionsP90": 949,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2026-05",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2026-05",
+    "impressionsP50": 1597,
+    "impressionsP90": 2156,
+    "clicksP50": 107,
+    "clicksP90": 173,
+    "leadsP50": 2.73,
+    "leadsP90": 6.62
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2026-05",
+    "impressionsP50": 1572,
+    "impressionsP90": 2122,
+    "clicksP50": 105,
+    "clicksP90": 171,
+    "leadsP50": 2.68,
+    "leadsP90": 6.54
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2026-05",
+    "impressionsP50": 1572,
+    "impressionsP90": 2122,
+    "clicksP50": 105,
+    "clicksP90": 171,
+    "leadsP50": 2.68,
+    "leadsP90": 6.54
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2026-05",
+    "impressionsP50": 1597,
+    "impressionsP90": 2156,
+    "clicksP50": 107,
+    "clicksP90": 173,
+    "leadsP50": 2.73,
+    "leadsP90": 6.62
+  },
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2026-06",
+    "impressionsP50": 1637,
+    "impressionsP90": 2210,
+    "clicksP50": 110,
+    "clicksP90": 178,
+    "leadsP50": 2.81,
+    "leadsP90": 6.81
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-06",
+    "impressionsP50": 1617,
+    "impressionsP90": 2183,
+    "clicksP50": 108,
+    "clicksP90": 176,
+    "leadsP50": 2.75,
+    "leadsP90": 6.73
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2026-06",
+    "impressionsP50": 1663,
+    "impressionsP90": 2245,
+    "clicksP50": 111,
+    "clicksP90": 180,
+    "leadsP50": 2.83,
+    "leadsP90": 6.89
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2026-06",
+    "impressionsP50": 1663,
+    "impressionsP90": 2245,
+    "clicksP50": 111,
+    "clicksP90": 180,
+    "leadsP50": 2.83,
+    "leadsP90": 6.89
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2026-06",
+    "impressionsP50": 787,
+    "impressionsP90": 1062,
+    "clicksP50": 24,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2026-06",
+    "impressionsP50": 718,
+    "impressionsP90": 969,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2026-06",
+    "impressionsP50": 718,
+    "impressionsP90": 969,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2026-06",
+    "impressionsP50": 708,
+    "impressionsP90": 956,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2026-06",
+    "impressionsP50": 718,
+    "impressionsP90": 969,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2026-06",
+    "impressionsP50": 718,
+    "impressionsP90": 969,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2026-06",
+    "impressionsP50": 747,
+    "impressionsP90": 1008,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2026-06",
+    "impressionsP50": 787,
+    "impressionsP90": 1062,
+    "clicksP50": 24,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-06",
+    "impressionsP50": 1564,
+    "impressionsP90": 2111,
+    "clicksP50": 105,
+    "clicksP90": 170,
+    "leadsP50": 2.68,
+    "leadsP90": 6.5
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2026-06",
+    "impressionsP50": 694,
+    "impressionsP90": 937,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2026-06",
+    "impressionsP50": 718,
+    "impressionsP90": 969,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2026-06",
+    "impressionsP50": 718,
+    "impressionsP90": 969,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2026-06",
+    "impressionsP50": 733,
+    "impressionsP90": 990,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2026-06",
+    "impressionsP50": 744,
+    "impressionsP90": 1004,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2026-06",
+    "impressionsP50": 744,
+    "impressionsP90": 1004,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2026-06",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2026-06",
+    "impressionsP50": 1690,
+    "impressionsP90": 2282,
+    "clicksP50": 113,
+    "clicksP90": 183,
+    "leadsP50": 2.88,
+    "leadsP90": 7
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2026-06",
+    "impressionsP50": 1663,
+    "impressionsP90": 2245,
+    "clicksP50": 111,
+    "clicksP90": 180,
+    "leadsP50": 2.83,
+    "leadsP90": 6.89
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2026-06",
+    "impressionsP50": 1663,
+    "impressionsP90": 2245,
+    "clicksP50": 111,
+    "clicksP90": 180,
+    "leadsP50": 2.83,
+    "leadsP90": 6.89
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2026-06",
+    "impressionsP50": 1690,
+    "impressionsP90": 2282,
+    "clicksP50": 113,
+    "clicksP90": 183,
+    "leadsP50": 2.88,
+    "leadsP90": 7
+  },
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2026-07",
+    "impressionsP50": 1681,
+    "impressionsP90": 2269,
+    "clicksP50": 113,
+    "clicksP90": 182,
+    "leadsP50": 2.88,
+    "leadsP90": 6.96
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-07",
+    "impressionsP50": 1661,
+    "impressionsP90": 2242,
+    "clicksP50": 111,
+    "clicksP90": 180,
+    "leadsP50": 2.83,
+    "leadsP90": 6.89
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2026-07",
+    "impressionsP50": 1709,
+    "impressionsP90": 2307,
+    "clicksP50": 115,
+    "clicksP90": 185,
+    "leadsP50": 2.93,
+    "leadsP90": 7.08
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2026-07",
+    "impressionsP50": 1709,
+    "impressionsP90": 2307,
+    "clicksP50": 115,
+    "clicksP90": 185,
+    "leadsP50": 2.93,
+    "leadsP90": 7.08
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2026-07",
+    "impressionsP50": 808,
+    "impressionsP90": 1091,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2026-07",
+    "impressionsP50": 738,
+    "impressionsP90": 996,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2026-07",
+    "impressionsP50": 738,
+    "impressionsP90": 996,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2026-07",
+    "impressionsP50": 728,
+    "impressionsP90": 983,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2026-07",
+    "impressionsP50": 738,
+    "impressionsP90": 996,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2026-07",
+    "impressionsP50": 738,
+    "impressionsP90": 996,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2026-07",
+    "impressionsP50": 767,
+    "impressionsP90": 1035,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2026-07",
+    "impressionsP50": 808,
+    "impressionsP90": 1091,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-07",
+    "impressionsP50": 1607,
+    "impressionsP90": 2169,
+    "clicksP50": 108,
+    "clicksP90": 174,
+    "leadsP50": 2.75,
+    "leadsP90": 6.66
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2026-07",
+    "impressionsP50": 713,
+    "impressionsP90": 963,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2026-07",
+    "impressionsP50": 738,
+    "impressionsP90": 996,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2026-07",
+    "impressionsP50": 738,
+    "impressionsP90": 996,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2026-07",
+    "impressionsP50": 753,
+    "impressionsP90": 1017,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2026-07",
+    "impressionsP50": 764,
+    "impressionsP90": 1031,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2026-07",
+    "impressionsP50": 764,
+    "impressionsP90": 1031,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2026-07",
+    "impressionsP50": 793,
+    "impressionsP90": 1071,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2026-07",
+    "impressionsP50": 1736,
+    "impressionsP90": 2344,
+    "clicksP50": 116,
+    "clicksP90": 188,
+    "leadsP50": 2.96,
+    "leadsP90": 7.19
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2026-07",
+    "impressionsP50": 1709,
+    "impressionsP90": 2307,
+    "clicksP50": 115,
+    "clicksP90": 185,
+    "leadsP50": 2.93,
+    "leadsP90": 7.08
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2026-07",
+    "impressionsP50": 1709,
+    "impressionsP90": 2307,
+    "clicksP50": 115,
+    "clicksP90": 185,
+    "leadsP50": 2.93,
+    "leadsP90": 7.08
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2026-07",
+    "impressionsP50": 1736,
+    "impressionsP90": 2344,
+    "clicksP50": 116,
+    "clicksP90": 188,
+    "leadsP50": 2.96,
+    "leadsP90": 7.19
+  },
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2026-08",
+    "impressionsP50": 1622,
+    "impressionsP90": 2190,
+    "clicksP50": 109,
+    "clicksP90": 176,
+    "leadsP50": 2.78,
+    "leadsP90": 6.73
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-08",
+    "impressionsP50": 1602,
+    "impressionsP90": 2163,
+    "clicksP50": 107,
+    "clicksP90": 174,
+    "leadsP50": 2.73,
+    "leadsP90": 6.66
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2026-08",
+    "impressionsP50": 1648,
+    "impressionsP90": 2225,
+    "clicksP50": 110,
+    "clicksP90": 179,
+    "leadsP50": 2.81,
+    "leadsP90": 6.85
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2026-08",
+    "impressionsP50": 1648,
+    "impressionsP90": 2225,
+    "clicksP50": 110,
+    "clicksP90": 179,
+    "leadsP50": 2.81,
+    "leadsP90": 6.85
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2026-08",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2026-08",
+    "impressionsP50": 712,
+    "impressionsP90": 961,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2026-08",
+    "impressionsP50": 712,
+    "impressionsP90": 961,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2026-08",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2026-08",
+    "impressionsP50": 712,
+    "impressionsP90": 961,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2026-08",
+    "impressionsP50": 712,
+    "impressionsP90": 961,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2026-08",
+    "impressionsP50": 740,
+    "impressionsP90": 999,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2026-08",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-08",
+    "impressionsP50": 1550,
+    "impressionsP90": 2093,
+    "clicksP50": 104,
+    "clicksP90": 168,
+    "leadsP50": 2.65,
+    "leadsP90": 6.43
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2026-08",
+    "impressionsP50": 688,
+    "impressionsP90": 929,
+    "clicksP50": 21,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2026-08",
+    "impressionsP50": 712,
+    "impressionsP90": 961,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2026-08",
+    "impressionsP50": 712,
+    "impressionsP90": 961,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2026-08",
+    "impressionsP50": 726,
+    "impressionsP90": 980,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2026-08",
+    "impressionsP50": 737,
+    "impressionsP90": 995,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2026-08",
+    "impressionsP50": 737,
+    "impressionsP90": 995,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2026-08",
+    "impressionsP50": 765,
+    "impressionsP90": 1033,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2026-08",
+    "impressionsP50": 1674,
+    "impressionsP90": 2260,
+    "clicksP50": 112,
+    "clicksP90": 182,
+    "leadsP50": 2.86,
+    "leadsP90": 6.96
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2026-08",
+    "impressionsP50": 1648,
+    "impressionsP90": 2225,
+    "clicksP50": 110,
+    "clicksP90": 179,
+    "leadsP50": 2.81,
+    "leadsP90": 6.85
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2026-08",
+    "impressionsP50": 1648,
+    "impressionsP90": 2225,
+    "clicksP50": 110,
+    "clicksP90": 179,
+    "leadsP50": 2.81,
+    "leadsP90": 6.85
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2026-08",
+    "impressionsP50": 1674,
+    "impressionsP90": 2260,
+    "clicksP50": 112,
+    "clicksP90": 182,
+    "leadsP50": 2.86,
+    "leadsP90": 6.96
+  },
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2026-09",
+    "impressionsP50": 1488,
+    "impressionsP90": 2009,
+    "clicksP50": 100,
+    "clicksP90": 162,
+    "leadsP50": 2.55,
+    "leadsP90": 6.2
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-09",
+    "impressionsP50": 1470,
+    "impressionsP90": 1985,
+    "clicksP50": 98,
+    "clicksP90": 160,
+    "leadsP50": 2.5,
+    "leadsP90": 6.12
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2026-09",
+    "impressionsP50": 1512,
+    "impressionsP90": 2041,
+    "clicksP50": 101,
+    "clicksP90": 164,
+    "leadsP50": 2.58,
+    "leadsP90": 6.27
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2026-09",
+    "impressionsP50": 1512,
+    "impressionsP90": 2041,
+    "clicksP50": 101,
+    "clicksP90": 164,
+    "leadsP50": 2.58,
+    "leadsP90": 6.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2026-09",
+    "impressionsP50": 715,
+    "impressionsP90": 965,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2026-09",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2026-09",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2026-09",
+    "impressionsP50": 644,
+    "impressionsP90": 869,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2026-09",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2026-09",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2026-09",
+    "impressionsP50": 679,
+    "impressionsP90": 917,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2026-09",
+    "impressionsP50": 715,
+    "impressionsP90": 965,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-09",
+    "impressionsP50": 1422,
+    "impressionsP90": 1920,
+    "clicksP50": 95,
+    "clicksP90": 154,
+    "leadsP50": 2.42,
+    "leadsP90": 5.89
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2026-09",
+    "impressionsP50": 631,
+    "impressionsP90": 852,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2026-09",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2026-09",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2026-09",
+    "impressionsP50": 666,
+    "impressionsP90": 899,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2026-09",
+    "impressionsP50": 676,
+    "impressionsP90": 913,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2026-09",
+    "impressionsP50": 676,
+    "impressionsP90": 913,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2026-09",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2026-09",
+    "impressionsP50": 1536,
+    "impressionsP90": 2074,
+    "clicksP50": 103,
+    "clicksP90": 167,
+    "leadsP50": 2.63,
+    "leadsP90": 6.39
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2026-09",
+    "impressionsP50": 1512,
+    "impressionsP90": 2041,
+    "clicksP50": 101,
+    "clicksP90": 164,
+    "leadsP50": 2.58,
+    "leadsP90": 6.27
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2026-09",
+    "impressionsP50": 1512,
+    "impressionsP90": 2041,
+    "clicksP50": 101,
+    "clicksP90": 164,
+    "leadsP50": 2.58,
+    "leadsP90": 6.27
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2026-09",
+    "impressionsP50": 1536,
+    "impressionsP90": 2074,
+    "clicksP50": 103,
+    "clicksP90": 167,
+    "leadsP50": 2.63,
+    "leadsP90": 6.39
+  },
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2026-10",
+    "impressionsP50": 1414,
+    "impressionsP90": 1909,
+    "clicksP50": 95,
+    "clicksP90": 153,
+    "leadsP50": 2.42,
+    "leadsP90": 5.85
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-10",
+    "impressionsP50": 1397,
+    "impressionsP90": 1886,
+    "clicksP50": 94,
+    "clicksP90": 152,
+    "leadsP50": 2.4,
+    "leadsP90": 5.81
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2026-10",
+    "impressionsP50": 1436,
+    "impressionsP90": 1939,
+    "clicksP50": 96,
+    "clicksP90": 156,
+    "leadsP50": 2.45,
+    "leadsP90": 5.97
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2026-10",
+    "impressionsP50": 1436,
+    "impressionsP90": 1939,
+    "clicksP50": 96,
+    "clicksP90": 156,
+    "leadsP50": 2.45,
+    "leadsP90": 5.97
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2026-10",
+    "impressionsP50": 679,
+    "impressionsP90": 917,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2026-10",
+    "impressionsP50": 620,
+    "impressionsP90": 837,
+    "clicksP50": 19,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2026-10",
+    "impressionsP50": 620,
+    "impressionsP90": 837,
+    "clicksP50": 19,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2026-10",
+    "impressionsP50": 612,
+    "impressionsP90": 826,
+    "clicksP50": 18,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2026-10",
+    "impressionsP50": 620,
+    "impressionsP90": 837,
+    "clicksP50": 19,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2026-10",
+    "impressionsP50": 620,
+    "impressionsP90": 837,
+    "clicksP50": 19,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2026-10",
+    "impressionsP50": 645,
+    "impressionsP90": 871,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2026-10",
+    "impressionsP50": 679,
+    "impressionsP90": 917,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-10",
+    "impressionsP50": 1351,
+    "impressionsP90": 1824,
+    "clicksP50": 91,
+    "clicksP90": 147,
+    "leadsP50": 2.32,
+    "leadsP90": 5.62
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2026-10",
+    "impressionsP50": 599,
+    "impressionsP90": 809,
+    "clicksP50": 18,
+    "clicksP90": 29,
+    "leadsP50": 0.08,
+    "leadsP90": 0.25
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2026-10",
+    "impressionsP50": 620,
+    "impressionsP90": 837,
+    "clicksP50": 19,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2026-10",
+    "impressionsP50": 620,
+    "impressionsP90": 837,
+    "clicksP50": 19,
+    "clicksP90": 30,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2026-10",
+    "impressionsP50": 633,
+    "impressionsP90": 855,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2026-10",
+    "impressionsP50": 642,
+    "impressionsP90": 867,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2026-10",
+    "impressionsP50": 642,
+    "impressionsP90": 867,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2026-10",
+    "impressionsP50": 667,
+    "impressionsP90": 900,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2026-10",
+    "impressionsP50": 1459,
+    "impressionsP90": 1970,
+    "clicksP50": 98,
+    "clicksP90": 158,
+    "leadsP50": 2.5,
+    "leadsP90": 6.04
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2026-10",
+    "impressionsP50": 1436,
+    "impressionsP90": 1939,
+    "clicksP50": 96,
+    "clicksP90": 156,
+    "leadsP50": 2.45,
+    "leadsP90": 5.97
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2026-10",
+    "impressionsP50": 1436,
+    "impressionsP90": 1939,
+    "clicksP50": 96,
+    "clicksP90": 156,
+    "leadsP50": 2.45,
+    "leadsP90": 5.97
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2026-10",
+    "impressionsP50": 1459,
+    "impressionsP90": 1970,
+    "clicksP50": 98,
+    "clicksP90": 158,
+    "leadsP50": 2.5,
+    "leadsP90": 6.04
+  },
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2026-11",
+    "impressionsP50": 1518,
+    "impressionsP90": 2049,
+    "clicksP50": 102,
+    "clicksP90": 165,
+    "leadsP50": 2.6,
+    "leadsP90": 6.31
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-11",
+    "impressionsP50": 1499,
+    "impressionsP90": 2024,
+    "clicksP50": 100,
+    "clicksP90": 163,
+    "leadsP50": 2.55,
+    "leadsP90": 6.23
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2026-11",
+    "impressionsP50": 1542,
+    "impressionsP90": 2082,
+    "clicksP50": 103,
+    "clicksP90": 167,
+    "leadsP50": 2.63,
+    "leadsP90": 6.39
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2026-11",
+    "impressionsP50": 1542,
+    "impressionsP90": 2082,
+    "clicksP50": 103,
+    "clicksP90": 167,
+    "leadsP50": 2.63,
+    "leadsP90": 6.39
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2026-11",
+    "impressionsP50": 729,
+    "impressionsP90": 984,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2026-11",
+    "impressionsP50": 666,
+    "impressionsP90": 899,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2026-11",
+    "impressionsP50": 666,
+    "impressionsP90": 899,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2026-11",
+    "impressionsP50": 657,
+    "impressionsP90": 887,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2026-11",
+    "impressionsP50": 666,
+    "impressionsP90": 899,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2026-11",
+    "impressionsP50": 666,
+    "impressionsP90": 899,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2026-11",
+    "impressionsP50": 693,
+    "impressionsP90": 936,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2026-11",
+    "impressionsP50": 729,
+    "impressionsP90": 984,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-11",
+    "impressionsP50": 1450,
+    "impressionsP90": 1958,
+    "clicksP50": 97,
+    "clicksP90": 157,
+    "leadsP50": 2.47,
+    "leadsP90": 6.01
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2026-11",
+    "impressionsP50": 644,
+    "impressionsP90": 869,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2026-11",
+    "impressionsP50": 666,
+    "impressionsP90": 899,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2026-11",
+    "impressionsP50": 666,
+    "impressionsP90": 899,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2026-11",
+    "impressionsP50": 679,
+    "impressionsP90": 917,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2026-11",
+    "impressionsP50": 690,
+    "impressionsP90": 932,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2026-11",
+    "impressionsP50": 690,
+    "impressionsP90": 932,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2026-11",
+    "impressionsP50": 716,
+    "impressionsP90": 967,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2026-11",
+    "impressionsP50": 1567,
+    "impressionsP90": 2115,
+    "clicksP50": 105,
+    "clicksP90": 170,
+    "leadsP50": 2.68,
+    "leadsP90": 6.5
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2026-11",
+    "impressionsP50": 1542,
+    "impressionsP90": 2082,
+    "clicksP50": 103,
+    "clicksP90": 167,
+    "leadsP50": 2.63,
+    "leadsP90": 6.39
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2026-11",
+    "impressionsP50": 1542,
+    "impressionsP90": 2082,
+    "clicksP50": 103,
+    "clicksP90": 167,
+    "leadsP50": 2.63,
+    "leadsP90": 6.39
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2026-11",
+    "impressionsP50": 1567,
+    "impressionsP90": 2115,
+    "clicksP50": 105,
+    "clicksP90": 170,
+    "leadsP50": 2.68,
+    "leadsP90": 6.5
+  },
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2026-12",
+    "impressionsP50": 1652,
+    "impressionsP90": 2230,
+    "clicksP50": 111,
+    "clicksP90": 179,
+    "leadsP50": 2.83,
+    "leadsP90": 6.85
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-12",
+    "impressionsP50": 1632,
+    "impressionsP90": 2203,
+    "clicksP50": 109,
+    "clicksP90": 177,
+    "leadsP50": 2.78,
+    "leadsP90": 6.77
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2026-12",
+    "impressionsP50": 1678,
+    "impressionsP90": 2265,
+    "clicksP50": 112,
+    "clicksP90": 182,
+    "leadsP50": 2.86,
+    "leadsP90": 6.96
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2026-12",
+    "impressionsP50": 1678,
+    "impressionsP90": 2265,
+    "clicksP50": 112,
+    "clicksP90": 182,
+    "leadsP50": 2.86,
+    "leadsP90": 6.96
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2026-12",
+    "impressionsP50": 794,
+    "impressionsP90": 1072,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2026-12",
+    "impressionsP50": 725,
+    "impressionsP90": 979,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2026-12",
+    "impressionsP50": 725,
+    "impressionsP90": 979,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2026-12",
+    "impressionsP50": 715,
+    "impressionsP90": 965,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2026-12",
+    "impressionsP50": 725,
+    "impressionsP90": 979,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2026-12",
+    "impressionsP50": 725,
+    "impressionsP90": 979,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2026-12",
+    "impressionsP50": 754,
+    "impressionsP90": 1018,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2026-12",
+    "impressionsP50": 794,
+    "impressionsP90": 1072,
+    "clicksP50": 24,
+    "clicksP90": 39,
+    "leadsP50": 0.1,
+    "leadsP90": 0.33
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2026-12",
+    "impressionsP50": 1578,
+    "impressionsP90": 2130,
+    "clicksP50": 106,
+    "clicksP90": 171,
+    "leadsP50": 2.7,
+    "leadsP90": 6.54
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2026-12",
+    "impressionsP50": 700,
+    "impressionsP90": 945,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2026-12",
+    "impressionsP50": 725,
+    "impressionsP90": 979,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2026-12",
+    "impressionsP50": 725,
+    "impressionsP90": 979,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2026-12",
+    "impressionsP50": 739,
+    "impressionsP90": 998,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2026-12",
+    "impressionsP50": 750,
+    "impressionsP90": 1013,
+    "clicksP50": 23,
+    "clicksP90": 36,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2026-12",
+    "impressionsP50": 750,
+    "impressionsP90": 1013,
+    "clicksP50": 23,
+    "clicksP90": 36,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2026-12",
+    "impressionsP50": 779,
+    "impressionsP90": 1052,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2026-12",
+    "impressionsP50": 1705,
+    "impressionsP90": 2302,
+    "clicksP50": 114,
+    "clicksP90": 185,
+    "leadsP50": 2.91,
+    "leadsP90": 7.08
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2026-12",
+    "impressionsP50": 1678,
+    "impressionsP90": 2265,
+    "clicksP50": 112,
+    "clicksP90": 182,
+    "leadsP50": 2.86,
+    "leadsP90": 6.96
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2026-12",
+    "impressionsP50": 1678,
+    "impressionsP90": 2265,
+    "clicksP50": 112,
+    "clicksP90": 182,
+    "leadsP50": 2.86,
+    "leadsP90": 6.96
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2026-12",
+    "impressionsP50": 1705,
+    "impressionsP90": 2302,
+    "clicksP50": 114,
+    "clicksP90": 185,
+    "leadsP50": 2.91,
+    "leadsP90": 7.08
+  },
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2027-01",
+    "impressionsP50": 1607,
+    "impressionsP90": 2169,
+    "clicksP50": 108,
+    "clicksP90": 174,
+    "leadsP50": 2.75,
+    "leadsP90": 6.66
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2027-01",
+    "impressionsP50": 1588,
+    "impressionsP90": 2144,
+    "clicksP50": 106,
+    "clicksP90": 172,
+    "leadsP50": 2.7,
+    "leadsP90": 6.58
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2027-01",
+    "impressionsP50": 1633,
+    "impressionsP90": 2205,
+    "clicksP50": 109,
+    "clicksP90": 177,
+    "leadsP50": 2.78,
+    "leadsP90": 6.77
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2027-01",
+    "impressionsP50": 1633,
+    "impressionsP90": 2205,
+    "clicksP50": 109,
+    "clicksP90": 177,
+    "leadsP50": 2.78,
+    "leadsP90": 6.77
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2027-01",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2027-01",
+    "impressionsP50": 705,
+    "impressionsP90": 952,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2027-01",
+    "impressionsP50": 705,
+    "impressionsP90": 952,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2027-01",
+    "impressionsP50": 696,
+    "impressionsP90": 940,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2027-01",
+    "impressionsP50": 705,
+    "impressionsP90": 952,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2027-01",
+    "impressionsP50": 705,
+    "impressionsP90": 952,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2027-01",
+    "impressionsP50": 733,
+    "impressionsP90": 990,
+    "clicksP50": 22,
+    "clicksP90": 36,
+    "leadsP50": 0.09,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2027-01",
+    "impressionsP50": 772,
+    "impressionsP90": 1042,
+    "clicksP50": 23,
+    "clicksP90": 38,
+    "leadsP50": 0.1,
+    "leadsP90": 0.32
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2027-01",
+    "impressionsP50": 1536,
+    "impressionsP90": 2074,
+    "clicksP50": 103,
+    "clicksP90": 167,
+    "leadsP50": 2.63,
+    "leadsP90": 6.39
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2027-01",
+    "impressionsP50": 681,
+    "impressionsP90": 919,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2027-01",
+    "impressionsP50": 705,
+    "impressionsP90": 952,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2027-01",
+    "impressionsP50": 705,
+    "impressionsP90": 952,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2027-01",
+    "impressionsP50": 719,
+    "impressionsP90": 971,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2027-01",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2027-01",
+    "impressionsP50": 730,
+    "impressionsP90": 986,
+    "clicksP50": 22,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2027-01",
+    "impressionsP50": 758,
+    "impressionsP90": 1023,
+    "clicksP50": 23,
+    "clicksP90": 37,
+    "leadsP50": 0.1,
+    "leadsP90": 0.31
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2027-01",
+    "impressionsP50": 1659,
+    "impressionsP90": 2240,
+    "clicksP50": 111,
+    "clicksP90": 180,
+    "leadsP50": 2.83,
+    "leadsP90": 6.89
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2027-01",
+    "impressionsP50": 1633,
+    "impressionsP90": 2205,
+    "clicksP50": 109,
+    "clicksP90": 177,
+    "leadsP50": 2.78,
+    "leadsP90": 6.77
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2027-01",
+    "impressionsP50": 1633,
+    "impressionsP90": 2205,
+    "clicksP50": 109,
+    "clicksP90": 177,
+    "leadsP50": 2.78,
+    "leadsP90": 6.77
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2027-01",
+    "impressionsP50": 1659,
+    "impressionsP90": 2240,
+    "clicksP50": 111,
+    "clicksP90": 180,
+    "leadsP50": 2.83,
+    "leadsP90": 6.89
+  },
+  {
+    "clusterId": "angarsk:garderobnye:transactional:money",
+    "month": "2027-02",
+    "impressionsP50": 1488,
+    "impressionsP90": 2009,
+    "clicksP50": 100,
+    "clicksP90": 162,
+    "leadsP50": 2.55,
+    "leadsP90": 6.2
+  },
+  {
+    "clusterId": "angarsk:kuhni-na-zakaz:transactional:money",
+    "month": "2027-02",
+    "impressionsP50": 1470,
+    "impressionsP90": 1985,
+    "clicksP50": 98,
+    "clicksP90": 160,
+    "leadsP50": 2.5,
+    "leadsP90": 6.12
+  },
+  {
+    "clusterId": "angarsk:shkafy-kupe:transactional:money",
+    "month": "2027-02",
+    "impressionsP50": 1512,
+    "impressionsP90": 2041,
+    "clicksP50": 101,
+    "clicksP90": 164,
+    "leadsP50": 2.58,
+    "leadsP90": 6.27
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-mini",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-nishe",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-prihozhei",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:commercial:micro-garderobnye-v-spalne",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:garderobnye:transactional:money",
+    "month": "2027-02",
+    "impressionsP50": 1512,
+    "impressionsP90": 2041,
+    "clicksP50": 101,
+    "clicksP90": 164,
+    "leadsP50": 2.58,
+    "leadsP90": 6.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-bez-verhnih-shkafov",
+    "month": "2027-02",
+    "impressionsP50": 715,
+    "impressionsP90": 965,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-bolshoi-semi",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-dlya-studii",
+    "month": "2027-02",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-do-potolka",
+    "month": "2027-02",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-malenkie",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-p-obraznye",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-pryamye",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-barnoi-stoikoi",
+    "month": "2027-02",
+    "impressionsP50": 644,
+    "impressionsP90": 869,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-ostrovom",
+    "month": "2027-02",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-penalom",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-s-poluostrovom",
+    "month": "2027-02",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-uglovye",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-hrushchevke",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:micro-kuhni-v-novostroyku",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:commercial:pricing-guide",
+    "month": "2027-02",
+    "impressionsP50": 679,
+    "impressionsP90": 917,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:colors",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:faq",
+    "month": "2027-02",
+    "impressionsP50": 715,
+    "impressionsP90": 965,
+    "clicksP50": 21,
+    "clicksP90": 35,
+    "leadsP50": 0.09,
+    "leadsP90": 0.3
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:guide-process",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:materials",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:production-timing",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:informational:selection",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:kuhni-na-zakaz:transactional:money",
+    "month": "2027-02",
+    "impressionsP50": 1422,
+    "impressionsP90": 1920,
+    "clicksP50": 95,
+    "clicksP90": 154,
+    "leadsP50": 2.42,
+    "leadsP90": 5.89
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-do-potolka",
+    "month": "2027-02",
+    "impressionsP50": 631,
+    "impressionsP90": 852,
+    "clicksP50": 19,
+    "clicksP90": 31,
+    "leadsP50": 0.08,
+    "leadsP90": 0.26
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-s-zerkalom",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-uglovye",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-nishu",
+    "month": "2027-02",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-prihozhuyu",
+    "month": "2027-02",
+    "impressionsP50": 653,
+    "impressionsP90": 882,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-v-spalnyu",
+    "month": "2027-02",
+    "impressionsP50": 666,
+    "impressionsP90": 899,
+    "clicksP50": 20,
+    "clicksP90": 32,
+    "leadsP50": 0.09,
+    "leadsP90": 0.27
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:commercial:micro-shkafy-vstroennye",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:organization",
+    "month": "2027-02",
+    "impressionsP50": 676,
+    "impressionsP90": 913,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:selection",
+    "month": "2027-02",
+    "impressionsP50": 676,
+    "impressionsP90": 913,
+    "clicksP50": 20,
+    "clicksP90": 33,
+    "leadsP50": 0.09,
+    "leadsP90": 0.28
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:informational:sliding-doors",
+    "month": "2027-02",
+    "impressionsP50": 702,
+    "impressionsP90": 948,
+    "clicksP50": 21,
+    "clicksP90": 34,
+    "leadsP50": 0.09,
+    "leadsP90": 0.29
+  },
+  {
+    "clusterId": "irkutsk:shkafy-kupe:transactional:money",
+    "month": "2027-02",
+    "impressionsP50": 1536,
+    "impressionsP90": 2074,
+    "clicksP50": 103,
+    "clicksP90": 167,
+    "leadsP50": 2.63,
+    "leadsP90": 6.39
+  },
+  {
+    "clusterId": "shelekhov:garderobnye:transactional:money",
+    "month": "2027-02",
+    "impressionsP50": 1512,
+    "impressionsP90": 2041,
+    "clicksP50": 101,
+    "clicksP90": 164,
+    "leadsP50": 2.58,
+    "leadsP90": 6.27
+  },
+  {
+    "clusterId": "shelekhov:kuhni-na-zakaz:transactional:money",
+    "month": "2027-02",
+    "impressionsP50": 1512,
+    "impressionsP90": 2041,
+    "clicksP50": 101,
+    "clicksP90": 164,
+    "leadsP50": 2.58,
+    "leadsP90": 6.27
+  },
+  {
+    "clusterId": "shelekhov:shkafy-kupe:transactional:money",
+    "month": "2027-02",
+    "impressionsP50": 1536,
+    "impressionsP90": 2074,
+    "clicksP50": 103,
+    "clicksP90": 167,
+    "leadsP50": 2.63,
+    "leadsP90": 6.39
+  }
+]

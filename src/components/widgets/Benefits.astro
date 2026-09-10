@@ -1,0 +1,53 @@
+---
+import { Icon } from 'astro-icon/components';
+
+export interface Props {
+  id?: string;
+  class?: string;
+}
+
+const { id, class: cls = '' } = Astro.props as Props;
+---
+
+<section id={id} class={`py-10 md:py-16 bg-gray-50 ${cls}`}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6">
+    <div class="text-center mb-8">
+      <h2 class="text-2xl md:text-3xl font-semibold">Наши преимущества</h2>
+      <p class="text-muted mt-2">Почему клиенты выбирают нас для изготовления мебели на заказ</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="bg-white p-5 rounded-lg shadow-sm text-center">
+        <div class="flex items-center justify-center mb-3 text-link">
+          <Icon name="tabler:tools" class="w-8 h-8" />
+        </div>
+        <h3 class="font-semibold">Индивидуальный проект</h3>
+        <p class="text-muted text-sm mt-2">Проект под ваши нужды и замеры.</p>
+      </div>
+
+      <div class="bg-white p-5 rounded-lg shadow-sm text-center">
+        <div class="flex items-center justify-center mb-3 text-link">
+          <Icon name="tabler:package" class="w-8 h-8" />
+        </div>
+        <h3 class="font-semibold">Качественные материалы</h3>
+        <p class="text-muted text-sm mt-2">Надежные материалы и фурнитура.</p>
+      </div>
+
+      <div class="bg-white p-5 rounded-lg shadow-sm text-center">
+        <div class="flex items-center justify-center mb-3 text-link">
+          <Icon name="tabler:truck" class="w-8 h-8" />
+        </div>
+        <h3 class="font-semibold">Доставка и монтаж</h3>
+        <p class="text-muted text-sm mt-2">Профессиональная сборка на объекте.</p>
+      </div>
+
+      <div class="bg-white p-5 rounded-lg shadow-sm text-center">
+        <div class="flex items-center justify-center mb-3 text-link">
+          <Icon name="tabler:shield-check" class="w-8 h-8" />
+        </div>
+        <h3 class="font-semibold">Гарантия</h3>
+        <p class="text-muted text-sm mt-2">Официальная гарантия на работы и материалы.</p>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,47 @@
+---
+import { Icon } from 'astro-icon/components';
+import { twMerge } from 'tailwind-merge';
+import type { CallToAction as Props } from '~/types';
+
+const buttonProps = Astro.props as Props & { disabled?: boolean };
+
+const {
+  variant = 'secondary',
+  target,
+  text = '',
+  icon = '',
+  class: className = '',
+  type,
+  disabled = false,
+  ...rest
+} = buttonProps;
+
+const hasSlot = Astro.slots.has('default');
+
+const variants = {
+  primary: 'btn-primary',
+  secondary: 'btn-secondary',
+  tertiary: 'btn btn-tertiary',
+  link: 'ui-btn-state cursor-pointer rounded-sm hover:text-primary',
+  ghost: 'btn-ghost',
+};
+---
+
+{
+  type === 'button' || type === 'submit' || type === 'reset' ? (
+    <button type={type} disabled={disabled} class={twMerge(variants[variant] || '', className)} {...rest}>
+      {hasSlot ? <slot /> : text}
+      {icon && <Icon name={icon} class="w-5 h-5 ml-1 -mr-1.5 rtl:mr-1 rtl:-ml-1.5 inline-block" />}
+    </button>
+  ) : (
+    <a
+      class={twMerge(variants[variant] || '', className)}
+      {...(target ? { target: target, rel: 'noopener noreferrer' } : {})}
+      {...(disabled ? { 'aria-disabled': 'true', tabindex: '-1' } : {})}
+      {...rest}
+    >
+      {hasSlot ? <slot /> : text}
+      {icon && <Icon name={icon} class="w-5 h-5 ml-1 -mr-1.5 rtl:mr-1 rtl:-ml-1.5 inline-block" />}
+    </a>
+  )
+}

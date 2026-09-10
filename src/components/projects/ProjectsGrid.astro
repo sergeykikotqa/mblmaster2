@@ -1,0 +1,27 @@
+---
+import ProjectCard from '~/components/projects/ProjectCard.astro';
+import type { ProjectCardData } from '~/types/project';
+import '~/styles/components/projects-grid.css';
+
+interface Props {
+  projects: ProjectCardData[];
+  emptyTitle?: string;
+  useModal?: boolean;
+}
+
+const { projects, emptyTitle = 'Кейсы скоро появятся', useModal = false } = Astro.props as Props;
+---
+
+{
+  projects.length > 0 ? (
+    <ul class="projects-grid">
+      {projects.map((project) => (
+        <li>
+          <ProjectCard project={project} useModal={useModal} />
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="projects-empty">{emptyTitle}</p>
+  )
+}

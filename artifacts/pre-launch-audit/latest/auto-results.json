@@ -1,0 +1,580 @@
+{
+  "runMeta": {
+    "startedAt": "2026-03-23T13:49:14.524Z",
+    "finishedAt": "2026-03-23T13:58:11.317Z",
+    "durationSec": 536.79,
+    "workspace": "C:\\Users\\adida\\Desktop\\yes",
+    "runner": "scripts/audit-pre-launch.mjs",
+    "envDefaults": {
+      "PUBLIC_SITE_URL": "https://example.com",
+      "METRICS_ADMIN_TOKEN": "__SET__",
+      "NODE_OPTIONS": "--max-old-space-size=4096",
+      "LHCI_NUMBER_OF_RUNS": "1",
+      "LHCI_BUILD_CONTEXT__CURRENT_BRANCH": "local"
+    }
+  },
+  "questions": {
+    "Q1": {
+      "question": "Все базовые гейты зелёные?",
+      "type": "auto",
+      "blocker": true,
+      "block": 1,
+      "status": "PASS",
+      "evidence": [
+        "npm run lint",
+        "npm run typecheck",
+        "npm run check:astro",
+        "npm run test",
+        "npm run build"
+      ],
+      "comment": "All baseline gates are green.",
+      "updatedAt": "2026-03-23T13:50:01.331Z"
+    },
+    "Q2": {
+      "question": "`npm run audit:pre-release` выдаёт GO без красных блокеров?",
+      "type": "auto",
+      "blocker": true,
+      "block": 1,
+      "status": "PASS",
+      "evidence": [
+        "npm run audit:pre-release"
+      ],
+      "comment": "Pre-release 28-question baseline is green.",
+      "updatedAt": "2026-03-23T13:52:41.657Z"
+    },
+    "Q3": {
+      "question": "Нет `any|unknown|as` в project-слое?",
+      "type": "auto",
+      "blocker": false,
+      "block": 1,
+      "status": "PASS",
+      "evidence": [
+        "src/lib/projects/project-boundary.ts",
+        "src/lib/projects/normalized-project-content.ts",
+        "src/lib/projects/project-view-model.ts",
+        "src/lib/projects/project-render-plan.ts",
+        "src/components/projects/BlockRenderer.astro"
+      ],
+      "comment": "Q3 PASS = unsafe typing allowed only in boundary layer; no as/any in render pipeline and normalized project flow. Residual debt outside strict pipeline: any=0, unknown=9, as=87.",
+      "updatedAt": "2026-03-23T13:52:41.669Z"
+    },
+    "Q4": {
+      "question": "Image-пайплайн без сырых `/images/projects/...` в шаблонах/dist?",
+      "type": "auto",
+      "blocker": true,
+      "block": 1,
+      "status": "PASS",
+      "evidence": [
+        "npm run check:image-policy",
+        "src/pages|components|layouts scan",
+        "dist/**/*.html scan"
+      ],
+      "comment": "No raw /images/projects/ leakage in templates/dist.",
+      "updatedAt": "2026-03-23T13:52:42.071Z"
+    },
+    "Q5": {
+      "question": "LCP smoke и hero-LCP check для money/project pages проходят?",
+      "type": "auto",
+      "blocker": true,
+      "block": 1,
+      "status": "PASS",
+      "evidence": [
+        "artifacts/lighthouse-summary.json",
+        ".lighthouseci/lhr-*.json"
+      ],
+      "comment": "Lighthouse smoke + hero-LCP contract evidence is present.",
+      "updatedAt": "2026-03-23T13:54:04.189Z"
+    },
+    "Q6": {
+      "question": "Нет duplicate slug/id в content collections?",
+      "type": "auto",
+      "blocker": true,
+      "block": 1,
+      "status": "PASS",
+      "evidence": [
+        "npm run check:slugs",
+        "npm run check:content-duplicates"
+      ],
+      "comment": "No duplicate slug/id collisions detected.",
+      "updatedAt": "2026-03-23T13:54:04.872Z"
+    },
+    "Q7": {
+      "question": "Build устойчив при альтернативном `PUBLIC_SITE_URL`?",
+      "type": "auto",
+      "blocker": false,
+      "block": 1,
+      "status": "PASS",
+      "evidence": [
+        "PUBLIC_SITE_URL=https://prelaunch-alt.example.com npm run build",
+        "npm run check:canonical-absolute",
+        "npm run check:sitemap-coverage"
+      ],
+      "comment": "Build and core URL invariants are stable under alternative PUBLIC_SITE_URL.",
+      "updatedAt": "2026-03-23T13:54:22.724Z"
+    },
+    "Q8": {
+      "question": "Атомы блоков покрыты интеграционными тестами?",
+      "type": "auto",
+      "blocker": false,
+      "block": 1,
+      "status": "PASS",
+      "evidence": [
+        "tests/project-block-registry.test.ts",
+        "tests/project-render-plan.test.ts",
+        "tests/project-video.test.ts"
+      ],
+      "comment": "Integration coverage references all key block atoms.",
+      "updatedAt": "2026-03-23T13:54:22.726Z"
+    },
+    "Q9": {
+      "question": "Legacy-режимы полностью отключены?",
+      "type": "auto",
+      "blocker": true,
+      "block": 1,
+      "status": "PASS",
+      "evidence": [
+        "npm run check:no-legacy-project-fields",
+        "src/**/* legacy marker scan"
+      ],
+      "comment": "No legacy-mode path remains.",
+      "updatedAt": "2026-03-23T13:54:23.095Z"
+    },
+    "Q10": {
+      "question": "Единый путь рендера через `ProjectRenderer/BlockRenderer`?",
+      "type": "auto",
+      "blocker": true,
+      "block": 1,
+      "status": "PASS",
+      "evidence": [
+        "src/components/projects/ProjectRenderer.astro",
+        "src/components/projects/BlockRenderer.astro",
+        "src/lib/projects/project-render-plan.ts"
+      ],
+      "comment": "Single renderer orchestration path is in place.",
+      "updatedAt": "2026-03-23T13:54:23.096Z"
+    },
+    "Q11": {
+      "question": "Money pages имеют evidence-based trust-блок в первых экранах?",
+      "type": "manual",
+      "blocker": false,
+      "block": 2,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q12": {
+      "question": "Есть профильная связка `data-service-projects` + «Наши работы»?",
+      "type": "auto",
+      "blocker": false,
+      "block": 2,
+      "status": "PASS",
+      "evidence": [
+        "dist/kuhni/index.html",
+        "dist/shkafy/index.html",
+        "dist/garderobnye/index.html",
+        "dist/kuhni-3-metra/index.html"
+      ],
+      "comment": "All money pages include service-project binding markers.",
+      "updatedAt": "2026-03-23T13:54:23.099Z"
+    },
+    "Q13": {
+      "question": "Есть re-entry CTA (`service_reentry_primary`, `service_reentry_call`)?",
+      "type": "auto",
+      "blocker": false,
+      "block": 2,
+      "status": "PASS",
+      "evidence": [
+        "dist/kuhni/index.html",
+        "dist/shkafy/index.html",
+        "dist/garderobnye/index.html",
+        "dist/kuhni-3-metra/index.html"
+      ],
+      "comment": "Re-entry conversion CTAs are present.",
+      "updatedAt": "2026-03-23T13:54:23.101Z"
+    },
+    "Q14": {
+      "question": "E-E-A-T по Claude >= 8/10 на money pages?",
+      "type": "manual",
+      "blocker": false,
+      "block": 2,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q15": {
+      "question": "Семантическая полнота money-кластера >= 8/10?",
+      "type": "manual",
+      "blocker": false,
+      "block": 2,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q16": {
+      "question": "Indexable-link coverage и внутренняя перелинковка в норме?",
+      "type": "auto",
+      "blocker": false,
+      "block": 2,
+      "status": "PASS",
+      "evidence": [
+        "npm run check:indexable-link-coverage"
+      ],
+      "comment": "Indexable internal-link baseline is green.",
+      "updatedAt": "2026-03-23T13:54:23.506Z"
+    },
+    "Q17": {
+      "question": "Schema coverage (`LocalBusiness/Offer/Review/BreadcrumbList`) в норме?",
+      "type": "auto",
+      "blocker": false,
+      "block": 2,
+      "status": "PASS",
+      "evidence": [
+        "npm run check:schema"
+      ],
+      "comment": "Schema baseline gate is green.",
+      "updatedAt": "2026-03-23T13:54:23.894Z"
+    },
+    "Q18": {
+      "question": "Google Rich Results Test подтверждает валидный JSON-LD?",
+      "type": "ops",
+      "blocker": false,
+      "block": 2,
+      "status": "NA/ops",
+      "evidence": [],
+      "comment": "Operational evidence required."
+    },
+    "Q19": {
+      "question": "Sitemap/robots/indexability инварианты зелёные?",
+      "type": "auto",
+      "blocker": true,
+      "block": 2,
+      "status": "PASS",
+      "evidence": [
+        "npm run check:sitemap-coverage",
+        "npm run check:indexable-coverage",
+        "npm run check:no-admin-in-sitemap",
+        "npm run check:indexability-runtime-consistency"
+      ],
+      "comment": "Sitemap/robots/indexability constraints are green.",
+      "updatedAt": "2026-03-23T13:54:26.281Z"
+    },
+    "Q20": {
+      "question": "Нет thin-content в индексируемых страницах?",
+      "type": "auto",
+      "blocker": true,
+      "block": 2,
+      "status": "PASS",
+      "evidence": [
+        "npm run check:content-length"
+      ],
+      "comment": "Thin-content gate is green for current indexable set.",
+      "updatedAt": "2026-03-23T13:54:26.620Z"
+    },
+    "Q21": {
+      "question": "Topical authority кластеров подтверждён?",
+      "type": "manual",
+      "blocker": false,
+      "block": 2,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q22": {
+      "question": "CWV smoke на обязательном наборе money routes проходит?",
+      "type": "auto",
+      "blocker": true,
+      "block": 2,
+      "status": "PASS",
+      "evidence": [
+        "/ (LCP<2.5s, CLS<0.1)",
+        "/kuhni (LCP<2.5s, CLS<0.1)",
+        "/shkafy (LCP<2.5s, CLS<0.1)",
+        "/garderobnye (LCP<2.5s, CLS<0.1)",
+        "/kuhni-3-metra (LCP<2.5s, CLS<0.1)",
+        "/projects/kuhnya-bogdana (LCP<2.5s, CLS<0.1)"
+      ],
+      "comment": "Required money-page CWV smoke set is green.",
+      "updatedAt": "2026-03-23T13:56:01.597Z"
+    },
+    "Q23": {
+      "question": "Mobile adaptation audit проходит без критичных дефектов?",
+      "type": "auto",
+      "blocker": false,
+      "block": 2,
+      "status": "PASS",
+      "evidence": [
+        "tests/e2e/mobile-adaptation-audit.spec.ts",
+        ".tmp/mobile-audit/report.md"
+      ],
+      "comment": "Mobile adaptation smoke audit passed.",
+      "updatedAt": "2026-03-23T13:57:40.001Z"
+    },
+    "Q24": {
+      "question": "Local SEO/NAP сигналы подтверждены в контенте и schema?",
+      "type": "auto",
+      "blocker": true,
+      "block": 2,
+      "status": "PASS",
+      "evidence": [
+        "npm run check:nap-consistency",
+        "npm run check:geo-signals",
+        "npm run check:schema"
+      ],
+      "comment": "NAP and local SEO schema signals are present on money pages.",
+      "updatedAt": "2026-03-23T13:57:41.048Z"
+    },
+    "Q25": {
+      "question": "Новый проект добавляется в минимальное число мест?",
+      "type": "manual",
+      "blocker": false,
+      "block": 3,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q26": {
+      "question": "Registry блоков остаётся декларативным?",
+      "type": "auto",
+      "blocker": false,
+      "block": 3,
+      "status": "PASS",
+      "evidence": [
+        "src/components/projects/block-registry.ts"
+      ],
+      "comment": "Block registry stays declarative.",
+      "updatedAt": "2026-03-23T13:57:41.048Z"
+    },
+    "Q27": {
+      "question": "`NormalizedProjectContent` остаётся единым источником правды?",
+      "type": "auto",
+      "blocker": false,
+      "block": 3,
+      "status": "PASS",
+      "evidence": [
+        "src/lib/projects/normalized-project-content.ts",
+        "src/lib/projects/project-adapters.ts",
+        "src/lib/projects/project-view-model.ts",
+        "src/components/projects/ProjectRenderer.astro"
+      ],
+      "comment": "Normalization contract remains the canonical project-data path.",
+      "updatedAt": "2026-03-23T13:57:41.049Z"
+    },
+    "Q28": {
+      "question": "Нет дублирования orchestration-логики между рендерами?",
+      "type": "manual",
+      "blocker": false,
+      "block": 3,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q29": {
+      "question": "Компоненты блоков атомарны и переиспользуемы?",
+      "type": "manual",
+      "blocker": false,
+      "block": 3,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q30": {
+      "question": "`ARCHITECTURE.md` отражает текущий data flow?",
+      "type": "manual",
+      "blocker": false,
+      "block": 3,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q31": {
+      "question": "Нет `TODO: legacy` и `temporary fix` в коде?",
+      "type": "auto",
+      "blocker": false,
+      "block": 3,
+      "status": "PASS",
+      "evidence": [
+        "src/**/* scan for TODO: legacy|temporary fix"
+      ],
+      "comment": "No legacy temporary markers found.",
+      "updatedAt": "2026-03-23T13:57:41.075Z"
+    },
+    "Q32": {
+      "question": "CI/CD quality gates покрывают release-контур, включая lead runtime smoke?",
+      "type": "auto",
+      "blocker": true,
+      "block": 3,
+      "status": "PASS",
+      "evidence": [
+        "docs/QUALITY_GATES.md",
+        "package.json scripts",
+        "npm run check:prod-runtime",
+        ".github/workflows/actions.yaml#check-production"
+      ],
+      "comment": "Release runtime gates are wired. Local smoke=PASS; deployed smoke=NA/ops. Deployed runtime smoke requires DEPLOY_SMOKE_BASE_URL and remains enforced in the main release workflow.",
+      "updatedAt": "2026-03-23T13:57:54.597Z"
+    },
+    "Q33": {
+      "question": "CTA в длинных money pages видимы и доступны на mobile?",
+      "type": "manual",
+      "blocker": false,
+      "block": 4,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q34": {
+      "question": "CTA-кнопки унифицированы по тексту и стилю?",
+      "type": "manual",
+      "blocker": false,
+      "block": 4,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q35": {
+      "question": "A11y smoke (WCAG AA baseline) проходит?",
+      "type": "auto",
+      "blocker": false,
+      "block": 4,
+      "status": "PASS",
+      "evidence": [
+        "npm run check:accessibility"
+      ],
+      "comment": "A11y smoke baseline is green.",
+      "updatedAt": "2026-03-23T13:58:11.317Z"
+    },
+    "Q36": {
+      "question": "Hero содержит оффер + локальную привязку?",
+      "type": "manual",
+      "blocker": false,
+      "block": 4,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q37": {
+      "question": "Карточки проектов визуально консистентны?",
+      "type": "manual",
+      "blocker": false,
+      "block": 4,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q38": {
+      "question": "Нет визуального шума/повторов в money flow?",
+      "type": "manual",
+      "blocker": false,
+      "block": 4,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q39": {
+      "question": "Нет P1-блокеров по технике/SEO/runtime?",
+      "type": "auto",
+      "blocker": true,
+      "block": 5,
+      "status": "PASS",
+      "evidence": [
+        "Q1:PASS",
+        "Q2:PASS",
+        "Q4:PASS",
+        "Q5:PASS",
+        "Q6:PASS",
+        "Q9:PASS",
+        "Q10:PASS",
+        "Q19:PASS",
+        "Q20:PASS",
+        "Q22:PASS",
+        "Q24:PASS",
+        "Q32:PASS"
+      ],
+      "comment": "No P1 auto-blockers detected in auto run.",
+      "updatedAt": "2026-03-23T13:58:11.317Z"
+    },
+    "Q40": {
+      "question": "Content moat достаточен для целевых запросов?",
+      "type": "manual",
+      "blocker": false,
+      "block": 5,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q41": {
+      "question": "После публикации можно ограничиться контентным насыщением?",
+      "type": "manual",
+      "blocker": false,
+      "block": 5,
+      "status": "MANUAL",
+      "evidence": [],
+      "comment": "Manual review required."
+    },
+    "Q42": {
+      "question": "Итоговый dual score и финальный verdict зафиксированы?",
+      "type": "auto",
+      "blocker": false,
+      "block": 5,
+      "status": "PASS",
+      "evidence": [
+        "Auto Score=10",
+        "Final Score=pending-manual",
+        "Verdict=GO"
+      ],
+      "comment": "Dual score and auto verdict computed.",
+      "updatedAt": "2026-03-23T13:58:11.317Z"
+    }
+  },
+  "runtimeSmoke": {
+    "local": {
+      "status": "PASS",
+      "evidence": [
+        "npm run check:prod-runtime"
+      ],
+      "comment": "Local production-like lead runtime smoke passed."
+    },
+    "deployed": {
+      "status": "NA/ops",
+      "evidence": [
+        ".github/workflows/actions.yaml#check-production"
+      ],
+      "comment": "Deployed runtime smoke requires DEPLOY_SMOKE_BASE_URL and remains enforced in the main release workflow."
+    }
+  },
+  "blockScores": {
+    "block1": {
+      "pass": 10,
+      "total": 10,
+      "score": 10
+    },
+    "block2": {
+      "pass": 9,
+      "total": 9,
+      "score": 10
+    },
+    "block3": {
+      "pass": 4,
+      "total": 4,
+      "score": 10
+    },
+    "block4": {
+      "pass": 1,
+      "total": 1,
+      "score": 10
+    },
+    "block5": {
+      "pass": 1,
+      "total": 1,
+      "score": 10
+    }
+  },
+  "autoScore": 10,
+  "finalScore": null,
+  "blockerState": {
+    "hasBlockingFailure": false,
+    "failedAt": null,
+    "failedBlockers": []
+  },
+  "verdict": "GO"
+}

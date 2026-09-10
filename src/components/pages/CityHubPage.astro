@@ -1,0 +1,189 @@
+---
+import HeroModern from '~/components/widgets/HeroModern.astro';
+import Contact from '~/components/widgets/Contact.astro';
+import PageLayout from '~/layouts/PageLayout.astro';
+import { getCityById, getMoneyServices } from '~/lib/geo-data';
+import { getLocalCityBlock } from '~/lib/local-city-blocks';
+import { buildCityPath, buildServicePath, toCanonical } from '~/lib/url-builder';
+import type { LocalCityId } from '~/types/geo-seo';
+
+export interface Props {
+  cityId: LocalCityId;
+}
+
+const { cityId } = Astro.props as Props;
+const city = getCityById(cityId);
+if (!city) {
+  throw new Error(`[factory-city-hub] unknown city "${cityId}"`);
+}
+
+const services = getMoneyServices().map((service) => {
+  const localBlock = getLocalCityBlock(service.id, city.id as LocalCityId);
+  return {
+    id: service.id,
+    name: service.name,
+    href: buildServicePath(service.id),
+    summary: localBlock.offer.description,
+    priceRange: localBlock.priceRange,
+    offer: localBlock.offer,
+  };
+});
+
+const metadata = {
+  title: `${city.name}: кухни, шкафы и гардеробные на заказ`,
+  description: `Краткая страница по ${city.name}: выберите кухни, шкафы-купе или гардеробные и перейдите к примерам работ, срокам и расчету стоимости.`,
+  canonical: toCanonical(buildCityPath(city.id), Astro.site),
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
+
+const heroSlides = [
+  {
+    src: '/images/figma/hero-main.png',
+    alt: `Мебель на заказ в ${city.nameIn}`,
+    title: `Мебель на заказ в ${city.nameIn}`,
+    subtitle: `Выберите интересующую услугу, чтобы посмотреть примеры работ, сроки, ориентиры по бюджету и оставить заявку на замер.`,
+    kicker: `Работаем в ${city.name}`,
+  },
+];
+
+const cityNotes = [
+  `В ${city.nameIn || city.name} работаем по тому же сценарию, что и в Иркутске: замер, проект, производство и монтаж под ключ с понятной сметой и договором.`,
+  `Ниже собраны основные направления. На страницах услуг вы найдете реальные кейсы, отзывы клиентов, ориентиры по бюджету и сроки выполнения работ по ${city.name}.`,
+];
+---
+
+<PageLayout metadata={metadata}>
+  <HeroModern
+    title={`Мебель на заказ в ${city.nameIn}`}
+    subtitle={`Выберите услугу и перейдите к странице с примерами работ, сроками, материалами и ориентиром по стоимости.`}
+    actions={[
+      { text: 'Кухни', href: '/kuhni', variant: 'primary' },
+      { text: 'Шкафы-купе', href: '/shkafy', variant: 'secondary' },
+      { text: 'Гардеробные', href: '/garderobnye', variant: 'secondary' },
+    ]}
+    slides={heroSlides}
+    badge={`Работаем в ${city.name}`}
+  />
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-14">
+    <div class="city-head ds-section-head left">
+      <div class="city-pill ds-pill">РАБОТАЕМ В ГОРОДЕ</div>
+      <h2>{city.name}: кухни, шкафы и гардеробные на заказ</h2>
+    </div>
+    <div class="city-copy">
+      {cityNotes.map((paragraph) => <p>{paragraph}</p>)}
+    </div>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 pb-12 sm:pb-14">
+    <div class="city-head ds-section-head left">
+      <div class="city-pill ds-pill">ОСНОВНЫЕ УСЛУГИ</div>
+      <h2>Перейдите к нужной странице</h2>
+      <p>
+        На страницах услуг собраны примеры работ, материалы, бюджетные ориентиры и условия выполнения заказа по {
+          city.nameIn || city.name
+        }.
+      </p>
+    </div>
+
+    <ul class="city-services-grid">
+      {
+        services.map((service) => (
+          <li class="city-service-card ds-card ds-card-interactive">
+            <h3>{service.name}</h3>
+            <p>{service.summary}</p>
+            <div class="city-service-meta">
+              <span>
+                {service.priceRange.from.toLocaleString('ru-RU')} - {service.priceRange.to.toLocaleString('ru-RU')} ₽
+              </span>
+              <small>{service.offer.title}</small>
+            </div>
+            <a class="city-service-btn ds-action-primary" href={service.href} data-anchor-spam="ignore">
+              Перейти к услуге
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <Contact
+    id="contact"
+    title={`Оставить заявку в ${city.nameIn}`}
+    subtitle="Напишите, какая мебель нужна, и мы подготовим расчет с учетом города, сроков и комплектации."
+    tagline={`Город: ${city.name}`}
+    inputs={[
+      { type: 'text', name: 'name', label: 'Имя', required: true },
+      { type: 'tel', name: 'phone', label: 'Телефон', required: true },
+      { type: 'textarea', name: 'message', label: 'Комментарий по задаче', required: false },
+    ]}
+    leadContext={{ city: city.id, pageType: 'city-hub', pageSlug: `/${city.id}` }}
+  />
+</PageLayout>
+
+<style>
+  .city-copy {
+    display: grid;
+    gap: 0.85rem;
+    max-width: 60rem;
+  }
+
+  .city-copy p {
+    margin: 0;
+    color: #5b534d;
+    line-height: 1.65;
+  }
+
+  .city-services-grid {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+
+  .city-service-card {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .city-service-card h3 {
+    margin: 0;
+    color: #1b1714;
+    font-size: 1.1rem;
+  }
+
+  .city-service-card p {
+    margin: 0;
+    color: #625a53;
+    line-height: 1.6;
+  }
+
+  .city-service-meta {
+    display: grid;
+    gap: 0.2rem;
+    color: #7f6857;
+    font-size: 0.85rem;
+  }
+
+  .city-service-btn {
+    justify-content: center;
+  }
+
+  @media (max-width: 960px) {
+    .city-services-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .city-services-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

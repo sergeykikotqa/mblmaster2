@@ -1,0 +1,53 @@
+---
+import Image from '~/components/common/Image.astro';
+import { Icon } from 'astro-icon/components';
+
+type Highlight = { title: string; description: string; icon: string };
+
+type Props = {
+  title: string;
+  paragraphs: string[];
+  image?: string;
+  heroAlt: string;
+  highlights?: Highlight[];
+};
+
+const { title, paragraphs = [], image, heroAlt, highlights = [] } = Astro.props as Props;
+const hasContent = paragraphs.length > 0 || Boolean(image);
+---
+
+{
+  hasContent && (
+    <section class="section project-section project-about">
+      <p class="project-section-kicker">О проекте</p>
+      <div class="project-about-card">
+        <div>
+          <h2>{title}</h2>
+          {paragraphs.map((text) => (
+            <p>{text}</p>
+          ))}
+        </div>
+        {image && (
+          <div class="project-about-media">
+            <Image src={image} alt={heroAlt} width={900} height={900} layout="cover" loading="lazy" decoding="async" />
+          </div>
+        )}
+      </div>
+      {highlights.length > 0 && (
+        <div class="project-about-highlights">
+          {highlights.map((item) => (
+            <div class="project-about-highlight">
+              <span class="project-about-icon">
+                <Icon name={item.icon} class="icon" />
+              </span>
+              <div>
+                <strong>{item.title}</strong>
+                <span>{item.description}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}

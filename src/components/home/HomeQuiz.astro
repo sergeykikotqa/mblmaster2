@@ -1,0 +1,158 @@
+---
+import ContactForm from '~/components/ContactForm.astro';
+
+const steps = [
+  {
+    key: 'furniture',
+    eyebrow: '01 / Тип мебели',
+    title: 'Что нужно спроектировать?',
+    hint: 'Выберите ближайший вариант — детали уточним на замере.',
+    options: [
+      { value: 'kuhni', label: 'Кухня', note: 'Прямая, угловая, с островом' },
+      { value: 'shkafy', label: 'Шкаф', note: 'В нишу, во всю стену, купе' },
+      { value: 'garderobnye', label: 'Гардеробная', note: 'Открытая или за фасадами' },
+      { value: 'other', label: 'Другая мебель', note: 'Прихожая, ТВ-зона, постирочная' },
+    ],
+  },
+  {
+    key: 'size',
+    eyebrow: '02 / Помещение',
+    title: 'Что уже известно о размерах?',
+    hint: 'Точные размеры сейчас не обязательны.',
+    options: [
+      { value: 'known', label: 'Есть точные размеры', note: 'Добавите их в комментарии' },
+      { value: 'rough', label: 'Знаю примерно', note: 'Этого достаточно для первого ориентира' },
+      { value: 'measure', label: 'Нужен замер', note: 'Согласуем удобное время выезда' },
+    ],
+  },
+  {
+    key: 'budget',
+    eyebrow: '03 / Бюджет',
+    title: 'На какой диапазон ориентироваться?',
+    hint: 'Это помогает сразу предложить подходящие материалы и фурнитуру.',
+    options: [
+      { value: 'to-150', label: 'До 150 000 ₽', note: 'Ищем рациональную комплектацию' },
+      { value: '150-250', label: '150 000–250 000 ₽', note: 'Баланс внешнего вида и ресурса' },
+      { value: '250-400', label: '250 000–400 000 ₽', note: 'Больше свободы в материалах' },
+      { value: 'from-400', label: 'От 400 000 ₽', note: 'Сложные решения и комплектация' },
+      { value: 'unknown', label: 'Пока не знаю', note: 'Покажем несколько сценариев' },
+    ],
+  },
+  {
+    key: 'timeline',
+    eyebrow: '04 / Срок',
+    title: 'Когда мебель должна быть готова?',
+    hint: 'Срок подтвердим после состава проекта и материалов.',
+    options: [
+      { value: 'soon', label: 'Как можно скорее', note: 'Проверим ближайшие окна производства' },
+      { value: 'month', label: 'В течение 1–2 месяцев', note: 'Оптимальный горизонт планирования' },
+      { value: 'later', label: 'Позже', note: 'Можно спокойно проработать варианты' },
+      { value: 'exploring', label: 'Пока изучаю', note: 'Дадим ориентир без обязательств' },
+    ],
+  },
+];
+---
+
+<section id="calculator" class="home-quiz mbl-section mbl-mode-brand" data-home-quiz aria-labelledby="quiz-title">
+  <div class="mbl-container">
+    <header class="home-quiz-head mbl-reveal" data-mbl-reveal>
+      <p class="mbl-kicker">Короткий расчёт</p>
+      <h2 id="quiz-title" class="mbl-title">От идеи до понятного первого шага</h2>
+      <p class="mbl-copy">
+        Ответьте на четыре вопроса. Мы получим контекст проекта вместе с заявкой и начнём разговор предметно.
+      </p>
+    </header>
+
+    <div class="home-quiz-shell mbl-surface mbl-reveal" data-mbl-reveal style="--mbl-reveal-delay: 80ms">
+      <div class="home-quiz-progress">
+        <div
+          class="home-quiz-progress-track"
+          role="progressbar"
+          aria-valuemin="1"
+          aria-valuemax="5"
+          aria-valuenow="1"
+          aria-valuetext="Шаг 1 из 5"
+          aria-label="Прогресс расчёта"
+          data-quiz-progress
+        >
+          <span data-quiz-progress-bar></span>
+        </div>
+        <span data-quiz-progress-label>Шаг 1 из 5</span>
+      </div>
+
+      <div class="home-quiz-layout">
+        <div class="home-quiz-summary">
+          <h3 class="home-quiz-summary-kicker">Ваш проект</h3>
+          <dl>
+            <div><dt>Мебель</dt><dd data-quiz-summary="furniture">Не выбрано</dd></div>
+            <div><dt>Размеры</dt><dd data-quiz-summary="size">Не выбрано</dd></div>
+            <div><dt>Бюджет</dt><dd data-quiz-summary="budget">Не выбрано</dd></div>
+            <div><dt>Срок</dt><dd data-quiz-summary="timeline">Не выбрано</dd></div>
+          </dl>
+          <p class="home-quiz-summary-note">Черновик сохраняется только в этом браузере.</p>
+        </div>
+
+        <div class="home-quiz-steps">
+          {
+            steps.map((step, stepIndex) => (
+              <fieldset class="home-quiz-step" data-quiz-step data-step-index={stepIndex} data-step-key={step.key}>
+                <legend tabindex="-1">
+                  <span>{step.eyebrow}</span>
+                  {step.title}
+                </legend>
+                <p class="home-quiz-hint">{step.hint}</p>
+                <div class="home-quiz-options">
+                  {step.options.map((option) => (
+                    <label class="home-quiz-option">
+                      <input
+                        type="radio"
+                        name={'quiz-' + step.key}
+                        value={option.value}
+                        data-quiz-answer={step.key}
+                        data-answer-label={option.label}
+                        required
+                      />
+                      <span class="home-quiz-option-marker" aria-hidden="true"></span>
+                      <span>
+                        <strong>{option.label}</strong>
+                        <small>{option.note}</small>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p class="home-quiz-error" data-quiz-error hidden role="alert">Выберите один вариант.</p>
+                <div class="home-quiz-navigation">
+                  {stepIndex > 0 && <button type="button" class="home-quiz-back" data-quiz-back>Назад</button>}
+                  <button type="button" class="mbl-button mbl-button-primary home-quiz-next" data-quiz-next>
+                    Продолжить <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+              </fieldset>
+            ))
+          }
+
+          <div class="home-quiz-step home-quiz-contact" data-quiz-step data-step-index="4" data-step-key="contact">
+            <div class="home-quiz-contact-head" tabindex="-1">
+              <p>05 / Контакт</p>
+              <h3>Оставьте телефон — детали проекта уже собраны</h3>
+              <button type="button" class="home-quiz-back" data-quiz-back>Изменить ответы</button>
+            </div>
+            <ContactForm
+              formContext="home-quiz"
+              title="Куда отправить ориентир?"
+              subtitle="Имя и телефон достаточно. При желании дополните автоматически собранное описание."
+              cta="Получить расчёт"
+              preCtaNote="Ответы из расчёта будут добавлены в описание заявки."
+              ctaNote="Без обязательств. Свяжемся, чтобы уточнить размеры и комплектацию."
+              leadContext={{ city: 'irkutsk', pageType: 'homepage', pageSlug: '/' }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <p class="sr-only" aria-live="polite" data-quiz-status></p>
+    </div>
+  </div>
+</section>
+
+<script type="module" src="/scripts/home-quiz.js"></script>

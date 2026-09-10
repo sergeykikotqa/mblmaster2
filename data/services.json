@@ -1,0 +1,41 @@
+[
+  {
+    "id": "kuhni-na-zakaz",
+    "pathSegment": "kuhni",
+    "name": "Кухни на заказ",
+    "forms": {
+      "nominative": "кухня на заказ",
+      "genitive": "кухни на заказ",
+      "prepositional": "кухне на заказ",
+      "accusative": "кухню на заказ"
+    },
+    "moneyPage": true,
+    "hasDistrictPages": false
+  },
+  {
+    "id": "shkafy-kupe",
+    "pathSegment": "shkafy",
+    "name": "Шкафы-купе",
+    "forms": {
+      "nominative": "шкаф-купе",
+      "genitive": "шкафа-купе",
+      "prepositional": "шкафе-купе",
+      "accusative": "шкаф-купе"
+    },
+    "moneyPage": true,
+    "hasDistrictPages": false
+  },
+  {
+    "id": "garderobnye",
+    "pathSegment": "garderobnye",
+    "name": "Гардеробные",
+    "forms": {
+      "nominative": "гардеробная",
+      "genitive": "гардеробной",
+      "prepositional": "гардеробной",
+      "accusative": "гардеробную"
+    },
+    "moneyPage": true,
+    "hasDistrictPages": false
+  }
+]

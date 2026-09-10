@@ -1,0 +1,26 @@
+[
+  {
+    "id": "oktyabrskiy",
+    "name": "Октябрьский район",
+    "nameIn": "Октябрьском районе",
+    "cityId": "irkutsk"
+  },
+  {
+    "id": "pravoberezhny",
+    "name": "Правобережный район",
+    "nameIn": "Правобережном районе",
+    "cityId": "irkutsk"
+  },
+  {
+    "id": "leninskiy",
+    "name": "Ленинский район",
+    "nameIn": "Ленинском районе",
+    "cityId": "irkutsk"
+  },
+  {
+    "id": "sverdlovskiy",
+    "name": "Свердловский район",
+    "nameIn": "Свердловском районе",
+    "cityId": "irkutsk"
+  }
+]

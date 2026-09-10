@@ -1,0 +1,13 @@
+dist
+.netlify
+node_modules
+.github
+.changeset
+.lighthouseci
+playwright-report
+test-results
+.tmp
+tmp-bing.html
+chrome
+src/data/post/markdown-elements-demo-post.mdx
+src/components/common/WebVitals.astro

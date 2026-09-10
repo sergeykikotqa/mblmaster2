@@ -1,0 +1,145 @@
+---
+import Image from '~/components/common/Image.astro';
+import type { ProjectVideoCard } from '~/types/project';
+import '~/styles/components/video-showcase.css';
+
+const { videos = [] } = Astro.props as { videos?: ProjectVideoCard[] };
+
+const primary = videos[0];
+const secondary = videos.slice(1);
+const totalLabel =
+  videos.length % 10 === 1 && videos.length % 100 !== 11
+    ? `${videos.length} видеообзор`
+    : videos.length % 10 >= 2 && videos.length % 10 <= 4 && (videos.length % 100 < 10 || videos.length % 100 >= 20)
+      ? `${videos.length} видеообзора`
+      : `${videos.length} видеообзоров`;
+const serviceLabels = [...new Set(videos.map((video) => String(video.serviceLabel || '').trim()).filter(Boolean))];
+const coverageLabel =
+  serviceLabels.length === 0
+    ? 'Из реальных кейсов'
+    : serviceLabels.length === 1
+      ? `Реальные ${serviceLabels[0]}`
+      : 'Кухни и системы хранения';
+---
+
+{
+  primary && (
+    <section id="video" class="video-showcase">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6">
+        <div class="video-shell">
+          <div class="video-head ds-section-head">
+            <div class="ds-pill">ВИДЕО</div>
+            <h2>Видеообзоры реальных проектов</h2>
+            <p>
+              Показываем готовые кухни и системы хранения без студийных рендеров: фасады, фурнитуру, компоновку и то,
+              как проект выглядит после монтажа вживую.
+            </p>
+            <div class="video-summary" aria-label="Ключевые факты о видеообзорах">
+              <span class="video-summary-pill">{totalLabel}</span>
+              <span class="video-summary-pill">{coverageLabel}</span>
+              <span class="video-summary-pill">{primary.platformLabel || 'Видеообзоры на проектных страницах'}</span>
+            </div>
+          </div>
+
+          <div class="video-layout">
+            <a
+              class="video-main ds-card-interactive"
+              href={primary.href}
+              aria-label={`Смотреть видеообзор: ${primary.title}`}
+            >
+              <Image
+                src={primary.image}
+                alt={`Видеообзор: ${primary.title}`}
+                width={1200}
+                height={800}
+                layout="responsive"
+                widths={[480, 768, 960, 1200]}
+                quality={60}
+              />
+              <span class="video-main-overlay" aria-hidden="true" />
+              <span class="video-main-badges" aria-hidden="true">
+                {primary.platformLabel && <span class="video-badge video-badge-solid">{primary.platformLabel}</span>}
+                {primary.publishedLabel && <span class="video-badge">{primary.publishedLabel}</span>}
+              </span>
+              <span class="video-play" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 7.5v9l8-4.5z" />
+                </svg>
+              </span>
+              <span class="video-main-caption" aria-live="polite">
+                <span class="video-main-kicker">Перейти к видеообзору</span>
+                <strong>{primary.title}</strong>
+                {primary.description && <span class="video-main-description">{primary.description}</span>}
+                <span class="video-main-meta">
+                  <span>{primary.meta}</span>
+                  {primary.locationLabel && <span>{primary.locationLabel}</span>}
+                </span>
+              </span>
+            </a>
+
+            {secondary.length > 0 && (
+              <div class="video-side">
+                <p class="video-side-title">Ещё обзоры</p>
+                <ul class="video-list">
+                  {secondary.map((video) => (
+                    <li>
+                      <a class="video-option ds-card-interactive ui-btn-state" href={video.href}>
+                        <Image
+                          src={video.image}
+                          alt={`Видеообзор: ${video.title}`}
+                          width={320}
+                          height={220}
+                          layout="responsive"
+                          widths={[240, 360, 480]}
+                          quality={60}
+                        />
+                        <span class="video-option-copy">
+                          <span class="video-option-badges">
+                            {video.platformLabel && (
+                              <span class="video-badge video-badge-compact">{video.platformLabel}</span>
+                            )}
+                            {video.publishedLabel && <span class="video-option-date">{video.publishedLabel}</span>}
+                          </span>
+                          <strong>{video.title}</strong>
+                          {video.description && <span class="video-option-description">{video.description}</span>}
+                          <span>{video.meta}</span>
+                        </span>
+                        <span class="video-option-icon" aria-hidden="true">
+                          ▶
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          <div class="video-actions">
+            <a
+              href="/projects"
+              class="video-btn main ds-action-primary"
+              data-cta-placement="section"
+              data-cta="home_video_more"
+              data-cta-type="secondary"
+            >
+              Смотреть все кейсы
+            </a>
+            <a
+              href="#contact"
+              class="video-btn sub ds-action-secondary"
+              data-cta-placement="section"
+              data-cta="home_video_contact"
+              data-cta-type="primary"
+            >
+              Получить расчет
+            </a>
+          </div>
+          <p class="video-footnote">
+            Каждый ролик ведёт на страницу реального проекта с материалами, стоимостью и подробным разбором.
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}

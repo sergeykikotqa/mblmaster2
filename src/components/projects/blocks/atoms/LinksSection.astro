@@ -1,0 +1,40 @@
+---
+type LinkItem = { text: string; href: string };
+
+interface Props {
+  links: LinkItem[];
+  kicker: string;
+  title: string;
+  actionLabel?: string;
+  id?: string;
+  className?: string;
+}
+
+const {
+  links,
+  kicker,
+  title,
+  actionLabel = 'Перейти',
+  id,
+  className = 'section project-section project-links',
+} = Astro.props as Props;
+---
+
+{
+  links.length > 0 && (
+    <section id={id} class={className}>
+      <p class="project-section-kicker">{kicker}</p>
+      <h2>{title}</h2>
+      <ul class="project-links-grid">
+        {links.map((link) => (
+          <li>
+            <a href={link.href} class="ds-link-card ui-btn-state">
+              <span>{link.text}</span>
+              <small>{actionLabel}</small>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}

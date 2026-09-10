@@ -1,0 +1,118 @@
+---
+import { getCityLabels, getServiceLabels, type ServiceLabels } from '~/utils/seo';
+
+interface Props {
+  city: string;
+  service: string;
+  serviceLabels?: ServiceLabels;
+  area?: number;
+  duration?: number;
+  price?: number;
+  estimatedPrice?: number;
+  priceIsEstimated?: boolean;
+  priceNote?: string;
+  materials?: { facade?: string; tabletop?: string; hardware?: string };
+}
+
+const {
+  city,
+  service,
+  serviceLabels: serviceLabelsOverride,
+  area,
+  duration,
+  price,
+  estimatedPrice,
+  priceIsEstimated = false,
+  priceNote = '',
+  materials,
+} = Astro.props as Props;
+
+const cityLabels = getCityLabels(city);
+const serviceLabels = serviceLabelsOverride || getServiceLabels(service);
+
+const resolvedPrice = Number.isFinite(price) ? Number(price) : Number.isFinite(estimatedPrice) ? Number(estimatedPrice) : NaN;
+const formattedPrice = Number.isFinite(resolvedPrice)
+  ? `${priceIsEstimated ? '~' : ''}${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(Number(resolvedPrice))} ₽`
+  : '';
+const formattedArea = Number.isFinite(area) ? `${Number(area)} м²` : '';
+const formattedDuration = Number.isFinite(duration) ? `${Number(duration)} дней` : '';
+const specs = [
+  { label: 'Город', value: cityLabels.base },
+  { label: 'Тип', value: serviceLabels.noun },
+  { label: 'Площадь', value: formattedArea },
+  { label: 'Срок', value: formattedDuration },
+  { label: priceIsEstimated ? 'Оценка стоимости' : 'Стоимость', value: formattedPrice },
+  { label: 'Гарантия', value: '2 года' },
+  { label: 'Фасады', value: materials?.facade },
+  { label: 'Столешница', value: materials?.tabletop },
+  { label: 'Фурнитура', value: materials?.hardware },
+].filter((item) => Boolean(item.value));
+---
+
+<section class="project-specs" aria-label="Характеристики проекта">
+  <div class="project-specs-card ds-card-soft">
+    <dl class="specs-grid">
+      {
+        specs.map((item) => (
+          <div>
+            <dt>{item.label}</dt>
+            <dd>{item.value}</dd>
+          </div>
+        ))
+      }
+    </dl>
+    {priceIsEstimated && priceNote && <p class="specs-note">{priceNote}</p>}
+  </div>
+</section>
+
+<style>
+  .project-specs-card {
+    padding: 1.6rem 1.8rem;
+    border-radius: 1.4rem;
+    background: #fff;
+    border: 1px solid #eadfd6;
+    box-shadow: 0 18px 36px rgba(20, 16, 12, 0.06);
+  }
+
+  .specs-grid {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem 2rem;
+  }
+
+  .specs-grid dt {
+    margin: 0;
+    color: #6d625b;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .specs-grid dd {
+    margin: 0.2rem 0 0;
+    color: #2a2421;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .specs-note {
+    margin: 1rem 0 0;
+    color: #6d625b;
+    font-size: 0.88rem;
+    line-height: 1.55;
+  }
+
+  @media (max-width: 900px) {
+    .specs-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 600px) {
+    .specs-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

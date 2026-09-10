@@ -1,0 +1,28 @@
+---
+import Layout from '~/layouts/Layout.astro';
+import Footer from '~/components/widgets/Footer.astro';
+
+import { footerData } from '~/navigation';
+
+import type { MetaData } from '~/types';
+
+export interface Props {
+  metadata?: MetaData;
+  localBusinessOfferCatalog?: Record<string, unknown>;
+  pageType?: string;
+}
+
+const { metadata, localBusinessOfferCatalog, pageType } = Astro.props;
+---
+
+<Layout metadata={metadata} localBusinessOfferCatalog={localBusinessOfferCatalog} pageType={pageType}>
+  <slot name="head" slot="head" />
+  <!-- Announcement slot intentionally left empty (removed template banner) -->
+  <slot name="announcement" />
+  <main data-page-type={pageType}>
+    <slot />
+  </main>
+  <slot name="footer">
+    <Footer {...footerData} />
+  </slot>
+</Layout>

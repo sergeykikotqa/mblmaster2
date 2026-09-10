@@ -1,0 +1,48 @@
+---
+const logoName = (process.env.SITE_NAME || 'мбл мастер').trim();
+---
+
+<span class="logo-brand" aria-label={logoName}>
+  <span class="logo-mark" aria-hidden="true">МБЛ</span>
+  <span class="logo-text">{logoName}</span>
+</span>
+
+<style is:inline>
+  .logo-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.1rem;
+    height: 1.4rem;
+    border-radius: 999px;
+    background: #8b5a3c;
+    color: #fff;
+    font-size: 0.56rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    padding: 0 0.4rem;
+    line-height: 1;
+  }
+
+  .logo-text {
+    color: #1c1815;
+    font-size: 1.06rem;
+    line-height: 1;
+    font-weight: 800;
+    text-transform: lowercase;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .logo-text {
+      font-size: 0.98rem;
+    }
+  }
+</style>
+

@@ -1,0 +1,87 @@
+---
+import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
+import type { CallToAction, Widget } from '~/types';
+import Headline from '~/components/ui/Headline.astro';
+import Button from '~/components/ui/Button.astro';
+
+interface Props extends Widget {
+  title?: string;
+  subtitle?: string;
+  tagline?: string;
+  callToAction?: CallToAction;
+  actions?: string | CallToAction[];
+}
+
+const {
+  title,
+  subtitle,
+  tagline,
+  actions,
+  id,
+  isDark = false,
+  classes = {},
+} = Astro.props;
+
+const hasTitleSlot = Astro.slots.has('title');
+const hasSubtitleSlot = Astro.slots.has('subtitle');
+const hasTaglineSlot = Astro.slots.has('tagline');
+const hasActionsSlot = Astro.slots.has('actions');
+const hasBgSlot = Astro.slots.has('bg');
+const actionsList = Array.isArray(actions) ? actions : null;
+const actionsText = typeof actions === 'string' ? actions : null;
+---
+
+<WidgetWrapper id={id} isDark={isDark} containerClass={`max-w-6xl mx-auto ${classes?.container ?? ''}`}>
+  {hasBgSlot && (
+    <Fragment slot="bg">
+      <slot name="bg" />
+    </Fragment>
+  )}
+  <div
+    class="max-w-3xl mx-auto text-center p-6 rounded-md shadow-xl dark:shadow-none dark:border dark:border-slate-600"
+  >
+    <Headline
+      title={title}
+      subtitle={subtitle}
+      tagline={tagline}
+      classes={{
+        container: 'mb-0 md:mb-0',
+        title: 'text-4xl md:text-4xl font-bold tracking-tighter mb-4 font-heading',
+        subtitle: 'text-xl text-muted dark:text-slate-400',
+      }}
+    >
+      {hasTitleSlot && (
+        <Fragment slot="title">
+          <slot name="title" />
+        </Fragment>
+      )}
+      {hasSubtitleSlot && (
+        <Fragment slot="subtitle">
+          <slot name="subtitle" />
+        </Fragment>
+      )}
+      {hasTaglineSlot && (
+        <Fragment slot="tagline">
+          <slot name="tagline" />
+        </Fragment>
+      )}
+    </Headline>
+    {
+      (actionsList || hasActionsSlot || actionsText) && (
+        <div class="max-w-xs sm:max-w-md m-auto flex flex-nowrap flex-col sm:flex-row sm:justify-center gap-4 mt-6">
+          {actionsList ? (
+            actionsList.map((action) => (
+              <div class="flex w-full sm:w-auto">
+                <Button {...(action || {})} class="w-full sm:mb-0" />
+              </div>
+            ))
+          ) : hasActionsSlot ? (
+            <slot name="actions" />
+          ) : (
+            <span>{actionsText}</span>
+          )}
+        </div>
+      )
+    }
+  </div>
+</WidgetWrapper>

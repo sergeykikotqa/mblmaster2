@@ -1,0 +1,20 @@
+---
+import type { ProjectBlockProps } from './types';
+
+const { block, viewModel } = Astro.props as ProjectBlockProps;
+const { solution } = viewModel;
+
+const text = (block as { text?: string }).text || solution.text;
+const title = (block as { title?: string }).title || 'Как мы решили задачу';
+const shouldRender = Boolean(text);
+---
+
+{
+  shouldRender && (
+    <section id="solution" class="section project-section project-story">
+      <p class="project-section-kicker">Решение</p>
+      <h2>{title}</h2>
+      <p>{text}</p>
+    </section>
+  )
+}

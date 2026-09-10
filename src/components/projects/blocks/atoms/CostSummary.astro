@@ -1,0 +1,22 @@
+---
+interface Props {
+  label?: string;
+  note?: string;
+  aside: string;
+}
+
+const { label, note = '', aside } = Astro.props as Props;
+---
+
+<div class="project-cost-head">
+  <div class="project-cost-main">
+    <p class="project-cost-label">Итоговая стоимость с монтажом</p>
+    {label && <p class="project-cost-value">{label}</p>}
+    {note && <p class="project-cost-note">{note}</p>}
+  </div>
+  <div class="project-cost-badge">
+    <span>Спецпредложение</span>
+    <strong>Расчёт за 1 день</strong>
+  </div>
+</div>
+<p class="project-cost-aside">{aside}</p>

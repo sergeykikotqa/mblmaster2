@@ -1,0 +1,72 @@
+{
+  "generated_at": "2026-03-20T04:56:23.037381Z",
+  "target_size": {
+    "width": 1280,
+    "height": 751
+  },
+  "images": [
+    {
+      "file": "src/assets/images/kitchen-colors.jpg",
+      "source": "Unsplash",
+      "license": "Unsplash License",
+      "url": "https://images.unsplash.com/photo-1765421619212-372b859dadf5?auto=format&fit=crop&w=1600&q=80",
+      "width": 1280,
+      "height": 751,
+      "size_kb": 156.9
+    },
+    {
+      "file": "src/assets/images/kitchen-production.jpg",
+      "source": "Pexels",
+      "license": "Pexels License",
+      "url": "https://images.pexels.com/photos/7480454/pexels-photo-7480454.jpeg?cs=srgb&dl=pexels-cottonbro-7480454.jpg&fm=jpg",
+      "width": 1280,
+      "height": 751,
+      "size_kb": 94.4
+    },
+    {
+      "file": "src/assets/images/kitchen-materials.jpg",
+      "source": "Unsplash",
+      "license": "Unsplash License",
+      "url": "https://images.unsplash.com/photo-1752321531753-d02f83283c5e?auto=format&fit=crop&w=1600&q=80",
+      "width": 1280,
+      "height": 751,
+      "size_kb": 131.3
+    },
+    {
+      "file": "src/assets/images/wardrobe-selection.jpg",
+      "source": "Pexels",
+      "license": "Pexels License",
+      "url": "https://images.pexels.com/photos/1682699/pexels-photo-1682699.jpeg?cs=srgb&dl=pexels-thatguycraig000-1682699.jpg&fm=jpg",
+      "width": 1280,
+      "height": 751,
+      "size_kb": 45.7
+    },
+    {
+      "file": "src/assets/images/wardrobe-organization.jpg",
+      "source": "Pixabay",
+      "license": "Pixabay Content License",
+      "url": "https://cdn.pixabay.com/photo/2019/10/23/19/30/closet-4572626_1280.jpg",
+      "width": 1280,
+      "height": 751,
+      "size_kb": 188.5
+    },
+    {
+      "file": "src/assets/images/sliding-doors.jpg",
+      "source": "Pexels",
+      "license": "Pexels License",
+      "url": "https://images.pexels.com/photos/32331029/pexels-photo-32331029.png?cs=srgb&dl=pexels-the-ghazi-2152398165-32331029.jpg&fm=jpg",
+      "width": 1280,
+      "height": 751,
+      "size_kb": 49.0
+    },
+    {
+      "file": "src/assets/images/kitchen-pricing.jpg",
+      "source": "Pixabay",
+      "license": "Pixabay Content License",
+      "url": "https://cdn.pixabay.com/photo/2015/08/29/16/09/calculator-913162_1280.jpg",
+      "width": 1280,
+      "height": 751,
+      "size_kb": 114.8
+    }
+  ]
+}

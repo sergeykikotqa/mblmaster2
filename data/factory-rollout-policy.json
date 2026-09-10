@@ -1,0 +1,89 @@
+{
+  "monthlyQuota": {
+    "min": 2,
+    "max": 4
+  },
+  "gates": {
+    "indexTrial": {
+      "readinessScoreMin": 75,
+      "minUniqueWords": {
+        "district": 350,
+        "money": 700
+      },
+      "proofPoints": {
+        "minimumReviews": 3,
+        "alternative": {
+          "minimumCases": 1,
+          "minimumPhotos": 5
+        }
+      },
+      "minimumInboundIndexLinks": 3
+    },
+    "indexStable": {
+      "evaluationWindowDays": 28,
+      "metrics": {
+        "money": {
+          "impressionsMin": 150,
+          "clicksMin": 6,
+          "ctrMin": 0.03
+        },
+        "district": {
+          "impressionsMin": 80,
+          "clicksMin": 3,
+          "ctrMin": 0.02
+        }
+      }
+    }
+  },
+  "thresholds": {
+    "indexTrial": {
+      "readinessScoreMin": 75,
+      "minUniqueWords": {
+        "district": 350,
+        "money": 700
+      },
+      "proofPoints": {
+        "minimumReviews": 3,
+        "alternative": {
+          "minimumCases": 1,
+          "minimumPhotos": 5
+        }
+      },
+      "minimumInboundIndexLinks": 3
+    },
+    "indexStable": {
+      "evaluationWindowDays": 28,
+      "metrics": {
+        "money": {
+          "impressionsMin": 150,
+          "clicksMin": 6,
+          "ctrMin": 0.03
+        },
+        "district": {
+          "impressionsMin": 80,
+          "clicksMin": 3,
+          "ctrMin": 0.02
+        }
+      }
+    },
+    "rollback": {
+      "evaluationWindowDays": 56,
+      "overlapThreshold": 0.4,
+      "incumbentLossThreshold": 0.25
+    }
+  },
+  "rollbackRules": {
+    "evaluationWindowDays": 56,
+    "overlapThreshold": 0.4,
+    "incumbentLossThreshold": 0.25,
+    "fallbackIndexabilityPolicy": "noindex_follow",
+    "fallbackReleaseStage": "rollback_noindex"
+  },
+  "assumptions": {
+    "realQueryModel": "observed+proxy",
+    "leadValidityRatio": 0.85,
+    "forecastWindowMonths": 12,
+    "forecastStyle": "P50_P90",
+    "geoScope": ["irkutsk", "angarsk", "shelekhov"]
+  }
+}

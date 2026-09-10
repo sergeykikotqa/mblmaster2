@@ -1,0 +1,16 @@
+---
+import RelatedProjects from '~/components/projects/RelatedProjects.astro';
+import type { ProjectCardData } from '~/types/project';
+
+type Props = {
+  relatedProjects: ProjectCardData[];
+  title?: string;
+  showAllLink?: boolean;
+};
+
+const { relatedProjects, title, showAllLink } = Astro.props as Props;
+---
+
+<section class="section project-section">
+  <RelatedProjects relatedProjects={relatedProjects} title={title} showAllLink={showAllLink} />
+</section>

@@ -1,0 +1,480 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import PageLayout from '~/layouts/PageLayout.astro';
+import Breadcrumb from '~/components/Breadcrumb.astro';
+import ContactForm from '~/components/ContactForm.astro';
+import SEOText from '~/components/SEOText.astro';
+import Image from '~/components/common/Image.astro';
+import JsonLd from '~/components/seo/JsonLd.astro';
+import RelatedProjects from '~/components/projects/RelatedProjects.astro';
+import type { ProjectCardData } from '~/types/project';
+import { getBusinessInfo } from '~/config/business-info';
+import { getSlugFromEntryId } from '~/utils/content-graph';
+import { getContextCta } from '~/utils/cta-strategy';
+import { injectEarlyServiceLink } from '~/utils/early-service-link';
+import { injectMidRelatedBlock } from '~/utils/mid-related';
+
+interface Props {
+  article: CollectionEntry<'articles'>;
+  relatedArticles?: CollectionEntry<'articles'>[];
+  relatedProjects?: ProjectCardData[];
+  relatedService?: { id: string; name: string; href: string } | null;
+}
+
+type NormalizedService = { id?: string; name: string; href: string };
+
+const { article, relatedArticles = [], relatedProjects = [], relatedService = null } = Astro.props;
+const { data } = article;
+const visibleRelatedArticles = relatedArticles.filter((item) => item.data.seoReady === true);
+const siteUrl = Astro.site ? new URL(Astro.site).toString().replace(/\/$/, '') : '';
+const companyName = (process.env.SITE_NAME || 'мбл мастер').trim();
+const businessInfo = getBusinessInfo(siteUrl);
+
+const normalizeService = (value: unknown): NormalizedService | null => {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as { id?: unknown; name?: unknown; href?: unknown };
+  const name = typeof candidate.name === 'string' ? candidate.name.trim() : '';
+  const href = typeof candidate.href === 'string' ? candidate.href.trim() : '';
+  const id = typeof candidate.id === 'string' ? candidate.id.trim() : undefined;
+  if (!name || !href) return null;
+  return { id, name, href };
+};
+
+const normalizedService = normalizeService(relatedService);
+if (import.meta.env.DEV && relatedService && !normalizedService) {
+  console.warn('[ArticleLayout] Invalid relatedService payload:', relatedService);
+}
+
+const normalizeHref = (value: string) => (value.startsWith('/') ? value : `/${value}`);
+const normalizedServiceHref = normalizedService ? normalizeHref(normalizedService.href) : '';
+const rawInternalLinks = data.internalLinks ?? [];
+const hasServiceLinkInInternalLinks =
+  normalizedService && rawInternalLinks.some((link) => normalizeHref(link.slug) === normalizedServiceHref);
+
+const slug = article.id.replace(/\.mdx?$/, '');
+
+const midRelatedArticle = (() => {
+  const candidate = visibleRelatedArticles[0];
+  if (!candidate) return null;
+  const candidateSlug = getSlugFromEntryId(candidate.id);
+  return {
+    title: candidate.data.title,
+    href: `/articles/${candidateSlug}`,
+    slug: candidateSlug,
+    description: candidate.data.description || candidate.data.excerpt || '',
+  };
+})();
+
+const midRelatedProject = (() => {
+  const candidate = relatedProjects[0];
+  if (!candidate) return null;
+  const meta = candidate.cityLabel || candidate.serviceLabel || candidate.description || '';
+  return {
+    title: candidate.title,
+    href: candidate.href,
+    meta,
+  };
+})();
+
+// Calculate reading time if not provided
+const readingTime = data.readingTime || Math.ceil((data.title.length + (data.excerpt?.length || 0)) / 200);
+
+// Format date
+const pubDate = new Date(data.publishDate).toLocaleDateString('ru-RU', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const metadata = {
+  title: data.title,
+  description: data.description,
+  image: data.image,
+};
+
+const resolvedImage = data.image ? (siteUrl ? new URL(data.image, siteUrl).toString() : data.image) : undefined;
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  '@id': `${Astro.url.href}#article`,
+  headline: data.title,
+  description: data.description,
+  image: resolvedImage ? [resolvedImage] : undefined,
+  datePublished: data.publishDate.toISOString(),
+  dateModified: (data.updateDate || data.publishDate).toISOString(),
+  author: {
+    '@type': 'Organization',
+    name: companyName,
+    url: siteUrl || undefined,
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: companyName,
+    url: siteUrl || undefined,
+    logo: businessInfo.imageUrl
+      ? {
+          '@type': 'ImageObject',
+          url: businessInfo.imageUrl,
+        }
+      : undefined,
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': Astro.url.href,
+  },
+};
+
+const slotHtml = await Astro.slots.render('default');
+const seoReady = data.seoReady === true;
+const earlyServiceResult = injectEarlyServiceLink({
+  html: slotHtml,
+  service: normalizedService,
+  articleSlug: slug,
+  seoReady,
+  geoTarget: data.geoTarget,
+});
+const allowMidRelated = data.midRelated !== false;
+const articleContentHtml = allowMidRelated
+  ? injectMidRelatedBlock({
+      html: earlyServiceResult.html,
+      project: midRelatedProject,
+      article: midRelatedArticle,
+      minChars: 3000,
+      minParagraphs: 3,
+    })
+  : earlyServiceResult.html;
+const hasMidRelated = articleContentHtml.includes('data-mid-related="true"');
+const hasServiceLinkInContent = earlyServiceResult.hasServiceLink;
+const filteredInternalLinks =
+  hasServiceLinkInContent && normalizedService
+    ? rawInternalLinks.filter((link) => normalizeHref(link.slug) !== normalizedServiceHref)
+    : rawInternalLinks;
+const limitedInternalLinks = filteredInternalLinks.slice(0, 2);
+const showRelatedService = Boolean(
+  normalizedService && !hasServiceLinkInContent && !hasServiceLinkInInternalLinks
+);
+const bottomRelatedArticles =
+  hasMidRelated && midRelatedArticle
+    ? visibleRelatedArticles.filter((item) => getSlugFromEntryId(item.id) !== midRelatedArticle.slug)
+    : visibleRelatedArticles;
+const bottomRelatedProjects =
+  hasMidRelated && midRelatedProject
+    ? relatedProjects.filter((item) => item.href !== midRelatedProject.href)
+    : relatedProjects;
+
+const ctaContext = getContextCta({ serviceId: normalizedService?.id, pageSlug: slug });
+const ctaTitle = normalizedService ? ctaContext.title : 'Хотите узнать больше?';
+const ctaSubtitle = normalizedService
+  ? ctaContext.subtitle
+  : 'Оставьте заявку и наш специалист свяжется с вами в течение 10 минут';
+const ctaLabel = normalizedService ? ctaContext.cta : 'Отправить заявку';
+const leadContext = {
+  service: normalizedService?.id,
+  city: data.geoTarget,
+  pageType: 'article',
+  pageSlug: slug,
+};
+const seoFooterTitle = data.geoTarget ? `${data.title} в ${data.geoTarget}` : data.title;
+const seoFooterText = data.geoTarget
+  ? `Материал «${data.title}» подготовлен для клиентов в ${data.geoTarget}. Если нужен проект мебели на заказ, команда ${companyName} поможет с подбором материалов, планировкой и расчетом стоимости.`
+  : `Материал «${data.title}» подготовлен командой ${companyName}. Если нужен проект мебели на заказ, поможем с подбором материалов, планировкой и расчетом стоимости.`;
+
+
+const breadcrumbItems = [
+  { label: 'Статьи', href: '/articles' },
+  { label: data.title, href: `/articles/${slug}` },
+];
+---
+
+<PageLayout metadata={metadata}>
+  <JsonLd schema={articleJsonLd} />
+  <Breadcrumb items={breadcrumbItems} />
+
+  <article class="section-inner">
+    <!-- Article Header -->
+    <header class="section section-sm">
+      <div class="section-content ds-section-head left">
+        <div class="ds-pill">Статья</div>
+        <h1 class="text-4xl md:text-5xl font-bold mb-6 text-gray-900">{data.title}</h1>
+        <p class="text-xl text-[#665f5a] mb-8">{data.description}</p>
+
+        <!-- Meta Info -->
+        <div class="flex flex-wrap gap-4 text-sm text-[#7a6f68] mb-8">
+          <div class="flex items-center gap-2">
+            <span>📅</span>
+            <time datetime={data.publishDate.toISOString()}>{pubDate}</time>
+          </div>
+          {
+            data.author && (
+              <div class="flex items-center gap-2">
+                <span>✍️</span>
+                <span>{data.author}</span>
+              </div>
+            )
+          }
+          {
+            readingTime && (
+              <div class="flex items-center gap-2">
+                <span>⏱️</span>
+                <span>{readingTime} мин. чтения</span>
+              </div>
+            )
+          }
+        </div>
+
+        <!-- Keywords -->
+        {
+          data.keywords && data.keywords.length > 0 && (
+            <div class="flex flex-wrap gap-2 mb-8">
+              {data.keywords.map((keyword) => (
+                <span class="ds-tag text-sm px-3 py-1">{keyword}</span>
+              ))}
+            </div>
+          )
+        }
+
+        <!-- Featured Image -->
+        {
+          data.image && (
+            <Image
+              src={data.image}
+              alt={data.title}
+              class="w-full h-72 md:h-96 object-cover rounded-lg mb-8"
+              loading="eager"
+              decoding="sync"
+              fetchpriority="high"
+              widths={[400, 640, 960]}
+              sizes="(max-width: 767px) 100vw, 720px"
+              width={1280}
+              height={751}
+              quality={68}
+              format="webp"
+              layout="responsive"
+            />
+          )
+        }
+      </div>
+    </header>
+
+    <!-- Article Content Body -->
+    <section class="section section-sm article-deferred-section">
+      <div class="section-content prose">
+        <Fragment set:html={articleContentHtml} />
+      </div>
+    </section>
+
+    <!-- Internal Links -->
+    {
+      limitedInternalLinks.length > 0 && (
+        <section class="section section-sm article-deferred-section">
+          <div class="section-content card card-soft card-shadow">
+            <h3 class="text-lg font-semibold mb-4">Похожие материалы:</h3>
+            <ul class="space-y-2">
+              {limitedInternalLinks.map((link) => (
+                <li>
+                  <a href={normalizeHref(link.slug)} class="font-medium text-[#7f5438] hover:underline">
+                    {link.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )
+    }
+
+    {
+        showRelatedService && (
+          <section class="section section-sm article-deferred-section">
+            <div class="section-content card card-soft card-shadow">
+              <h3 class="text-lg font-semibold mb-3">Услуга по теме</h3>
+              <a href={normalizedServiceHref} class="font-medium text-[#7f5438] hover:underline">
+                {normalizedService?.name}
+              </a>
+            </div>
+          </section>
+        )
+    }
+
+    <!-- Tags -->
+    {
+      data.tags && data.tags.length > 0 && (
+        <section class="section section-sm article-deferred-section">
+          <div class="section-content">
+            <h3 class="text-lg font-semibold mb-4">Теги:</h3>
+            <div class="flex flex-wrap gap-2">
+              {data.tags.map((tag) => (
+                <span class="ds-tag text-sm px-3 py-1">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+      )
+    }
+  </article>
+
+  <!-- Related Articles -->
+  {
+    bottomRelatedArticles.length > 0 && (
+      <section class="section bg-[#f7f1ec] article-deferred-section">
+        <div class="section-inner">
+          <div class="ds-section-head left mb-8">
+            <div class="ds-pill">Читайте также</div>
+            <h2 class="text-3xl font-bold">Похожие статьи</h2>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {bottomRelatedArticles.map((item) => {
+              const itemSlug = item.id.replace(/\.mdx?$/, '');
+              return (
+                <a href={`/articles/${itemSlug}`} class="ui-btn-state ds-card ds-card-interactive p-6">
+                  <h3 class="font-semibold text-lg mb-2">{item.data.title}</h3>
+                  <p class="text-[#665f5a] text-sm mb-4">{item.data.description}</p>
+                  <span class="text-[#7f5438] hover:underline">Читать дальше →</span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    bottomRelatedProjects.length > 0 && (
+      <RelatedProjects relatedProjects={bottomRelatedProjects} title="Примеры наших работ" showAllLink={true} />
+    )
+  }
+
+  <!-- CTA Form -->
+  <section class="section bg-[#f7f1ec] article-deferred-section">
+    <div class="section-inner section-content">
+      <h2 class="text-3xl font-bold mb-2">{ctaTitle}</h2>
+      <p class="mb-8 text-[#665f5a]">{ctaSubtitle}</p>
+      <ContactForm
+        cta={ctaLabel}
+        ctaNote="Ответим в течение дня • можно без звонка • без обязательств"
+        leadContext={leadContext}
+      />
+    </div>
+  </section>
+
+  <!-- SEO Footer Text -->
+  {
+    data.geoTarget && (
+      <section class="section section-sm article-deferred-section">
+        <div class="section-content text-gray-700">
+          <SEOText title={seoFooterTitle} content={seoFooterText} />
+        </div>
+      </section>
+    )
+  }
+
+</PageLayout>
+
+<style is:global>
+  @supports (content-visibility: auto) {
+    .article-deferred-section {
+      content-visibility: auto;
+      contain-intrinsic-size: 960px;
+    }
+  }
+
+  .prose {
+    color: #4f4843;
+  }
+
+  .prose h2 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-size: 1.875rem;
+    font-weight: bold;
+    color: #171514;
+  }
+
+  .prose h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #1f1a17;
+  }
+
+  .prose p {
+    margin-bottom: 1rem;
+    line-height: 1.75;
+  }
+
+  .prose ul,
+  .prose ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+  }
+
+  .prose li {
+    margin-bottom: 0.5rem;
+  }
+
+  .prose a {
+    color: #7f5438;
+    text-decoration: underline;
+  }
+
+  .prose a:hover {
+    color: #7f5438;
+  }
+
+  .prose .article-mid-related a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .prose .article-mid-related a:hover {
+    text-decoration: underline;
+  }
+
+  .prose blockquote {
+    border-left: 4px solid #8b5a3c;
+    padding-left: 1rem;
+    margin: 1.5rem 0;
+    color: #6d645d;
+    font-style: italic;
+  }
+
+  .prose code {
+    background: #f3f4f6;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+  }
+
+  .prose pre {
+    background: #1f2937;
+    color: #f3f4f6;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+  }
+
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+  }
+
+  .prose th {
+    background: #f3f4f6;
+    padding: 0.75rem;
+    text-align: left;
+    border: 1px solid #e5e7eb;
+    font-weight: bold;
+  }
+
+  .prose td {
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+  }
+</style>
+

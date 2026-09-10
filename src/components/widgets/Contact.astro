@@ -1,0 +1,433 @@
+---
+import ContactForm from '~/components/ContactForm.astro';
+import Image from '~/components/common/Image.astro';
+import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
+import { getBusinessInfo } from '~/config/business-info';
+import { getCityById, getGeneratedPageBySlug } from '~/lib/geo-data';
+import { normalizePath, resolveServiceId } from '~/lib/url-builder';
+
+type LeadContext = {
+  city?: string;
+  district?: string;
+  service?: string;
+  pageType?: string;
+  pageSlug?: string;
+};
+
+function sanitizeLeadToken(value: unknown, maxLength = 64): string {
+  return String(value || '')
+    .trim()
+    .slice(0, maxLength)
+    .replace(/[^a-zA-Z0-9/_:-]+/g, '');
+}
+
+function resolveGeneratedPage(pathname: string, providedPageSlug: string) {
+  const normalizedPath = normalizePath(pathname);
+  const normalizedProvidedPageSlug = providedPageSlug ? normalizePath(providedPageSlug) : '';
+
+  if (normalizedProvidedPageSlug) {
+    const byProvided = getGeneratedPageBySlug(normalizedProvidedPageSlug);
+    if (byProvided) return byProvided;
+  }
+
+  const byPath = getGeneratedPageBySlug(normalizedPath);
+  if (byPath) return byPath;
+
+  const segments = normalizedPath.split('/').filter(Boolean);
+  if (segments.length === 2 && getCityById(segments[0])) {
+    const serviceId = resolveServiceId(segments[1]);
+    const servicePath = normalizePath(`/${segments[1]}`);
+    const byServicePath = getGeneratedPageBySlug(servicePath);
+    if (byServicePath) return byServicePath;
+
+    const byServiceIdPath = getGeneratedPageBySlug(normalizePath(`/${serviceId}`));
+    if (byServiceIdPath) return byServiceIdPath;
+  }
+
+  const flatMatch = normalizedPath.match(/^\/([a-z0-9-]+)-([a-z0-9-]+)$/i);
+  if (flatMatch) {
+    const servicePart = String(flatMatch[2] || '')
+      .trim()
+      .toLowerCase();
+    if (servicePart) {
+      const byFlatPath = getGeneratedPageBySlug(normalizePath(`/${servicePart}`));
+      if (byFlatPath) return byFlatPath;
+    }
+  }
+
+  return null;
+}
+
+function resolveLeadContext(pathname: string, provided: LeadContext | undefined) {
+  const normalizedPath = normalizePath(pathname || '/');
+  const providedPageSlug = sanitizeLeadToken(provided?.pageSlug, 200);
+  const generatedPage = resolveGeneratedPage(normalizedPath, providedPageSlug);
+  const city = sanitizeLeadToken(provided?.city) || sanitizeLeadToken(generatedPage?.cityId);
+  const district = sanitizeLeadToken(provided?.district);
+  const service = sanitizeLeadToken(provided?.service) || sanitizeLeadToken(generatedPage?.serviceId);
+  const pageType = sanitizeLeadToken(provided?.pageType) || sanitizeLeadToken(generatedPage?.pageType);
+
+  return {
+    city: city || 'unknown',
+    district,
+    service: service || 'unknown',
+    pageType: pageType || 'site',
+    pageSlug: providedPageSlug ? normalizePath(providedPageSlug) : generatedPage?.pageSlug || normalizedPath,
+  };
+}
+
+const {
+  title = '',
+  subtitle = '',
+  tagline = '',
+  inputs,
+  description,
+  id,
+  isDark = false,
+  classes = {},
+  leadContext,
+} = Astro.props;
+
+const resolvedLeadContext = resolveLeadContext(Astro.url.pathname, leadContext);
+const businessInfo = getBusinessInfo();
+const phoneHref = `tel:${businessInfo.phoneHref}`;
+const telegramHref = businessInfo.telegramUrl;
+---
+
+<WidgetWrapper id={id} isDark={isDark} containerClass={`max-w-7xl mx-auto ${classes?.container ?? ''}`}>
+  <Fragment slot="bg">
+    <slot name="bg" />
+  </Fragment>
+  <div class="contact-wrap">
+    <div class="contact-info ds-card">
+      {tagline && <p class="contact-kicker">{tagline}</p>}
+      {title && <h2>{title}</h2>}
+      {subtitle && <p class="contact-subtitle">{subtitle}</p>}
+
+      <ul class="contact-benefits ds-list-dot">
+        <li>Бесплатный выезд замерщика по Иркутску, Ангарску и Шелехову</li>
+        <li>Точный расчет стоимости и сроков изготовления</li>
+        <li>Договор, гарантия и монтаж под ключ</li>
+      </ul>
+
+      <ol class="contact-steps">
+        <li>
+          <span>1</span>
+          <div>
+            <strong>Замер и консультация</strong>
+            <p>Выясняем задачи, бюджет и ограничения по помещению.</p>
+          </div>
+        </li>
+        <li>
+          <span>2</span>
+          <div>
+            <strong>Проект и смета</strong>
+            <p>Показываем варианты и фиксируем финальную стоимость.</p>
+          </div>
+        </li>
+        <li>
+          <span>3</span>
+          <div>
+            <strong>Производство и монтаж</strong>
+            <p>Изготавливаем мебель и сдаем готовый результат под ключ.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="contact-actions">
+        <a href={phoneHref} class="contact-action phone ds-action-primary">Позвонить: {businessInfo.phone}</a>
+        {
+          telegramHref && (
+            <a
+              href={telegramHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="contact-action telegram ds-action-secondary"
+            >
+              <Image src="/images/figma/telegram-icon.png" alt="" width={20} height={20} layout="fixed" />
+              Telegram
+            </a>
+          )
+        }
+      </div>
+
+      <div class="contact-city-links">
+        <p>Основные страницы по услугам:</p>
+        <ul>
+          <li><a href="/kuhni">Кухни на заказ</a></li>
+          <li><a href="/shkafy">Шкафы-купе</a></li>
+          <li><a href="/garderobnye">Гардеробные</a></li>
+        </ul>
+      </div>
+
+      <div class="contact-map">
+        <a
+          href={businessInfo.yandexMapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="contact-map-preview ui-btn-state"
+          data-cta="contact_map_yandex"
+          data-cta-type="secondary"
+          data-cta-placement="section"
+        >
+          <Image
+            src="/images/figma/map-preview.png"
+            alt="Карта проезда к шоуруму"
+            width={650}
+            height={450}
+            layout="responsive"
+          />
+          <span class="contact-map-badge">Открыть в Яндекс Картах</span>
+        </a>
+        <div class="contact-map-meta">
+          <p class="contact-map-address">{businessInfo.fullAddress}</p>
+          <p class="contact-map-hours">Режим: {businessInfo.openingHoursText}</p>
+          <div class="contact-map-links">
+            <a href={businessInfo.yandexMapsUrl} target="_blank" rel="noopener noreferrer"> Яндекс Карты </a>
+            <a href={businessInfo.googleMapsUrl} target="_blank" rel="noopener noreferrer"> Google Maps </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {
+      inputs && (
+        <div class="contact-form ds-card">
+          <ContactForm
+            successText={description ?? 'Спасибо! Мы свяжемся с вами в течение 10 минут.'}
+            formContext={id ? String(id) : 'section'}
+            leadContext={resolvedLeadContext}
+          />
+        </div>
+      )
+    }
+  </div>
+</WidgetWrapper>
+
+<style is:inline>
+  .contact-wrap {
+    border: 1px solid #e7d9ce;
+    background: linear-gradient(180deg, #fbf8f5 0%, #f5eee8 100%);
+    border-radius: 1rem;
+    padding: 0.95rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 520px);
+    gap: 1rem;
+    align-items: start;
+  }
+  .contact-info {
+    padding: 1rem;
+  }
+  .contact-kicker {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #7f5438;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  .contact-info h2 {
+    margin: 0.55rem 0 0;
+    font-size: clamp(1.4rem, 2vw, 2rem);
+    line-height: 1.2;
+    color: #1a1715;
+  }
+  .contact-subtitle {
+    margin: 0.7rem 0 0;
+    color: #5f5a56;
+    line-height: 1.55;
+  }
+  .contact-benefits {
+    margin: 0.9rem 0 0;
+  }
+  .contact-steps {
+    margin: 0.95rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.55rem;
+  }
+  .contact-steps li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.55rem;
+    align-items: start;
+  }
+  .contact-steps li > span {
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 999px;
+    background: #f1dfd2;
+    color: #7f573c;
+    font-size: 0.74rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.05rem;
+  }
+  .contact-steps strong {
+    display: block;
+    font-size: 0.88rem;
+    color: #2f2823;
+  }
+  .contact-steps p {
+    margin: 0.15rem 0 0;
+    color: #675f59;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+  .contact-actions {
+    margin-top: 0.9rem;
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+  .contact-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.52rem 0.9rem;
+  }
+  .contact-action.telegram img {
+    width: 1rem;
+    height: 1rem;
+  }
+  .contact-city-links {
+    margin-top: 0.95rem;
+    border: 1px solid #ece7e2;
+    border-radius: 0.7rem;
+    background: #faf7f5;
+    padding: 0.75rem 0.85rem;
+  }
+  .contact-city-links p {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #4f453f;
+  }
+  .contact-city-links ul {
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.24rem;
+  }
+  .contact-city-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    padding: 0 0.45rem;
+    border-radius: 0.45rem;
+    color: #7f5438;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+  }
+  .contact-city-links a:hover {
+    text-decoration: underline;
+    background: #f5eee8;
+  }
+  .contact-map {
+    margin-top: 0.85rem;
+    border: 1px solid #e6ddd8;
+    border-radius: 0.65rem;
+    overflow: hidden;
+    width: min(100%, 299px);
+    background: #fff;
+  }
+  .contact-map-preview {
+    position: relative;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+  .contact-map img {
+    width: 100%;
+    display: block;
+  }
+  .contact-map-badge {
+    position: absolute;
+    left: 0.6rem;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 2.4rem;
+    padding: 0 0.8rem;
+    border-radius: 999px;
+    background: rgba(31, 22, 15, 0.82);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    backdrop-filter: blur(8px);
+  }
+  .contact-map-meta {
+    padding: 0.75rem 0.85rem 0.85rem;
+    display: grid;
+    gap: 0.45rem;
+  }
+  .contact-map-address,
+  .contact-map-hours {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #524842;
+  }
+  .contact-map-address {
+    font-weight: 700;
+    color: #2f2823;
+  }
+  .contact-map-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .contact-map-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.15rem;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    border: 1px solid #e2d4c7;
+    background: #faf5f1;
+    color: #7f5438;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .contact-map-links a:hover {
+    border-color: #b78562;
+    background: #fff;
+  }
+  .contact-form {
+    padding: 0.3rem;
+  }
+  @media (max-width: 1024px) {
+    .contact-wrap {
+      grid-template-columns: 1fr;
+    }
+    .contact-form {
+      order: -1;
+    }
+  }
+  @media (max-width: 640px) {
+    .contact-wrap {
+      padding: 0.6rem;
+    }
+    .contact-info {
+      padding: 0.8rem;
+    }
+    .contact-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .contact-action {
+      justify-content: center;
+    }
+  }
+</style>

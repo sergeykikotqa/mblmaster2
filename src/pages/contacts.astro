@@ -1,0 +1,320 @@
+---
+import PageLayout from '~/layouts/PageLayout.astro';
+import Breadcrumb from '~/components/Breadcrumb.astro';
+import HeroModern from '~/components/widgets/HeroModern.astro';
+import Contact from '~/components/widgets/Contact.astro';
+import YandexMap from '~/components/YandexMap.astro';
+import { getBusinessInfo } from '~/config/business-info';
+import { getPermalink } from '~/utils/permalinks';
+
+const metadata = {
+  title: 'Контакты и реквизиты - мебель на заказ в Иркутске',
+  description: 'Контакты компании «мбл мастер»: телефон, адрес, режим работы, реквизиты и схема проезда по Иркутску.',
+};
+
+const heroSlides = [
+  {
+    src: '/images/figma/hero-main.png',
+    alt: 'Шоурум и производство мебели в Иркутске',
+    title: 'Контакты и консультация по проекту',
+    subtitle: 'Свяжитесь с нами любым удобным способом: звонок, Telegram или заявка на сайте.',
+    kicker: 'Отвечаем в течение 10 минут',
+  },
+  {
+    src: '/images/figma/hero-slide-2.png',
+    alt: 'Консультация по кухне и шкафам',
+    title: 'Покажем материалы и рассчитаем стоимость',
+    subtitle: 'Подскажем по срокам, бюджету и оптимальной комплектации под вашу планировку.',
+    kicker: 'Бесплатный замер по Иркутску',
+  },
+];
+
+const cityServiceLinks = [
+  { title: 'Кухни на заказ', href: getPermalink('/kuhni') },
+  { title: 'Шкафы-купе', href: getPermalink('/shkafy') },
+  { title: 'Гардеробные', href: getPermalink('/garderobnye') },
+  { title: 'Иркутск', href: getPermalink('/irkutsk') },
+  { title: 'Ангарск', href: getPermalink('/angarsk') },
+  { title: 'Шелехов', href: getPermalink('/shelekhov') },
+];
+const businessInfo = getBusinessInfo();
+---
+
+<PageLayout metadata={metadata}>
+  <Breadcrumb items={[{ label: 'Контакты', href: '/contacts' }]} />
+
+  <HeroModern
+    title="Контакты компании «мбл мастер»"
+    subtitle={`${businessInfo.fullAddress}. Консультируем по проектам, срокам и стоимости мебели под заказ.`}
+    actions={[
+      { text: 'Позвонить сейчас', href: `tel:${businessInfo.phoneHref}`, variant: 'primary' },
+      { text: 'Открыть карту', href: '#map', variant: 'secondary' },
+    ]}
+    slides={heroSlides}
+    badge="Контакты и реквизиты"
+  />
+
+  <section
+    class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-14 cv-auto"
+    itemscope
+    itemtype="https://schema.org/LocalBusiness"
+    id="contacts-info"
+  >
+    <meta itemprop="name" content="мбл мастер" />
+    <div class="contacts-grid">
+      <article class="contacts-card ds-card">
+        <h2>Быстрая связь</h2>
+        <p>Выберите удобный канал, мы ответим и поможем с расчетом проекта.</p>
+
+        <div class="contacts-actions">
+          <a
+            href={`tel:${businessInfo.phoneHref}`}
+            itemprop="telephone"
+            class="contacts-btn ds-action-primary"
+            data-cta-placement="section"
+            data-cta="contacts_phone"
+            data-cta-type="phone"
+          >
+            {businessInfo.phone}
+          </a>
+          <a
+            href={`mailto:${businessInfo.email}`}
+            itemprop="email"
+            class="contacts-btn ds-action-secondary"
+            data-cta-placement="section"
+            data-cta="contacts_email"
+            data-cta-type="secondary"
+          >
+            {businessInfo.email}
+          </a>
+          {
+            businessInfo.telegramUrl && (
+              <a
+                href={businessInfo.telegramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="contacts-btn ds-action-secondary"
+                data-cta-placement="section"
+                data-cta="contacts_tg"
+                data-cta-type="secondary"
+              >
+                Telegram
+              </a>
+            )
+          }
+        </div>
+
+        <ul class="contacts-checklist ds-list-dot">
+          <li>Бесплатная консультация по материалам и фурнитуре</li>
+          <li>Предварительный расчет стоимости в день обращения</li>
+          <li>Согласование удобного времени выезда замерщика</li>
+        </ul>
+      </article>
+
+      <article class="contacts-card ds-card" itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
+        <h2>Шоурум и консультация</h2>
+        <ul class="contacts-meta">
+          <li>
+            <span>Адрес</span>
+            <p>
+              <span itemprop="addressLocality">{businessInfo.addressLocality}</span>,
+              <span itemprop="streetAddress">{businessInfo.streetAddress}</span>
+            </p>
+          </li>
+          <li>
+            <span>Район</span>
+            <p>{businessInfo.addressDistrict}</p>
+          </li>
+          <li>
+            <span>Регион</span>
+            <p itemprop="addressRegion">{businessInfo.addressRegion}</p>
+          </li>
+          <li>
+            <span>Индекс</span>
+            <p itemprop="postalCode">{businessInfo.postalCode}</p>
+          </li>
+          <li>
+            <span>Режим работы</span>
+            <p>
+              {
+                businessInfo.openingHoursTextLines.map((line) => (
+                  <>
+                    {line}
+                    <br />
+                  </>
+                ))
+              }
+            </p>
+          </li>
+        </ul>
+        <div class="contacts-map-actions">
+          <a href={businessInfo.yandexMapsUrl} target="_blank" rel="noopener noreferrer" class="contacts-btn ds-action-secondary">
+            Яндекс Карты
+          </a>
+          <a href={businessInfo.googleMapsUrl} target="_blank" rel="noopener noreferrer" class="contacts-btn ds-action-secondary">
+            Google Maps
+          </a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 pb-12 sm:pb-14 cv-auto" data-support-links>
+    <div class="contacts-head ds-section-head">
+      <div class="contacts-pill ds-pill">РАЙОНЫ И ГОРОДА</div>
+      <h2>Основные страницы по услугам</h2>
+    </div>
+    <ul class="contacts-links support-links">
+      {
+        cityServiceLinks.map((item) => (
+          <li>
+            <a href={item.href} class="contacts-link-card ds-link-card ui-btn-state">
+              <span>{item.title}</span>
+              <small>Перейти к странице</small>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section id="map" class="max-w-7xl mx-auto px-4 sm:px-6 pb-12 sm:pb-14 cv-auto">
+    <div class="map-card ds-card">
+      <div class="contacts-head ds-section-head left">
+        <div class="contacts-pill ds-pill">КАК НАС НАЙТИ</div>
+        <h2>Схема проезда</h2>
+        <p>{businessInfo.fullAddress}. Удобный подъезд со стороны основных магистралей города.</p>
+      </div>
+      <YandexMap
+        lat={businessInfo.latitude}
+        lon={businessInfo.longitude}
+        zoom={16}
+        height="360px"
+        title="мбл мастер"
+        address={businessInfo.fullAddress}
+        yandexUrl={businessInfo.yandexMapsUrl}
+        googleUrl={businessInfo.googleMapsUrl}
+      />
+    </div>
+  </section>
+
+  <div class="cv-auto">
+    <Contact
+      id="contact"
+      title="Оставьте заявку на консультацию и замер"
+      subtitle="Заполните форму — свяжемся в течение 10 минут и подберем удобное время встречи."
+      tagline="Контактная форма"
+      inputs={[
+        { type: 'text', name: 'name', label: 'Имя', required: true },
+        { type: 'tel', name: 'phone', label: 'Телефон', required: true },
+        { type: 'textarea', name: 'message', label: 'Комментарий (район, тип мебели)', required: false },
+      ]}
+      leadContext={{ pageType: 'site', pageSlug: '/contacts' }}
+    />
+  </div>
+</PageLayout>
+
+<style is:inline>
+  .contacts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+
+  .contacts-card {
+    padding: 1rem;
+  }
+
+  .contacts-card h2 {
+    margin: 0;
+    color: #191613;
+    font-size: 1.4rem;
+  }
+
+  .contacts-card > p {
+    margin: 0.55rem 0 0;
+    color: #665f5a;
+    line-height: 1.5;
+  }
+
+  .contacts-actions {
+    margin-top: 0.85rem;
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .contacts-btn {
+    display: inline-flex;
+    justify-content: center;
+    font-size: 0.84rem;
+    font-weight: 700;
+    padding: 0.62rem 1rem;
+  }
+
+  .contacts-checklist {
+    margin: 0.95rem 0 0;
+    font-size: 0.9rem;
+  }
+
+  .contacts-meta {
+    margin: 0.9rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .contacts-meta span {
+    display: inline-flex;
+    border-radius: 999px;
+    border: 1px solid #eadfd6;
+    background: #faf6f2;
+    color: #7a6a5f;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.24rem 0.55rem;
+  }
+
+  .contacts-meta p {
+    margin: 0.35rem 0 0;
+    color: #403732;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .contacts-map-actions {
+    margin-top: 0.9rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .contacts-links {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.7rem;
+  }
+
+  .map-card {
+    padding: 1rem;
+  }
+
+  @media (max-width: 960px) {
+    .contacts-grid,
+    .contacts-links {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .contacts-grid,
+    .contacts-links {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

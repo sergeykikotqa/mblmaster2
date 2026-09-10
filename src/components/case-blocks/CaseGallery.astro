@@ -1,0 +1,59 @@
+---
+import ProjectGallery from '~/components/projects/ProjectGallery.astro';
+
+type MiniCtaSecondary = { href: string; label: string };
+
+type Props = {
+  slug: string;
+  images: string[];
+  alt: string;
+  service: string;
+  miniCtaSecondary: MiniCtaSecondary;
+  captions?: Record<string, string>;
+};
+
+const { slug, images = [], alt, service, miniCtaSecondary, captions } = Astro.props as Props;
+const hasImages = images.length > 0;
+---
+
+{
+  hasImages && (
+    <section id="gallery" class="section project-section project-gallery-section">
+      <h2 class="sr-only">Галерея проекта</h2>
+      <ProjectGallery slug={slug} images={images} alt={alt} captions={captions} />
+    </section>
+  )
+}
+
+{
+  hasImages && (
+    <section class="section project-section project-mini-cta">
+      <div class="project-mini-cta-card cta card-shadow">
+        <div>
+          <h2>Понравился проект?</h2>
+          <p>Рассчитаем похожий проект и покажем варианты под ваш бюджет.</p>
+        </div>
+        <div class="project-mini-cta-actions">
+          <a
+            href={`/${service}#contact`}
+            class="ui-btn-state ds-action-primary"
+            data-cta="project_gallery_calc"
+            data-cta-type="primary"
+            data-cta-placement="gallery"
+          >
+            Рассчитать стоимость
+          </a>
+          <a
+            href={miniCtaSecondary.href}
+            class="ui-btn-state ds-action-secondary"
+            data-cta="project_gallery_secondary"
+            data-cta-type="secondary"
+            data-cta-placement="gallery"
+          >
+            {miniCtaSecondary.label}
+          </a>
+        </div>
+      </div>
+    </section>
+  )
+}

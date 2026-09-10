@@ -1,0 +1,393 @@
+---
+import PageLayout from '~/layouts/PageLayout.astro';
+import Breadcrumb from '~/components/Breadcrumb.astro';
+import HeroModern from '~/components/widgets/HeroModern.astro';
+import Portfolio from '~/components/widgets/Portfolio.astro';
+import Contact from '~/components/widgets/Contact.astro';
+import { getBusinessInfo } from '~/config/business-info';
+import { getPortfolioItems } from '~/lib/projects/portfolio-items';
+
+const metadata = {
+  title: 'О компании - мебель на заказ в Иркутске',
+  description:
+    'О компании «мбл мастер»: собственное производство в Иркутске, опыт более 10 лет, сертифицированные материалы и гарантия 2 года.',
+};
+
+const aboutSlides = [
+  {
+    src: '/images/figma/portfolio-modern-light.jpg',
+    alt: 'Современная светлая кухня, выполненная компанией',
+    title: 'Компания «мбл мастер»',
+    subtitle: 'Делаем кухни, шкафы-купе и гардеробные по индивидуальным проектам в Иркутске и области.',
+    kicker: 'Собственное производство',
+  },
+  {
+    src: '/images/figma/portfolio-classic-white.png',
+    alt: 'Классическая белая кухня, проект компании',
+    title: 'Контроль качества на каждом этапе',
+    subtitle: 'От замера до финального монтажа проект ведет одна команда.',
+    kicker: '10+ лет опыта',
+  },
+  {
+    src: '/images/figma/portfolio-classic-cream.png',
+    alt: 'Классическая угловая кухня, выполненная под заказ',
+    title: 'Подход без шаблонов',
+    subtitle: 'Проектируем мебель под реальные планировки, сценарии хранения и бюджет клиента.',
+    kicker: 'Индивидуальные решения',
+  },
+];
+
+const principles = [
+  {
+    title: 'Прозрачная коммуникация',
+    description: 'Согласовываем проект, сроки и смету заранее без скрытых доплат.',
+  },
+  {
+    title: 'Ответственность за результат',
+    description: 'Не передаем этапы сторонним подрядчикам и контролируем весь цикл.',
+  },
+  {
+    title: 'Практичный дизайн',
+    description: 'Ставим в приоритет удобство ежедневного использования и эргономику.',
+  },
+  {
+    title: 'Материалы под задачу',
+    description: 'Подбираем фасады и фурнитуру под бюджет и уровень нагрузки.',
+  },
+  {
+    title: 'Аккуратный монтаж',
+    description: 'Собираем мебель с соблюдением технологии и финальной регулировкой.',
+  },
+  {
+    title: 'Поддержка после сдачи',
+    description: 'Остаемся на связи и помогаем по вопросам эксплуатации.',
+  },
+];
+const businessInfo = getBusinessInfo();
+const phoneHref = `tel:${businessInfo.phoneHref}`;
+const portfolioItems = await getPortfolioItems(6);
+---
+
+<PageLayout metadata={metadata}>
+  <Breadcrumb items={[{ label: 'О компании', href: '/o-kompanii' }]} />
+
+  <HeroModern
+    title="О компании «мбл мастер»"
+    subtitle="Более 10 лет проектируем и производим мебель на заказ в Иркутске: кухни, шкафы-купе и гардеробные системы."
+    actions={[
+      { text: 'Обсудить проект', href: '#contact', variant: 'primary' },
+      { text: 'Наши принципы', href: '#principles', variant: 'secondary' },
+    ]}
+    slides={aboutSlides}
+    badge="Производство в Иркутске"
+  />
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-14" id="principles">
+    <div class="about-story-grid">
+      <article class="about-story-card ds-card">
+        <div class="about-pill ds-pill">КТО МЫ</div>
+        <h2>Команда, которая отвечает за весь цикл проекта</h2>
+        <p>
+          Мы специализируемся на изготовлении мебели под заказ для квартир и домов. Основной профиль - кухни, шкафы-купе
+          и гардеробные. Работаем с сертифицированными материалами и надежной фурнитурой.
+        </p>
+        <p>
+          Наша задача - не просто собрать красивую мебель, а сделать решение, которое удобно в ежедневной жизни,
+          выдерживает нагрузку и остается актуальным на годы.
+        </p>
+      </article>
+
+      <div class="about-stats-card ds-card">
+        <h3>Факты о компании</h3>
+        <ul>
+          <li>
+            <strong>10+</strong>
+            <span>лет на рынке мебели Иркутска</span>
+          </li>
+          <li>
+            <strong>500+</strong>
+            <span>реализованных проектов под ключ</span>
+          </li>
+          <li>
+            <strong>24 мес.</strong>
+            <span>гарантия на мебель и монтаж</span>
+          </li>
+          <li>
+            <strong>1 команда</strong>
+            <span>замер, проект, производство, установка</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 pb-12 sm:pb-14">
+    <div class="about-head ds-section-head">
+      <div class="about-pill ds-pill">НАШ ПОДХОД</div>
+      <h2>Принципы работы</h2>
+      <p>Строим процесс так, чтобы клиенту было понятно, спокойно и предсказуемо на каждом этапе.</p>
+    </div>
+    <div class="about-principles-grid">
+      {
+        principles.map((item) => (
+          <article class="about-principle-card ds-card ds-card-interactive">
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 pb-12 sm:pb-14">
+    <div class="about-head ds-section-head left">
+      <div class="about-pill ds-pill">ЭТАПЫ РАБОТЫ</div>
+      <h2>Как мы ведем проект</h2>
+    </div>
+
+    <ol class="about-steps">
+      <li class="ds-card">
+        <span>01</span>
+        <div>
+          <h3>Замер и бриф</h3>
+          <p>Фиксируем размеры, пожелания по стилю, хранению и бюджету.</p>
+        </div>
+      </li>
+      <li class="ds-card">
+        <span>02</span>
+        <div>
+          <h3>Проект и смета</h3>
+          <p>Предлагаем решение по материалам, фурнитуре и стоимости.</p>
+        </div>
+      </li>
+      <li class="ds-card">
+        <span>03</span>
+        <div>
+          <h3>Производство</h3>
+          <p>Изготавливаем мебель по утвержденной спецификации и срокам.</p>
+        </div>
+      </li>
+      <li class="ds-card">
+        <span>04</span>
+        <div>
+          <h3>Монтаж и сдача</h3>
+          <p>Устанавливаем, регулируем и передаем готовый проект с гарантией.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 pb-12 sm:pb-14">
+    <div class="about-requisites ds-card">
+      <div class="about-head ds-section-head left">
+        <div class="about-pill ds-pill">РЕКВИЗИТЫ</div>
+        <h2>Юридическая информация</h2>
+      </div>
+      <div class="about-requisites-grid">
+        <p><strong>Название:</strong> {businessInfo.legal.businessName}</p>
+        <p><strong>ИНН:</strong> {businessInfo.legal.taxId}</p>
+        <p><strong>ОГРНИП:</strong> {businessInfo.legal.registrationId}</p>
+        <p><strong>Расчетный счет:</strong> {businessInfo.legal.checkingAccount}</p>
+        <p><strong>БИК:</strong> {businessInfo.legal.bic}</p>
+        <p><strong>Банк:</strong> {businessInfo.legal.bankName}</p>
+        <p><strong>Адрес регистрации:</strong> {businessInfo.legal.registeredAddress}</p>
+        <p>
+          <strong>Телефон:</strong>
+          <a
+            class="ui-btn-state inline-flex min-h-10 items-center rounded-sm px-1 text-[#7f5438] hover:underline"
+            href={phoneHref}
+            data-cta="about_phone"
+            data-cta-type="phone"
+            data-cta-placement="section">{businessInfo.phone}</a
+          >
+        </p>
+        <p>
+          <strong>Email:</strong>
+          <a
+            class="ui-btn-state inline-flex min-h-10 items-center rounded-sm px-1 text-[#7f5438] hover:underline"
+            href={`mailto:${businessInfo.email}`}>{businessInfo.email}</a
+          >
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <Portfolio
+    id="portfolio"
+    items={portfolioItems}
+    showHeader
+    title="Примеры наших реализованных проектов"
+    subtitle="Реальные фото мебели, чтобы вы могли оценить стиль, качество и уровень исполнения."
+    ctaHref="#contact"
+    ctaText="Обсудить похожий проект"
+  />
+
+  <Contact
+    id="contact"
+    title="Обсудить ваш проект мебели"
+    subtitle="Опишите задачу, и мы подготовим предложение с ориентиром по стоимости и срокам."
+    tagline="Связь с компанией"
+    inputs={[
+      { type: 'text', name: 'name', label: 'Имя', required: true },
+      { type: 'tel', name: 'phone', label: 'Телефон', required: true },
+      { type: 'textarea', name: 'message', label: 'Какая мебель нужна', required: false },
+    ]}
+    leadContext={{ pageType: 'site', pageSlug: '/o-kompanii' }}
+  />
+</PageLayout>
+
+<style>
+  .about-story-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+    gap: 0.9rem;
+  }
+
+  .about-story-card {
+    padding: 1rem;
+  }
+
+  .about-story-card h2 {
+    margin: 0;
+    color: #1a1715;
+    font-size: clamp(1.35rem, 2vw, 1.85rem);
+  }
+
+  .about-story-card p {
+    margin: 0.62rem 0 0;
+    color: #655f5a;
+    line-height: 1.6;
+  }
+
+  .about-stats-card {
+    padding: 1rem;
+  }
+
+  .about-stats-card h3 {
+    margin: 0;
+    color: #1d1916;
+    font-size: 1.15rem;
+  }
+
+  .about-stats-card ul {
+    margin: 0.8rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .about-stats-card li {
+    border-radius: 0.75rem;
+    border: 1px solid #ece2da;
+    background: #faf6f2;
+    padding: 0.6rem 0.65rem;
+  }
+
+  .about-stats-card strong {
+    display: block;
+    color: #7e553b;
+    font-size: 1.05rem;
+    line-height: 1.1;
+  }
+
+  .about-stats-card span {
+    color: #5f544b;
+    font-size: 0.82rem;
+  }
+
+  .about-principles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .about-principle-card {
+    padding: 0.9rem;
+  }
+
+  .about-principle-card h3 {
+    margin: 0;
+    color: #1e1a17;
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  .about-principle-card p {
+    margin: 0.42rem 0 0;
+    color: #655f5a;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  .about-steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+  }
+
+  .about-steps li {
+    padding: 0.85rem;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.65rem;
+    align-items: start;
+  }
+
+  .about-steps span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    background: #f2e5dc;
+    color: #7e553b;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .about-steps h3 {
+    margin: 0;
+    color: #1e1a17;
+    font-size: 1rem;
+  }
+
+  .about-steps p {
+    margin: 0.35rem 0 0;
+    color: #655f5a;
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+
+  .about-requisites {
+    padding: 1rem;
+  }
+
+  .about-requisites-grid {
+    margin-top: 0.7rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem 1rem;
+    color: #504741;
+    font-size: 0.9rem;
+  }
+
+  .about-requisites-grid p {
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 960px) {
+    .about-story-grid,
+    .about-principles-grid,
+    .about-steps,
+    .about-requisites-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,250 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Breadcrumb from '~/components/Breadcrumb.astro';
+import CaseHero from '~/components/case-blocks/CaseHero.astro';
+import ProjectAbout from '~/components/projects/ProjectAbout.astro';
+import ProjectBlocks from '~/components/projects/ProjectBlocks.astro';
+import CtaBlock from '~/components/projects/blocks/CtaBlock.astro';
+import ProjectModal from '~/components/projects/ProjectModal.astro';
+import ProjectRail from '~/components/projects/ProjectRail.astro';
+import JsonLd from '~/components/seo/JsonLd.astro';
+import PageLayout from '~/layouts/PageLayout.astro';
+import { buildProjectCardData, resolveProjectSlug } from '~/lib/projects/project-adapters';
+import { buildProjectRenderPlan } from '~/lib/projects/project-render-plan';
+import { buildProjectViewModel } from '~/lib/projects/project-view-model';
+import '~/styles/pages/project-page.css';
+
+type ProjectEntry = CollectionEntry<'projects'>;
+
+export async function getStaticPaths() {
+  const projects = (await getCollection('projects')).filter((entry) => !entry.data.draft);
+  return projects.map((entry) => ({
+    params: {
+      slug: resolveProjectSlug(entry),
+    },
+    props: { entry },
+  }));
+}
+
+const entry = (Astro.props as { entry?: ProjectEntry }).entry;
+if (!entry) {
+  throw new Error('[projects/[slug]] missing project entry');
+}
+
+const { Content } = await render(entry);
+const articles = await getCollection('articles');
+const allProjects = (await getCollection('projects')).filter((item) => !item.data.draft);
+
+const viewModel = await buildProjectViewModel({ entry, allProjects, articles, site: Astro.site });
+const ctaBlocks = buildProjectRenderPlan(viewModel).blocksByType.get('cta') ?? [];
+const project = viewModel.project;
+const breadcrumbItems = viewModel.hero.breadcrumbs.filter(
+  (item): item is { label: string; href: string } => Boolean(item.href)
+);
+const modalData = buildProjectCardData(project);
+const serviceLabels = viewModel.labels.service;
+const formatMoney = (value: number) =>
+  new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(value);
+const formatArea = (value: number) =>
+  new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(value).replace(/,0$/, '');
+const formatDays = (value: number) => {
+  const days = Number(value);
+  if (days % 10 === 1 && days % 100 !== 11) return `${days} день`;
+  if (days % 10 >= 2 && days % 10 <= 4 && (days % 100 < 10 || days % 100 >= 20)) return `${days} дня`;
+  return `${days} дней`;
+};
+const capitalize = (value: string) => (value ? `${value[0].toUpperCase()}${value.slice(1)}` : '');
+
+const areaValue = project.areaValue ?? Number.NaN;
+const areaLabel = Number.isFinite(areaValue) ? `${formatArea(areaValue)} м²` : '';
+const layoutLabel = String(project.data.layout || '').trim().toLowerCase();
+const exactPriceValue = project.actualPriceValue ?? Number.NaN;
+const estimatedPriceValue = project.estimatedPriceValue ?? Number.NaN;
+const formattedPrice = Number.isFinite(exactPriceValue)
+  ? formatMoney(exactPriceValue)
+  : Number.isFinite(estimatedPriceValue)
+    ? `~${formatMoney(estimatedPriceValue)}`
+    : '';
+const priceBase = viewModel.cost?.summaryPrice || viewModel.cost?.label || formattedPrice;
+const priceWithCurrency = priceBase ? (priceBase.includes('₽') ? priceBase : `${priceBase} ₽`) : '';
+const priceFact =
+  priceWithCurrency &&
+  (priceWithCurrency.startsWith('от') || priceWithCurrency.includes('до') || priceWithCurrency.startsWith('~'))
+    ? priceWithCurrency
+    : priceWithCurrency
+      ? `~${priceWithCurrency}`
+      : '';
+const durationValue = project.durationValue ?? Number.NaN;
+const durationFact = Number.isFinite(durationValue) ? `за ${formatDays(durationValue)}` : '';
+const serviceFact = areaLabel ? `${capitalize(serviceLabels.noun)} ${areaLabel}` : capitalize(serviceLabels.noun);
+const microFacts = [serviceFact, layoutLabel, priceFact, durationFact].filter(Boolean).join(' • ');
+const sameServicePhrase = serviceLabels.noun.endsWith('а') || serviceLabels.noun.endsWith('я')
+  ? `такую же ${serviceLabels.accusative}`
+  : `такой же ${serviceLabels.accusative}`;
+const heroCtaLabel = `Хочу ${sameServicePhrase} →`;
+const heroCtaAttrs = {
+  'data-project-modal-trigger': true,
+  'data-project-slug': modalData.slug,
+  'data-project-title': modalData.title,
+  'data-project-area': modalData.areaLabel || '',
+  'data-project-price': modalData.priceLabel || '',
+  'data-project-duration': modalData.durationLabel || '',
+  'data-project-proof': modalData.proofHighlight?.value || '',
+  'data-project-service': modalData.serviceId || '',
+  'data-project-summary': microFacts,
+  'data-project-href': modalData.href || '',
+  'data-project-page': modalData.href || '',
+};
+const preloadSrcset = viewModel.preloadImage?.srcset?.trim() || undefined;
+const preloadSizes = viewModel.preloadImage?.sizes?.trim() || undefined;
+const preloadType = viewModel.preloadImage?.type?.trim() || undefined;
+const rawSchemas = [
+  viewModel.schemas.creativeWorkSchema,
+  viewModel.schemas.faqSchema,
+  viewModel.schemas.videoSchema,
+];
+
+const isSchemaObject = (value: unknown): value is Record<string, unknown> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const typeValue = (value as Record<string, unknown>)['@type'];
+  if (typeof typeValue === 'string') return Boolean(typeValue.trim());
+  if (Array.isArray(typeValue)) return typeValue.length > 0;
+  return false;
+};
+
+const safeSchemas = rawSchemas.filter(isSchemaObject);
+const seenTypes = new Set<string>();
+const projectSchemas = safeSchemas.filter((schema) => {
+  const typeValue = schema['@type'];
+  const typeKey = Array.isArray(typeValue) ? typeValue.join('|') : String(typeValue);
+  if (!typeKey) return false;
+  if (seenTypes.has(typeKey)) return false;
+  seenTypes.add(typeKey);
+  return true;
+});
+---
+
+<PageLayout metadata={viewModel.metadata} pageType="project">
+  {projectSchemas.length > 0 && <JsonLd schema={projectSchemas} />}
+  <Fragment slot="head">
+    <style>
+      .project-hero {
+        position: relative;
+        min-height: clamp(28rem, 80vh, 54rem);
+        margin: 0 calc(50% - 50vw) 2rem;
+        display: flex;
+        align-items: flex-end;
+        color: #fff;
+      }
+      .project-hero__media {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background: #0f0f0f;
+      }
+      .project-hero__media img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+      }
+      .project-hero__content {
+        width: 100%;
+        position: relative;
+        padding: clamp(2rem, 6vw, 4rem) 0;
+      }
+      .project-hero__content-inner {
+        max-width: var(--container);
+        margin: 0 auto;
+        padding: 0 1rem;
+        display: grid;
+        gap: 0.6rem;
+      }
+    </style>
+    {
+      viewModel.preloadImage && (
+        <link
+          rel="preload"
+          as="image"
+          href={viewModel.preloadImage.href}
+          fetchpriority="high"
+          imagesrcset={preloadSrcset}
+          imagesizes={preloadSizes}
+          type={preloadType}
+        />
+      )
+    }
+  </Fragment>
+  <div class="project-page">
+    {
+      viewModel.sectionVisibility.hasHero && (
+        <div id="overview" class="project-section-anchor">
+          <CaseHero
+            heading={viewModel.hero.heading}
+            description={viewModel.hero.description}
+            microGeoText={viewModel.hero.microGeoText}
+            cityLabel={viewModel.hero.cityLabel}
+            cityInCase={viewModel.hero.cityInCase}
+            heroImage={viewModel.hero.heroImage}
+            heroAlt={viewModel.hero.heroAlt}
+            quickSpecs={viewModel.hero.quickSpecs}
+            service={viewModel.hero.service}
+            hasGallery={viewModel.hero.hasGallery}
+            heroTags={viewModel.hero.heroTags}
+            heroStats={viewModel.hero.heroStats}
+            breadcrumbs={viewModel.hero.breadcrumbs}
+            rating={viewModel.hero.rating ?? undefined}
+            microFacts={microFacts}
+            ctaLabel={heroCtaLabel}
+            ctaAttrs={heroCtaAttrs}
+          />
+        </div>
+      )
+    }
+    {
+      !viewModel.sectionVisibility.hasHero && (
+        <div id="overview" class="project-section-anchor">
+          <section class="section project-section project-hero-fallback">
+            <h1>{viewModel.pageTitle}</h1>
+          </section>
+        </div>
+      )
+    }
+
+    <article class="project-container section-inner">
+      <div class="project-breadcrumbs">
+        <Breadcrumb items={breadcrumbItems} />
+      </div>
+      <div class="project-layout grid-12">
+        <div class="project-main main">
+          <ProjectAbout
+            title={viewModel.about.title}
+            paragraphs={viewModel.about.paragraphs}
+            image={viewModel.about.image}
+            heroAlt={viewModel.hero.heroAlt}
+            highlights={viewModel.about.highlights}
+          />
+          <ProjectBlocks viewModel={viewModel} Content={Content} modalData={modalData} />
+        </div>
+        <ProjectRail viewModel={viewModel} />
+      </div>
+    </article>
+    {
+      ctaBlocks.map(({ block, index, typeIndex }) => (
+        <CtaBlock block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} />
+      ))
+    }
+  </div>
+
+  <ProjectModal
+    leadContext={{ pageType: 'project', pageSlug: modalData.href }}
+    successLink={{ label: 'Пока ждёте, посмотрите похожие проекты →', href: '/projects' }}
+  />
+
+  {viewModel.tocItems.length > 0 && <script src="/scripts/project-toc.js" defer />}
+  {viewModel.hasBodyContent && <script src="/scripts/project-result-toggle.js" defer />}
+  {viewModel.beforeAfter.items.length > 0 && <script src="/scripts/project-before-after.js" defer />}
+  {viewModel.video.data?.embedUrl && <script src="/scripts/project-video-embed.js" defer />}
+  <script src="/scripts/project-modal.js" defer />
+</PageLayout>

@@ -1,0 +1,676 @@
+{
+  "total": 46,
+  "generatedAt": "2026-03-20T09:25:29.473Z",
+  "routes": [
+    {
+      "path": "/",
+      "type": "home",
+      "source": "policy",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/angarsk",
+      "type": "city",
+      "source": "cities",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles",
+      "type": "articles-index",
+      "source": "policy",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/cveta-kuhni-trendy",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/dlitelnost-izgotovleniya-kuhni",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/garderobnaya-na-zakaz-irkutsk",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/kak-splanirovat-garderobnuyu",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/kak-vybrat-kuhnyu-na-zakaz",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/kak-vybrat-shkaf-na-zakaz",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/kuhnya-3-metra-irkutsk",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/kuhnya-bez-verhnih-shkafov-irkutsk",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/kuhnya-iz-mdf-irkutsk",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/kuhnya-s-barnoy-stoykoy-irkutsk",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/kuhnya-s-ostrovom-irkutsk",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/kuhnya-v-hrushevke-irkutsk",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/malenkaya-kuhnya-na-zakaz-irkutsk",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/materialy-dlya-kuhni",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/organizacija-shkafa",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/razdvijnye-dveri-dlya-shkafa",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/skolko-stoit-kuhnya-v-irkutske",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/articles/uglovaya-kuhnya-nedorogo-irkutsk",
+      "type": "article",
+      "source": "content",
+      "flags": {
+        "seoReady": true,
+        "isArchived": false,
+        "noindex": false
+      },
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/contacts",
+      "type": "contacts",
+      "source": "policy",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/faq",
+      "type": "faq-index",
+      "source": "policy",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/faq/voprosy-ob-ispolzovanii-kuhen",
+      "type": "faq",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/garderobnye",
+      "type": "service",
+      "source": "policy",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/guides/process-izgotovleniya-kuhni",
+      "type": "guide",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/irkutsk",
+      "type": "city",
+      "source": "cities",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/kuhni",
+      "type": "service",
+      "source": "policy",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/kuhni-3-metra",
+      "type": "landing",
+      "source": "policy",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/o-kompanii",
+      "type": "about",
+      "source": "policy",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects",
+      "type": "projects-index",
+      "source": "policy",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/kuhnya-baykalskiy-trakt",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/kuhnya-bogdana",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/kuhnya-dzerzhinskogo",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/kuhnya-grafitovaya",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/kuhnya-krasnokazachya",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/kuhnya-piskunova",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/kuhnya-trilissera",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/kuhnya-uglovaya-irkutsk-lermontova",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/kuhnya-verkhnyaya-naberezhnaya",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/mebel-pod-lestnitsey",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/shkaf-deputatskaya",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/projects/shkaf-vstroennyi-angarsk-84-i-kvartal",
+      "type": "project",
+      "source": "content",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/shelekhov",
+      "type": "city",
+      "source": "cities",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    },
+    {
+      "path": "/shkafy",
+      "type": "service",
+      "source": "policy",
+      "flags": {},
+      "policy": {
+        "classification": "index",
+        "index": true,
+        "follow": true,
+        "includeInSitemap": true,
+        "isKnown": true
+      }
+    }
+  ]
+}

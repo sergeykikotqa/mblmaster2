@@ -1,0 +1,85 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import GuideLayout from '~/components/content/GuideLayout.astro';
+import { buildAutoRelated, getSlugFromEntryId } from '~/utils/content-graph';
+
+export async function getStaticPaths() {
+  const guides = await getCollection('guides', ({ data }) => !data.draft);
+  const articles = await getCollection('articles', ({ data }) => !data.draft);
+  const guidesBySlug = new Map(guides.map((entry) => [getSlugFromEntryId(entry.id), entry]));
+  const articlesBySlug = new Map(articles.map((entry) => [getSlugFromEntryId(entry.id), entry]));
+
+  return guides.map((guide) => {
+    const slug = getSlugFromEntryId(guide.id);
+    const manualRelatedItems = (guide.data.relatedArticles ?? [])
+      .map((relatedSlug) => {
+        const relatedGuide = guidesBySlug.get(relatedSlug);
+        if (relatedGuide) {
+          return {
+            title: relatedGuide.data.title,
+            description: relatedGuide.data.description,
+            href: `/guides/${relatedSlug}`,
+            type: 'guide' as const,
+          };
+        }
+        const relatedArticle = articlesBySlug.get(relatedSlug);
+        if (relatedArticle && relatedArticle.data.seoReady === true) {
+          return {
+            title: relatedArticle.data.title,
+            description: relatedArticle.data.description,
+            href: `/articles/${relatedSlug}`,
+            type: 'article' as const,
+          };
+        }
+        return null;
+      })
+      .filter((item): item is { title: string; description: string; href: string; type: 'guide' | 'article' } =>
+        Boolean(item)
+      );
+
+    const autoRelatedItems = buildAutoRelated(guide, [...guides, ...articles], 3)
+      .filter((candidate) => {
+        const candidateSlug = getSlugFromEntryId(candidate.id);
+        const articleCandidate = articlesBySlug.get(candidateSlug);
+        return !articleCandidate || articleCandidate.data.seoReady === true;
+      })
+      .slice(0, 3)
+      .map((candidate) => {
+        const candidateSlug = getSlugFromEntryId(candidate.id);
+        const isGuide = guidesBySlug.has(candidateSlug);
+        return {
+          title: candidate.data.title,
+          description: candidate.data.description,
+          href: isGuide ? `/guides/${candidateSlug}` : `/articles/${candidateSlug}`,
+          type: isGuide ? ('guide' as const) : ('article' as const),
+        };
+      });
+
+    const relatedItems = [...manualRelatedItems, ...autoRelatedItems].filter(
+      (item, index, arr) => arr.findIndex((value) => value.href === item.href) === index
+    );
+
+    return {
+      params: { slug },
+      props: { guide, relatedItems: relatedItems.slice(0, 3) },
+    };
+  });
+}
+
+interface Props {
+  guide?: CollectionEntry<'guides'>;
+  relatedItems?: { title: string; description: string; href: string; type: 'guide' | 'article' }[];
+}
+
+const { guide, relatedItems = [] }: Props = Astro.props;
+
+if (!guide) {
+  return Astro.redirect('/guides/');
+}
+
+const { Content } = await render(guide);
+---
+
+<GuideLayout guide={guide} relatedItems={relatedItems}>
+  <Content />
+</GuideLayout>

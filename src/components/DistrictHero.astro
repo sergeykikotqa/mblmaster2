@@ -1,0 +1,84 @@
+---
+import type { ImageMetadata } from 'astro';
+import Image from '~/components/common/Image.astro';
+import { getBusinessInfo } from '~/config/business-info';
+
+export interface Props {
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  region?: string;
+  accent?: string;
+  image?: { src: string | ImageMetadata; alt?: string };
+}
+
+const { title = '', subtitle = '', description = '', region = '', accent = '', image } = Astro.props as Props;
+const businessInfo = getBusinessInfo();
+const phoneHref = `tel:${businessInfo.phoneHref}`;
+---
+
+<section
+  class="relative overflow-hidden py-14 sm:py-18 lg:py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white"
+>
+  <div class="absolute inset-0 pointer-events-none">
+    {
+      image?.src && (
+        <Image
+          src={image.src}
+          alt={image.alt || title || 'Проект в районе'}
+          class="w-full h-full object-cover opacity-25"
+          loading="eager"
+          widths={[640, 960, 1280, 1600]}
+          sizes="100vw"
+          width={1600}
+          height={939}
+          layout="responsive"
+        />
+      )
+    }
+    <div class="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/85"></div>
+  </div>
+
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6">
+    <div class="max-w-4xl">
+      {
+        region && (
+          <div class="inline-flex items-center bg-white/10 border border-white/20 px-4 py-2 rounded-full mb-4">
+            <span class="text-sm font-semibold">{region}</span>
+          </div>
+        )
+      }
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-4">{title}</h1>
+      {subtitle && <p class="text-lg sm:text-xl text-slate-100 mb-4">{subtitle}</p>}
+      {description && <p class="text-base text-slate-200 max-w-3xl mb-8">{description}</p>}
+
+      <div class="flex flex-wrap items-center gap-4">
+        <a
+          href="#contact"
+          data-cta-placement="hero"
+          data-cta="district_hero_primary"
+          data-cta-type="primary"
+          class="ui-btn-state inline-flex items-center justify-center px-7 py-4 rounded-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg"
+        >
+          Получить расчет проекта
+        </a>
+        <a
+          href={phoneHref}
+          data-cta-placement="hero"
+          data-cta="district_hero_phone"
+          data-cta-type="phone"
+          class="ui-btn-state inline-flex items-center rounded-sm text-white/95 hover:text-white underline underline-offset-4"
+        >
+          {businessInfo.phone}
+        </a>
+        {
+          accent && (
+            <span class="inline-flex items-center px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-300/40 text-emerald-100 text-sm font-semibold">
+              {accent}
+            </span>
+          )
+        }
+      </div>
+    </div>
+  </div>
+</section>

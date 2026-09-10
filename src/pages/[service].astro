@@ -1,0 +1,1626 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Breadcrumb from '~/components/Breadcrumb.astro';
+import Image from '~/components/common/Image.astro';
+import ProjectsGrid from '~/components/projects/ProjectsGrid.astro';
+import JsonLd from '~/components/seo/JsonLd.astro';
+import Advantages from '~/components/widgets/Advantages.astro';
+import Contact from '~/components/widgets/Contact.astro';
+import HeroModern from '~/components/widgets/HeroModern.astro';
+import MoneyPageReentryCta from '~/components/MoneyPageReentryCta.astro';
+import PageLayout from '~/layouts/PageLayout.astro';
+import { getBusinessInfo } from '~/config/business-info';
+import { getRelatedEntities } from '~/lib/entities/get-related-entities';
+import { getCities, getGeneratedPageBySlug, getGeneratedPages, getMoneyServices, getServiceById } from '~/lib/geo-data';
+import { getLocalCityBlocksForService } from '~/lib/local-city-blocks';
+import {
+  buildProjectCardData,
+  buildProjectCards,
+  resolveProjectSlug as resolveProjectSlugFromAdapter,
+} from '~/lib/projects/project-adapters';
+import { buildCityPath, buildServicePath, normalizePath, toAbsoluteUrl, toCanonical } from '~/lib/url-builder';
+import type { GeneratedGeoPage, LocalCityBlock } from '~/types/geo-seo';
+import { hashString, selectServiceAnchor, SERVICE_CONTEXT_ANCHORS } from '~/utils/anchor-strategy';
+
+type ServiceViewConfig = {
+  title: string;
+  subtitle: string;
+  heroBadge: string;
+  seoTitle: string;
+  seoDescription: string;
+  overview: string[];
+  checklist: string[];
+  advantages: Array<{ title: string; description: string }>;
+  priceTitle?: string;
+  priceIntro?: string;
+  priceEvidence?: string;
+  priceRanges?: Array<{ label: string; value: string }>;
+  priceNote?: string;
+  primaryCta: string;
+  secondaryCta: string;
+};
+
+type ProjectEntry = CollectionEntry<'projects'>;
+type PriceProofCaseCard = {
+  slug: string;
+  href: string;
+  label: string;
+  title: string;
+  priceLabel: string;
+  meta: string;
+  locationLabel: string;
+  summary: string;
+  note?: string;
+};
+
+const SERVICE_VIEW: Record<string, ServiceViewConfig> = {
+  'kuhni-na-zakaz': {
+    title: 'Кухни на заказ в Иркутске, Ангарске и Шелехове',
+    subtitle: 'Замер, 3D‑проект, производство и монтаж под ключ по Иркутску, Ангарску и Шелехову.',
+    heroBadge: 'Кухни от производителя',
+    seoTitle: 'Кухни на заказ в Иркутске — замер, 3D‑проект, монтаж',
+    seoDescription:
+      'Проектируем кухни под размеры и бюджет: бесплатный замер, 3D‑проект до старта, производство и монтаж. Работаем в Иркутске, Ангарске и Шелехове.',
+    primaryCta: 'Рассчитать стоимость кухни',
+    secondaryCta: 'Смотреть примеры кухонь',
+    overview: [
+      'Берем на себя весь цикл: замеряем помещение, готовим проект, согласовываем материалы и фурнитуру, изготавливаем кухню и монтируем ее под ключ.',
+      'На странице собраны ориентиры по бюджету, реальные кейсы, отзывы клиентов и условия работы по Иркутску, Ангарску и Шелехову, чтобы вы заранее понимали сроки и состав проекта.',
+    ],
+    checklist: [
+      'Замерный сценарий под технику, розетки и вентиляцию',
+      '3D-проект с рабочей компоновкой до запуска',
+      'Смета по фасадам, фурнитуре и столешнице без скрытых строк',
+      'План сроков производства и монтажа по этапам',
+    ],
+    advantages: [
+      {
+        title: 'Проект под коммуникации',
+        description: 'Готовим 3D‑проект до старта с учетом розеток, вентиляции и техники.',
+      },
+      {
+        title: 'Прозрачная смета',
+        description: 'Смета с перечнем материалов и фурнитуры, фиксируем цену в договоре.',
+      },
+      {
+        title: 'Сроки по договору',
+        description: 'Согласуем график этапов и держим производство и монтаж в прописанные даты.',
+      },
+      {
+        title: 'Контроль на монтаже',
+        description: 'Сдаем по чек‑листу: геометрия фасадов, зазоры, доводчики, финальная сборка.',
+      },
+    ],
+    priceTitle: 'Сколько стоит кухня в Иркутске?',
+    priceIntro: 'Ориентиры по бюджету для типовых планировок.',
+    priceEvidence: 'На основе реальных проектов в Иркутске за 2024–2025.',
+    priceRanges: [
+      { label: 'Кухня 5–7 м²', value: 'от 180–260 тыс. ₽' },
+      { label: 'Кухня 8–10 м²', value: 'от 260–380 тыс. ₽' },
+      { label: 'Кухня с островом', value: 'от 400 тыс. ₽' },
+    ],
+    priceNote: 'Точный расчет зависит от планировки и материалов — покажем на примерах ниже.',
+  },
+  'shkafy-kupe': {
+    title: 'Шкафы-купе на заказ в Иркутске, Ангарске и Шелехове',
+    subtitle: 'Проект, подбор наполнения и монтаж шкафов‑купе под размеры помещения.',
+    heroBadge: 'Шкафы-купе по размерам',
+    seoTitle: 'Шкафы-купе на заказ в Иркутске — проект и монтаж',
+    seoDescription:
+      'Шкафы-купе под размеры ниши и сценарии хранения: проект, подбор наполнения и монтаж. Работаем в Иркутске, Ангарске и Шелехове.',
+    primaryCta: 'Рассчитать стоимость шкафа‑купе',
+    secondaryCta: 'Смотреть примеры шкафов',
+    overview: [
+      'Шкаф-купе должен точно вставать в помещение и работать без перекосов, поэтому начинаем с точного замера, подбора наполнения и расчета полезного объема.',
+      'Ниже собраны примеры работ, отзывы клиентов, ориентиры по стоимости и сроки запуска по каждому городу обслуживания. Это помогает понять, какой формат подойдет именно для вашей квартиры или дома.',
+    ],
+    checklist: [
+      'Точный замер ниши с учетом геометрии стен и пола',
+      'Схема внутреннего наполнения под ваш сценарий хранения',
+      'Смета по профилю, дверям и наполнению до запуска',
+      'План монтажа и финальной регулировки без лишних выездов',
+    ],
+    advantages: [
+      {
+        title: 'Максимум полезного объема',
+        description: 'Считаем полезный объем и высоту до потолка, чтобы не терять место.',
+      },
+      {
+        title: 'Надежные механизмы',
+        description: 'Подбираем профиль и фурнитуру под ежедневную нагрузку, проверяем плавность хода.',
+      },
+      {
+        title: 'Сценарии хранения',
+        description: 'Разводим секции под сезонные и повседневные вещи, чтобы все было на месте.',
+      },
+      {
+        title: 'Аккуратный монтаж',
+        description: 'Регулируем двери на месте и проверяем геометрию без перекосов.',
+      },
+    ],
+    priceTitle: 'Сколько стоит шкаф-купе в Иркутске?',
+    priceIntro: 'Показываем ориентиры по бюджету для стандартных ниш.',
+    priceEvidence: 'На основе реальных проектов в Иркутске за 2024–2025.',
+    priceRanges: [
+      { label: 'Шкаф-купе 2–2.5 м', value: 'от 90–140 тыс. ₽' },
+      { label: 'Шкаф-купе 3–3.5 м', value: 'от 140–220 тыс. ₽' },
+      { label: 'Угловой шкаф', value: 'от 220 тыс. ₽' },
+    ],
+    priceNote: 'Точный расчет зависит от планировки и материалов — покажем на примерах ниже.',
+  },
+  garderobnye: {
+    title: 'Гардеробные на заказ в Иркутске, Ангарске и Шелехове',
+    subtitle: 'Проектируем гардеробные под объем вещей, размеры помещения и сценарии хранения.',
+    heroBadge: 'Гардеробные под ключ',
+    seoTitle: 'Гардеробные на заказ в Иркутске — проект и монтаж',
+    seoDescription:
+      'Гардеробные под ваш объем вещей: планировка секций, материалы и монтаж. Работаем в Иркутске, Ангарске и Шелехове.',
+    primaryCta: 'Рассчитать стоимость гардеробной',
+    secondaryCta: 'Смотреть примеры гардеробных',
+    overview: [
+      'Сначала разбираем, что именно нужно хранить: одежду, обувь, бытовые вещи, сезонные позиции. После этого проектируем секции, проходы и наполнение под ваш режим использования.',
+      'На странице собраны ориентиры по стоимости, реальные примеры, отзывы клиентов и условия работы по Иркутску, Ангарску и Шелехову, чтобы вы могли оценить проект до выезда на замер.',
+    ],
+    checklist: [
+      'План секций под объем вещей и сценарий использования',
+      'Расчет стоимости с понятным составом проекта',
+      'Подбор материалов и наполнения под согласованный бюджет',
+      'Сроки монтажа и приемки, понятные до старта работ',
+    ],
+    advantages: [
+      {
+        title: 'Хранение по зонам',
+        description: 'Разделяем секции под одежду, обувь, бытовые вещи и сезонные позиции.',
+      },
+      {
+        title: 'Полезная эргономика',
+        description: 'Проходы и высоты полок рассчитываем под реальный режим использования.',
+      },
+      {
+        title: 'Гибкая конфигурация',
+        description: 'Комбинируем полки, штанги и ящики под объем вещей и привычки семьи.',
+      },
+      {
+        title: 'Единая команда',
+        description: 'Один менеджер ведет проект от замера до монтажа без передачи этапов.',
+      },
+    ],
+    priceTitle: 'Сколько стоит гардеробная в Иркутске?',
+    priceIntro: 'Диапазоны для базовых конфигураций гардеробных.',
+    priceEvidence: 'На основе реальных проектов в Иркутске за 2024–2025.',
+    priceRanges: [
+      { label: 'Гардеробная 2–3 м²', value: 'от 140–200 тыс. ₽' },
+      { label: 'Гардеробная 4–5 м²', value: 'от 220–320 тыс. ₽' },
+      { label: 'Гардеробная с подсветкой', value: 'от 320 тыс. ₽' },
+    ],
+    priceNote: 'Точный расчет зависит от планировки и материалов — покажем на примерах ниже.',
+  },
+};
+
+const SERVICE_ANCHOR_KEY: Record<string, string> = {
+  'kuhni-na-zakaz': 'kuhni',
+  'shkafy-kupe': 'shkafy',
+  garderobnye: 'garderobnye',
+};
+
+const FINAL_PROOF_ITEMS: Record<string, string[]> = {
+  'kuhni-na-zakaz': [
+    'Размеры кухни или фото помещения с нескольких ракурсов',
+    'Список техники, которую нужно встроить',
+    'Пожелания по бюджету, фасадам и столешнице',
+  ],
+  'shkafy-kupe': [
+    'Размеры ниши или фото помещения',
+    'Сценарий хранения: одежда, обувь, бытовые вещи',
+    'Пожелания по фасадам, зеркалам и наполнению',
+  ],
+  garderobnye: [
+    'Размер помещения, ниши или хотя бы примерный план',
+    'Что именно нужно хранить: одежду, обувь, чемоданы, бытовые вещи',
+    'Нужны ли закрытые секции, ящики, подсветка и зеркало',
+  ],
+};
+
+const FINAL_PROOF_TITLES: Record<string, string> = {
+  'kuhni-na-zakaz': 'Что подготовить для расчета кухни',
+  'shkafy-kupe': 'Что подготовить для расчета шкафа-купе',
+  garderobnye: 'Что подготовить для расчета гардеробной',
+};
+
+function normalizeToken(value: unknown): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^\/+|\/+$/g, '');
+}
+
+function formatPrice(value: number, currency: string): string {
+  const locale = 'ru-RU';
+  const normalizedCurrency = currency === 'RUB' ? 'RUB' : currency;
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: normalizedCurrency,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatDaysGenitive(value: number): string {
+  const normalized = Math.abs(Math.trunc(value));
+  return normalized === 1 ? 'дня' : 'дней';
+}
+
+const resolveProjectSlug = (project: ProjectEntry): string => resolveProjectSlugFromAdapter(project);
+
+function formatAreaValue(area: number | undefined): string {
+  return typeof area === 'number' && Number.isFinite(area) ? `${area} м²` : '';
+}
+
+function buildAdministrativeArea(name: string) {
+  return {
+    '@type': 'AdministrativeArea',
+    name,
+  };
+}
+
+function formatLayoutLabel(layoutToken: string | undefined): string {
+  if (layoutToken === 'straight') return 'прямая планировка';
+  if (layoutToken === 'corner') return 'угловая планировка';
+  if (layoutToken === 'u-shape') return 'П-образная планировка';
+  return '';
+}
+
+function buildPriceProofCaseCards(entries: ProjectEntry[]): PriceProofCaseCard[] {
+  const candidates = entries
+    .map((entry) => {
+      const card = buildProjectCardData(entry);
+      return {
+        entry,
+        card,
+        slug: resolveProjectSlugFromAdapter(entry),
+        publishedAt: Number(new Date(entry.data.publishDate || 0)),
+      };
+    })
+    .filter((record) => Number.isFinite(record.card.priceValue))
+    .sort((a, b) => {
+      const byPrice = Number(a.card.priceValue) - Number(b.card.priceValue);
+      if (byPrice !== 0) return byPrice;
+      const byArea = Number(a.card.areaValue || 0) - Number(b.card.areaValue || 0);
+      if (byArea !== 0) return byArea;
+      return b.publishedAt - a.publishedAt;
+    });
+
+  if (candidates.length < 3) return [];
+
+  const lowest = candidates[0];
+  const highest = candidates.length > 1 ? candidates[candidates.length - 1] : candidates[0];
+  const medianPrice = candidates[Math.floor(candidates.length / 2)]?.card.priceValue ?? lowest.card.priceValue ?? 0;
+  const middlePool = candidates.filter((record) => record.slug !== lowest.slug && record.slug !== highest.slug);
+  const middle =
+    middlePool.slice().sort((a, b) => {
+      const aLayoutPriority = a.card.layoutToken === 'straight' || a.card.layoutToken === 'corner' ? 0 : 1;
+      const bLayoutPriority = b.card.layoutToken === 'straight' || b.card.layoutToken === 'corner' ? 0 : 1;
+      if (aLayoutPriority !== bLayoutPriority) return aLayoutPriority - bLayoutPriority;
+      const aDistance = Math.abs((a.card.priceValue ?? medianPrice) - medianPrice);
+      const bDistance = Math.abs((b.card.priceValue ?? medianPrice) - medianPrice);
+      if (aDistance !== bDistance) return aDistance - bDistance;
+      return b.publishedAt - a.publishedAt;
+    })[0] || null;
+
+  const selected = [lowest, middle, highest].filter(Boolean).filter((record, index, array) => {
+    return array.findIndex((item) => item?.slug === record?.slug) === index;
+  });
+
+  return selected.map((record, index) => {
+    const layoutLabel = formatLayoutLabel(record?.card.layoutToken);
+    const meta = [record?.card.areaLabel, layoutLabel].filter(Boolean).join(' • ');
+    const summary = String(record?.card.proofHighlight?.value || record?.card.description || '').trim();
+    const label =
+      index === 0
+        ? 'Стартовый сценарий'
+        : index === selected.length - 1
+          ? 'Более дорогой проект'
+          : 'Сбалансированный сценарий';
+
+    return {
+      slug: String(record?.slug || ''),
+      href: String(record?.card.href || ''),
+      label,
+      title: String(record?.card.title || ''),
+      priceLabel: String(record?.card.priceLabel || ''),
+      meta,
+      locationLabel: String(record?.card.locationLabel || ''),
+      summary,
+    };
+  });
+}
+
+function buildHybridPriceProofCaseCards(
+  entries: ProjectEntry[],
+  blocks: Array<LocalCityBlock & { cityModel: (typeof cities)[number] }>
+): PriceProofCaseCard[] {
+  const blockByCityId = new Map(blocks.map((block) => [normalizeToken(block.city), block]));
+  const candidates = entries
+    .map((entry) => {
+      const card = buildProjectCardData(entry);
+      const block = blockByCityId.get(normalizeToken(entry.data.city));
+      if (!block) return null;
+      return {
+        entry,
+        block,
+        card,
+        slug: resolveProjectSlugFromAdapter(entry),
+        publishedAt: Number(new Date(entry.data.publishDate || 0)),
+      };
+    })
+    .filter((record): record is NonNullable<typeof record> => Boolean(record));
+
+  if (candidates.length < 3) return [];
+
+  const exactCase =
+    candidates
+      .filter((record) => Number.isFinite(Number(record.entry?.data.price)))
+      .sort((a, b) => {
+        const byPublishedAt = Number(b.publishedAt || 0) - Number(a.publishedAt || 0);
+        if (byPublishedAt !== 0) return byPublishedAt;
+        return Number(a.card.priceValue || 0) - Number(b.card.priceValue || 0);
+      })[0] || null;
+
+  if (!exactCase) return [];
+
+  const rangeCases = candidates
+    .filter((record) => record.slug !== exactCase.slug)
+    .sort((a, b) => {
+      const byArea = Number(a.card.areaValue || 0) - Number(b.card.areaValue || 0);
+      if (byArea !== 0) return byArea;
+      return Number(b.publishedAt || 0) - Number(a.publishedAt || 0);
+    })
+    .slice(0, 2);
+
+  if (rangeCases.length < 2) return [];
+
+  const selected = [exactCase, ...rangeCases].sort((a, b) => {
+    const byArea = Number(a.card.areaValue || 0) - Number(b.card.areaValue || 0);
+    if (byArea !== 0) return byArea;
+    return Number(a.card.priceValue || 0) - Number(b.card.priceValue || 0);
+  });
+
+  return selected.map((record) => {
+    const layoutLabel = formatLayoutLabel(record.card.layoutToken);
+    const meta = [record.card.areaLabel, layoutLabel].filter(Boolean).join(' • ');
+    const summary = String(record.card.proofHighlight?.value || record.card.description || '').trim();
+    const isExactCase = record.slug === exactCase.slug;
+    const hasEstimatedPrice = Boolean(record.card.priceIsEstimated && record.card.priceValue);
+    const cityLabel = record.block.cityModel.name || '';
+
+    return {
+      slug: String(record.slug || ''),
+      href: String(record.card.href || ''),
+      label: isExactCase
+        ? 'Кейс с точной ценой'
+        : hasEstimatedPrice
+          ? 'Оценка по фото и аналогам'
+          : `${cityLabel} - рабочий диапазон`,
+      title: String(record.card.title || ''),
+      priceLabel: isExactCase
+        ? String(record.card.priceLabel || '')
+        : hasEstimatedPrice
+          ? String(record.card.priceLabel || '')
+          : `${formatPrice(record.block.priceRange.from || 0, record.block.priceRange.currency || 'RUB')} - ${formatPrice(record.block.priceRange.to || 0, record.block.priceRange.currency || 'RUB')}`,
+      meta,
+      locationLabel: String(record.card.locationLabel || ''),
+      summary,
+      note: isExactCase
+        ? 'Точная сумма указана по завершенному проекту.'
+        : hasEstimatedPrice
+          ? String(record.card.priceNote || '').trim() ||
+            'Оценка по фото и близким кейсам; точная смета зависит от наполнения и материалов.'
+          : `Диапазон подтвержден для ${record.block.cityModel.nameGenitive || cityLabel}; точная смета зависит от площади и наполнения.`,
+    };
+  });
+}
+
+export function getStaticPaths() {
+  return getGeneratedPages()
+    .filter((page) => page.pageType === 'service-money')
+    .map((page) => ({
+      params: {
+        service: normalizePath(page.pageSlug).split('/').filter(Boolean)[0],
+      },
+      props: {
+        page,
+      },
+    }));
+}
+
+const paramsService = Astro.params.service || '';
+const pageFromProps = (Astro.props as { page?: GeneratedGeoPage }).page;
+const page = pageFromProps || getGeneratedPageBySlug(normalizePath(`/${paramsService}`));
+
+if (!page || page.pageType !== 'service-money') {
+  throw new Error(`[factory-service-money] unknown route: service="${paramsService}"`);
+}
+
+const serviceToken = normalizeToken(normalizePath(page.pageSlug).slice(1));
+const service = getServiceById(page.serviceId);
+if (!service) {
+  throw new Error(`[factory-service-money] unresolved service for "${page.pageSlug}"`);
+}
+const currentServiceName = page.serviceName;
+
+const serviceConfig = SERVICE_VIEW[service.id] || SERVICE_VIEW['kuhni-na-zakaz'];
+const cities = getCities();
+const primaryCity = cities[0];
+const siteUrl = Astro.site ? new URL(Astro.site).toString().replace(/\/$/, '') : '';
+const companyName = (process.env.SITE_NAME || 'мбл мастер').trim();
+const businessInfo = getBusinessInfo(siteUrl);
+const canonicalPath = toCanonical(page.pageSlug, Astro.site);
+const canonicalUrl = toAbsoluteUrl(canonicalPath, Astro.site);
+const businessId = siteUrl ? `${siteUrl}/#business` : '#business';
+const serviceArea = cities.map((city) => buildAdministrativeArea(city.name));
+const serviceSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  name: primaryCity ? `${service.name} в ${primaryCity.nameIn || primaryCity.name}` : service.name,
+  serviceType: service.name,
+  areaServed: serviceArea,
+  provider:
+    businessId !== '#business'
+      ? { '@id': businessId }
+      : {
+          '@type': 'LocalBusiness',
+          name: companyName,
+          telephone: businessInfo.phone,
+          address: {
+            '@type': 'PostalAddress',
+            addressCountry: 'RU',
+            addressRegion: businessInfo.addressRegion,
+            addressLocality: businessInfo.addressLocality,
+            postalCode: businessInfo.postalCode,
+            streetAddress: businessInfo.streetAddress,
+          },
+        },
+  url: canonicalUrl,
+};
+const localBlocks = getLocalCityBlocksForService(service.id).map((block) => {
+  const city = cities.find((item) => item.id === block.city);
+  if (!city) {
+    throw new Error(`[factory-service-money] missing city model for block "${block.city}"`);
+  }
+  return { ...block, cityModel: city };
+});
+const cityNameById = new Map(cities.map((city) => [city.id, city.name]));
+const cityNameInByName = new Map(cities.map((city) => [city.name, city.nameIn || city.name]));
+const geoAnchorLinks = localBlocks.map((block) => ({
+  href: buildCityPath(block.cityModel.id),
+  label: `${block.cityModel.name} — ${service.name}`,
+}));
+const serviceAreas = cities.map((city) => buildAdministrativeArea(city.name));
+
+function buildGeoMentionText(block: LocalCityBlock & { cityModel: (typeof cities)[number] }): string {
+  const [primaryCase, secondaryCase] = block.cases;
+  const firstLocalSignal = primaryCase?.district || primaryCase?.location || block.cityModel.name;
+  const secondLocalSignal =
+    secondaryCase?.district || secondaryCase?.location || block.reviews[0]?.location || block.cityModel.name;
+
+  return `${currentServiceName} в ${block.cityModel.nameIn || block.cityModel.name} чаще всего заказывают для адресов и районов вроде ${firstLocalSignal} и ${secondLocalSignal}. По ${block.cityModel.nameGenitive || block.cityModel.name} держим выезд на замер за ${block.sla.measurementDays} дн., производство около ${block.sla.productionDays} дн. и монтаж за ${block.sla.installationDays} дн. В отзывах по ${block.cityModel.nameGenitive || block.cityModel.name} чаще отмечают понятную смету, аккуратный монтаж и отсутствие лишних выездов после сдачи.`;
+}
+
+const allProjects = (await getCollection('projects'))
+  .filter((entry) => {
+    if (entry.data.draft) return false;
+    const primaryService = normalizeToken(entry.data.service);
+    const relatedServices = (entry.data.relatedServices ?? []).map((value) => normalizeToken(value));
+    return primaryService === serviceToken || relatedServices.includes(serviceToken);
+  })
+  .sort((a, b) => {
+    const diff = Number(new Date(b.data.publishDate || 0)) - Number(new Date(a.data.publishDate || 0));
+    if (diff !== 0) return diff;
+    return resolveProjectSlugFromAdapter(a).localeCompare(resolveProjectSlugFromAdapter(b));
+  });
+const totalProjects = allProjects.length;
+const primaryServiceProjects = allProjects.filter((project) => normalizeToken(project.data.service) === serviceToken);
+const pricedPrimaryServiceProjects = primaryServiceProjects.filter((project) =>
+  Number.isFinite(Number(project.data.price))
+);
+const priceProofSourceProjects = pricedPrimaryServiceProjects.length >= 3 ? pricedPrimaryServiceProjects : [];
+const exactPriceProofCases = buildPriceProofCaseCards(priceProofSourceProjects);
+const hybridPriceProofCases =
+  service.id === 'garderobnye' &&
+  exactPriceProofCases.length === 0 &&
+  pricedPrimaryServiceProjects.length >= 1 &&
+  primaryServiceProjects.length >= 3
+    ? buildHybridPriceProofCaseCards(primaryServiceProjects, localBlocks)
+    : [];
+const priceProofCases = exactPriceProofCases.length > 0 ? exactPriceProofCases : hybridPriceProofCases;
+const hasHybridPriceProof = exactPriceProofCases.length === 0 && hybridPriceProofCases.length > 0;
+const priceProofCaseSlugs = new Set(priceProofCases.map((item) => item.slug));
+const featuredPrimaryServiceEntries = primaryServiceProjects
+  .filter((project) => !priceProofCaseSlugs.has(resolveProjectSlugFromAdapter(project)))
+  .slice(0, 6);
+const featuredFallbackEntries = allProjects
+  .filter((project) => !priceProofCaseSlugs.has(resolveProjectSlugFromAdapter(project)))
+  .slice(0, 6);
+const featuredProjectEntries =
+  featuredPrimaryServiceEntries.length > 0 ? featuredPrimaryServiceEntries : featuredFallbackEntries;
+const serviceForms = service.forms;
+const serviceContextLabel = serviceForms.genitive || service.name.toLowerCase();
+const minMeasurementDays = Math.min(...localBlocks.map((block) => block.sla.measurementDays));
+const minProductionDays = Math.min(...localBlocks.map((block) => block.sla.productionDays));
+const minInstallationDays = Math.min(...localBlocks.map((block) => block.sla.installationDays));
+const minPriceFrom = Math.min(...localBlocks.map((block) => block.priceRange.from));
+const priceCurrency = localBlocks[0]?.priceRange.currency || 'RUB';
+const totalReviewCount = localBlocks.reduce((sum, block) => sum + block.reviews.length, 0);
+const averageReviewRatingRaw =
+  totalReviewCount > 0
+    ? localBlocks.reduce((sum, block) => sum + block.reviews.reduce((inner, review) => inner + Number(review.rating), 0), 0) /
+      totalReviewCount
+    : 0;
+const averageReviewRating = averageReviewRatingRaw > 0 ? averageReviewRatingRaw.toFixed(1).replace('.0', '') : '';
+const totalLocalCases = localBlocks.reduce((sum, block) => sum + block.cases.length, 0);
+const priceProofSummary =
+  priceProofCases.length > 0
+    ? hasHybridPriceProof
+      ? `${priceProofCases.length} кейса на странице: один с точной суммой и еще два с подтвержденным диапазоном по городу.`
+      : `${priceProofCases.length} кейса на странице с привязкой к реальным итоговым бюджетам.`
+    : `${localBlocks.length} городских диапазона по бюджету с привязкой к текущим условиям по городам.`;
+const factItems = [
+  totalProjects > 0
+    ? `В портфолио ${totalProjects} реализованных проектов по теме ${serviceForms.genitive}, из них ${totalLocalCases} кейсов используются в городских блоках на этой странице.`
+    : 'На странице используются реальные кейсы и городские ориентиры по услуге.',
+  `География и SLA: ${cities.map((city) => city.name).join(', ')}; замер от ${minMeasurementDays} ${formatDaysGenitive(minMeasurementDays)}, производство от ${minProductionDays} ${formatDaysGenitive(minProductionDays)}, монтаж от ${minInstallationDays} ${formatDaysGenitive(minInstallationDays)}.`,
+  `Бюджет: старт от ${formatPrice(minPriceFrom, priceCurrency)}. ${priceProofSummary}`,
+  totalReviewCount > 0
+    ? `Социальное доказательство: ${totalReviewCount} локальных отзывов, средний рейтинг ${averageReviewRating}/5.`
+    : 'Социальное доказательство: на странице показаны отзывы клиентов по городам обслуживания.',
+];
+
+const allArticles = await getCollection('articles');
+const relatedEntities = getRelatedEntities({
+  type: 'service',
+  slug: page.pageSlug,
+  projects: allProjects,
+  articles: allArticles,
+  limits: { projects: 0, articles: 2, services: 0 },
+});
+const relatedArticles = relatedEntities.articles;
+const resolveArticleSlug = (value: string) => value.replace(/\.mdx?$/, '');
+
+const baseProjects = buildProjectCards(featuredProjectEntries);
+const featuredProjectsAreMixed = featuredProjectEntries.some(
+  (project) => normalizeToken(project.data.service) !== serviceToken
+);
+const factsSectionTitle = 'Что можно проверить до заявки';
+const processSectionTitle = `Что согласуем до запуска ${serviceForms.genitive}`;
+const projectsSectionTitle = featuredProjectsAreMixed
+  ? `Наши работы по теме ${serviceForms.genitive}`
+  : `Наши работы: ${service.name}`;
+const relatedArticlesSectionTitle = `Полезные материалы о ${serviceForms.prepositional}`;
+const contactSectionTitle = `Оставить заявку на ${serviceForms.accusative}`;
+const serviceAnchorKey = SERVICE_ANCHOR_KEY[service.id] || service.id;
+const finalProofItems = FINAL_PROOF_ITEMS[service.id] || [
+  'Точный расчет под ваш проект',
+  'Несколько вариантов решений и материалов',
+  'Понимание бюджета до заказа',
+];
+const finalProofTitle = FINAL_PROOF_TITLES[service.id] || 'Рассчитаем проект под ваши размеры за 1 день';
+const usedServiceAnchors = new Set<string>();
+const contextTemplatesByType = {
+  exact: ['Пример: {anchor}', 'Кейс — {anchor}'],
+  partial: ['Пример: {anchor}', 'Кейс — {anchor}', 'Проект по теме: {anchor}'],
+  natural: ['Проект по теме: {anchor}', 'Кейс — {anchor}'],
+  generic: ['Подборка: {anchor}', 'Смотреть: {anchor}'],
+} as const;
+const featuredProjects = baseProjects.map((project, index) => {
+  const cityIn = cityNameInByName.get(project.cityLabel) || project.cityLabel;
+  const anchorResult = selectServiceAnchor({
+    serviceKey: serviceAnchorKey,
+    seed: hashString(`${service.id}:${project.slug}:${index}`),
+    city: { name: project.cityLabel, in: cityIn },
+    usedAnchors: usedServiceAnchors,
+    allowedTypes: ['exact', 'partial', 'natural', 'generic'],
+    anchorSet: SERVICE_CONTEXT_ANCHORS[serviceAnchorKey],
+  });
+  if (anchorResult) {
+    usedServiceAnchors.add(anchorResult.text);
+  }
+  const contextTemplatePool = anchorResult
+    ? contextTemplatesByType[anchorResult.type] || contextTemplatesByType.partial
+    : contextTemplatesByType.partial;
+  const contextLabel = anchorResult
+    ? contextTemplatePool[index % contextTemplatePool.length].replace('{anchor}', anchorResult.text)
+    : `Пример ${serviceContextLabel} в ${cityIn}`;
+  return { ...project, contextLabel };
+});
+const projectPathBySlug = new Map(
+  allProjects.map((project) => {
+    const slug = resolveProjectSlug(project);
+    return [normalizeToken(slug), `/projects/${slug}`];
+  })
+);
+
+const metadata = {
+  title: serviceConfig.seoTitle,
+  description: serviceConfig.seoDescription,
+  canonical: canonicalPath,
+};
+
+const heroTrustItems = (() => {
+  if (service.id === 'kuhni-na-zakaz') {
+    return [
+      'Замер с учетом техники, розеток и вентиляции',
+      `В портфолио ${totalProjects} реализованных проектов по теме кухни`,
+      'Смета и сроки фиксируются в договоре до запуска',
+    ];
+  }
+  if (service.id === 'shkafy-kupe') {
+    return [
+      'Замеряем нишу с учетом геометрии стен и пола',
+      'Наполнение проектируем под ваш сценарий хранения',
+      'Монтаж и регулировка без перекосов и люфтов',
+    ];
+  }
+  if (service.id === 'garderobnye') {
+    return [
+      'Планируем секции под реальный объем вещей',
+      'Материалы и наполнение согласовываем до запуска',
+      'Монтаж с проверкой эргономики и доступа к зонам',
+    ];
+  }
+  return [
+    `Замер от ${minMeasurementDays} ${formatDaysGenitive(minMeasurementDays)}`,
+    `Производство от ${minProductionDays} ${formatDaysGenitive(minProductionDays)}`,
+    `Монтаж от ${minInstallationDays} ${formatDaysGenitive(minInstallationDays)}`,
+  ];
+})();
+const heroProjectLabelByService: Record<string, string> = {
+  'kuhni-na-zakaz': 'реализованных проектов по теме кухни',
+  'shkafy-kupe': 'реализованных проектов по шкафам-купе',
+  garderobnye: 'реализованных проектов по гардеробным',
+};
+const heroMobileProofLabelByService: Record<string, string> = {
+  'kuhni-na-zakaz': 'кейсов по кухням',
+  'shkafy-kupe': 'кейсов по шкафам',
+  garderobnye: 'кейсов по гардеробным',
+};
+const heroStats = (() => {
+  return [
+    {
+      value: `${totalProjects}`,
+      label: heroProjectLabelByService[service.id] || 'реализованных проектов по теме услуги',
+    },
+    totalReviewCount > 0
+      ? { value: `${averageReviewRating}/5`, label: `${totalReviewCount} локальных отзывов` }
+      : { value: `${cities.length}`, label: 'города обслуживания' },
+    { value: `от ${formatPrice(minPriceFrom, priceCurrency)}`, label: 'старт бюджета по реальным кейсам' },
+  ];
+})();
+const serviceAdvantages = [...serviceConfig.advantages];
+const heroPrimaryCtaText = 'Рассчитать стоимость';
+const heroSecondaryCtaText = 'Смотреть примеры';
+const heroActions = [
+  { text: heroPrimaryCtaText, href: '#contact', variant: 'primary' },
+  {
+    text: heroSecondaryCtaText,
+    href: featuredProjects.length > 0 ? '#service-projects' : '#local-city-blocks',
+    variant: 'secondary',
+  },
+];
+const heroMobileProof = `${totalProjects} ${heroMobileProofLabelByService[service.id] || 'кейсов по услуге'} • от ${formatPrice(minPriceFrom, priceCurrency)}`;
+const priceSectionIntro =
+  priceProofCases.length > 0
+    ? hasHybridPriceProof
+      ? 'Ниже показываем один кейс с точной ценой и еще два реальных проекта с подтвержденными диапазонами по городам.'
+      : 'Ниже показываем не абстрактные диапазоны, а реальные проекты из текущего портфолио.'
+    : serviceConfig.priceIntro;
+const priceSectionEvidence =
+  priceProofCases.length > 0
+    ? hasHybridPriceProof
+      ? 'Точная сумма указана только там, где она есть в карточке проекта. Для остальных кейсов показываем подтвержденный диапазон по соответствующему городу.'
+      : 'Каждый ориентир привязан к существующему кейсу и его итоговой стоимости.'
+    : serviceConfig.priceEvidence;
+const priceSectionNote =
+  priceProofCases.length > 0
+    ? hasHybridPriceProof
+      ? 'Для кейсов без точной цены не подставляем оценку проекта. Вместо этого показываем рабочий диапазон по городу и ведем на реальную страницу кейса.'
+      : 'Точный расчет зависит от размеров, планировки, наполнения, материалов и техники. Остальные проекты из портфолио показываем ниже без повторения этих кейсов.'
+    : serviceConfig.priceNote;
+const projectsSectionDescription =
+  priceProofCases.length > 0
+    ? 'Ниже — профильные кейсы из портфолио. Кейсы, которые уже использовали для ценовых ориентиров выше, здесь не повторяем.'
+    : featuredProjectsAreMixed
+      ? 'Ниже — профильные кейсы и смежные системы хранения, которые помогают оценить подход, материалы и сценарии наполнения.'
+      : 'Показываем выполненные проекты, которые усиливают основную коммерческую страницу через реальные результаты.';
+const midCtaTitle = `Подготовим расчет ${serviceForms.genitive} под ваш бюджет`;
+const midCtaSubtitle = 'Без длинного созвона: достаточно фото, примерных размеров и короткого описания задачи.';
+const localBusinessOfferCatalog = {
+  '@type': 'OfferCatalog',
+  name: 'Основные услуги на заказ в Иркутске, Ангарске и Шелехове',
+  itemListElement: getMoneyServices().map((moneyService) => ({
+    '@type': 'Service',
+    name: moneyService.name,
+    serviceType: moneyService.name,
+    url: toAbsoluteUrl(buildServicePath(moneyService.id), Astro.site),
+    areaServed: serviceAreas,
+  })),
+};
+
+const faqSchema =
+  Array.isArray(page.faq) && page.faq.length > 0
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: page.faq.map((item) => ({
+          '@type': 'Question',
+          name: item.q,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: item.a,
+          },
+        })),
+      }
+    : null;
+
+const leadContext = {
+  city: 'irkutsk',
+  service: service.id,
+  pageType: 'service-money',
+  pageSlug: page.pageSlug,
+};
+---
+
+<PageLayout metadata={metadata} localBusinessOfferCatalog={localBusinessOfferCatalog} pageType="service-money">
+  <JsonLd schema={serviceSchema} />
+  <Breadcrumb items={[{ label: service.name, href: canonicalPath }]} />
+
+  <HeroModern
+    title={serviceConfig.title}
+    subtitle={serviceConfig.subtitle}
+    actions={heroActions}
+    primaryCtaId="service_hero_primary"
+    secondaryCtaIds={['service_hero_secondary']}
+    mobileProof={heroMobileProof}
+    badge={serviceConfig.heroBadge}
+    trustItems={heroTrustItems}
+    stats={heroStats}
+    slides={[
+      {
+        src: '/images/figma/hero-main.png',
+        alt: serviceConfig.title,
+        title: serviceConfig.title,
+        subtitle: serviceConfig.subtitle,
+        kicker: 'Иркутск, Ангарск, Шелехов',
+      },
+    ]}
+  />
+
+  <section class="section section-inner cv-auto facts-block">
+    <div class="money-head ds-section-head left">
+      <div class="money-pill ds-pill">ОПОРНЫЕ ДАННЫЕ</div>
+      <h2>{factsSectionTitle}</h2>
+    </div>
+    <ul class="facts-list">
+      {factItems.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  {
+    service.id === 'kuhni-na-zakaz' && (
+      <section class="section section-inner cv-auto">
+        <div class="money-head ds-section-head left">
+          <div class="money-pill ds-pill">ЭКСПЕРТНЫЙ ПОДХОД</div>
+          <h2>Почему выбираем именно такую конфигурацию кухни</h2>
+        </div>
+        <ul class="facts-list">
+          <li>Сначала фиксируем рабочий треугольник, потом подбираем фасады и комплектацию.</li>
+          <li>Если есть газ и вентканал, трассы и отступы проектируем до выбора корпуса.</li>
+          <li>При ограниченном бюджете сохраняем эргономику и фурнитуру, а материал оптимизируем последним шагом.</li>
+        </ul>
+      </section>
+    )
+  }
+
+  {
+    serviceConfig.priceRanges && serviceConfig.priceRanges.length > 0 && (
+      <section id="service-price" class="section section-inner cv-auto price-block">
+        <div class="money-head ds-section-head left">
+          <div class="money-pill ds-pill">ОРИЕНТИР ПО БЮДЖЕТУ</div>
+          <h2>{serviceConfig.priceTitle || `Сколько стоит ${serviceForms.nominative}?`}</h2>
+          {priceSectionIntro && <p>{priceSectionIntro}</p>}
+          {priceSectionEvidence && <p class="price-evidence">{priceSectionEvidence}</p>}
+        </div>
+        {priceProofCases.length > 0 ? (
+          <div class="price-grid price-grid--case">
+            {priceProofCases.map((item) => (
+              <article class="price-card price-card--case ds-card">
+                <p class="price-card-kicker">{item.label}</p>
+                <strong>{item.title}</strong>
+                {item.meta && <p class="price-card-meta">{item.meta}</p>}
+                {item.locationLabel && <p class="price-card-location">{item.locationLabel}</p>}
+                {item.summary && <p class="price-card-summary">{item.summary}</p>}
+                <div class="price-card-value">{item.priceLabel}</div>
+                {item.note && <p class="price-card-note">{item.note}</p>}
+                <a href={item.href} class="price-card-link" data-anchor-spam="ignore">
+                  Смотреть кейс
+                </a>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div class="price-grid">
+            {serviceConfig.priceRanges.map((item) => (
+              <div class="price-card ds-card">
+                <strong>{item.label}</strong>
+                <span class="price-card-value">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {priceSectionNote && <p class="price-note">{priceSectionNote}</p>}
+        {featuredProjects.length > 0 && (
+          <a class="price-next" href="#service-projects">
+            {priceProofCases.length > 0
+              ? `↓ Еще проекты по теме ${serviceForms.genitive} без повторения кейсов`
+              : '↓ Примеры реализованных проектов с ценами'}
+          </a>
+        )}
+      </section>
+    )
+  }
+
+  <MoneyPageReentryCta title={midCtaTitle} subtitle={midCtaSubtitle} />
+
+  <section class="section section-inner cv-auto">
+    <div class="money-head ds-section-head left">
+      <div class="money-pill ds-pill">ЧТО ВХОДИТ В ПРОЕКТ</div>
+      <h2>{service.name}: от замера до монтажа</h2>
+    </div>
+    <div class="money-intro" data-main-copy>
+      {serviceConfig.overview.map((paragraph) => <p>{paragraph}</p>)}
+    </div>
+  </section>
+
+  <section class="section section-inner geo-anchor-block cv-auto" data-support-links>
+    <div class="money-head ds-section-head left">
+      <div class="money-pill ds-pill">ГОРОДА ОБСЛУЖИВАНИЯ</div>
+      <h2>Работаем в городах</h2>
+      <p>
+        Если удобнее ориентироваться по городу, используйте быстрые переходы. На каждой странице услуг сохраняем единый
+        стандарт замера, производства и монтажа.
+      </p>
+    </div>
+    <ul class="geo-anchor-list">
+      {
+        geoAnchorLinks.map((item) => (
+          <li>
+            <a href={item.href} class="geo-anchor-link">
+              {item.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="section section-inner cv-auto">
+    <div class="money-head ds-section-head left">
+      <div class="money-pill ds-pill">ДО ЗАПУСКА ПРОЕКТА</div>
+      <h2>{processSectionTitle}</h2>
+      <p>До договора фиксируем состав проекта, материалы, бюджет и сроки, чтобы запуск шел без пересборки сметы.</p>
+    </div>
+    <ul class="money-checklist" aria-label="Что включено">
+      {serviceConfig.checklist.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <div class="cv-auto">
+    <Advantages items={serviceAdvantages} />
+  </div>
+
+  <section id="local-city-blocks" class="section section-inner cv-auto-xl">
+    <div class="money-head ds-section-head left">
+      <div class="money-pill ds-pill">УСЛОВИЯ ПО ГОРОДАМ</div>
+      <h2>Иркутск, Ангарск, Шелехов</h2>
+      <p>
+        Для каждого города показываем реальные кейсы, отзывы клиентов, ориентиры по бюджету и сроки выполнения работ.
+      </p>
+    </div>
+
+    <div class="city-blocks-grid">
+      {
+        localBlocks.map((block) => (
+          <article class="city-block ds-card" data-local-city-block={block.city}>
+            <header class="city-block-head">
+              <div>
+                <p class="city-block-kicker">{block.cityModel.name}</p>
+                <h3>
+                  {service.name} в {block.cityModel.nameIn || block.cityModel.name}
+                </h3>
+              </div>
+              <a href="#contact" class="city-block-cta ui-btn-state">
+                Получить расчет
+              </a>
+            </header>
+
+            <p class="city-block-description">{block.offer.description}</p>
+            <p class="city-block-geo-mention" data-geo-mention-layer>
+              {buildGeoMentionText(block)}
+            </p>
+
+            <dl class="city-block-stats">
+              <div>
+                <dt>Бюджет</dt>
+                <dd>
+                  {formatPrice(block.priceRange.from, block.priceRange.currency)} -{` `}
+                  {formatPrice(block.priceRange.to, block.priceRange.currency)}
+                </dd>
+              </div>
+              <div>
+                <dt>SLA</dt>
+                <dd>
+                  Замер {block.sla.measurementDays} дн. / Производство {block.sla.productionDays} дн. / Монтаж{' '}
+                  {block.sla.installationDays} дн.
+                </dd>
+              </div>
+            </dl>
+
+            <p class="city-block-note">
+              {block.priceRange.note} {block.sla.note}
+            </p>
+
+            <div class="city-block-subsection">
+              <h4>Кейсы по городу</h4>
+              <ul class="city-case-list">
+                {block.cases.map((item) => {
+                  const projectHref = item.projectSlug ? projectPathBySlug.get(normalizeToken(item.projectSlug)) : '';
+                  const caseCityName = cityNameById.get(item.city) || item.city;
+                  return (
+                    <li class="city-case-item">
+                      <div class="city-case-media">
+                        <Image
+                          class="city-case-preview"
+                          src={item.image}
+                          alt={item.alt}
+                          width={960}
+                          height={720}
+                          layout="responsive"
+                        />
+                        <div class="city-case-gallery" aria-label={`Фото проекта: ${item.title}`}>
+                          {item.photos.map((photo, photoIndex) => (
+                            <Image
+                              src={photo}
+                              alt={`${item.alt}, фото ${photoIndex + 1}`}
+                              width={480}
+                              height={360}
+                              layout="responsive"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div class="city-case-meta">
+                        <span>{caseCityName}</span>
+                        {item.district && <span>{item.district}</span>}
+                        <span>{item.year} г.</span>
+                        {typeof item.area === 'number' && <span>{formatAreaValue(item.area)}</span>}
+                      </div>
+                      <strong>{item.title}</strong>
+                      <span class="city-case-location">{item.location}</span>
+                      <p>{item.summary}</p>
+                      {projectHref && (
+                        <a href={projectHref} class="city-case-link" data-anchor-spam="ignore">
+                          Смотреть кейс
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            <div class="city-block-subsection">
+              <h4>Отзывы клиентов</h4>
+              <ul class="city-review-list">
+                {block.reviews.map((review) => (
+                  <li class="city-review-item">
+                    <p>{review.text}</p>
+                    <div>
+                      <strong>{review.author}</strong>
+                      <span>{review.location}</span>
+                      <small>Рейтинг: {review.rating}/5</small>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div class="city-block-offer">
+              <strong>{block.offer.title}</strong>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  {
+    featuredProjects.length > 0 && (
+      <section id="service-projects" class="section section-inner cv-auto" data-service-projects={serviceToken}>
+        <div class="money-head ds-section-head left">
+          <div class="money-pill ds-pill">РЕАЛЬНЫЕ ПРОЕКТЫ</div>
+          <h2>{projectsSectionTitle}</h2>
+          <p>{projectsSectionDescription}</p>
+        </div>
+        <ProjectsGrid projects={featuredProjects} />
+      </section>
+    )
+  }
+
+  {
+    relatedArticles.length > 0 && (
+      <section class="section section-inner cv-auto">
+        <div class="money-head ds-section-head left">
+          <div class="money-pill ds-pill">СТАТЬИ ПО ТЕМЕ</div>
+          <h2>{relatedArticlesSectionTitle}</h2>
+          <p>Подобрали статьи, которые усиливают выбор и помогают сравнить решения.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {relatedArticles.map((article) => {
+            const articleSlug = resolveArticleSlug(article.id);
+            const linkTitle = String(article.data.mainKeyword || article.data.title || '').trim();
+            return (
+              <a href={`/articles/${articleSlug}`} class="ui-btn-state ds-card ds-card-interactive p-6">
+                <h3 class="font-semibold text-lg mb-2">{linkTitle || article.data.title}</h3>
+                <p class="text-[#665f5a] text-sm mb-4">{article.data.description}</p>
+                <span class="text-[#7f5438] hover:underline">Читать статью →</span>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    )
+  }
+
+  <section class="section section-inner cv-auto">
+    <div class="money-head ds-section-head left">
+      <div class="money-pill ds-pill">FAQ</div>
+      <h2>Частые вопросы</h2>
+    </div>
+    <div class="money-faq-list">
+      {
+        page.faq.map((item) => (
+          <details class="money-faq ds-faq">
+            <summary>{item.q}</summary>
+            <p>{item.a}</p>
+          </details>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section section-inner cv-auto final-proof">
+    <div class="money-head ds-section-head left">
+      <div class="money-pill ds-pill">ПЕРЕД ЗАЯВКОЙ</div>
+      <h2>{finalProofTitle}</h2>
+      <p>Если точных размеров нет, достаточно фото, примерных размеров и короткого описания задачи.</p>
+    </div>
+    <ul class="final-proof-list">
+      {finalProofItems.map((item) => <li>{item}</li>)}
+    </ul>
+    <p class="final-proof-note">Сначала даем ориентир и уточняющие вопросы, а не уводим в длинный созвон.</p>
+  </section>
+
+  <div class="cv-auto">
+    <Contact
+      id="contact"
+      title={contactSectionTitle}
+      subtitle="Опишите задачу, и мы подготовим расчет с учетом города, сроков и комплектации."
+      tagline="Форма расчета"
+      inputs={[
+        { type: 'text', name: 'name', label: 'Имя', required: true },
+        { type: 'tel', name: 'phone', label: 'Телефон', required: true },
+        { type: 'textarea', name: 'message', label: 'Комментарий по проекту', required: false },
+      ]}
+      leadContext={leadContext}
+    />
+  </div>
+
+  {faqSchema && <JsonLd schema={faqSchema} />}
+</PageLayout>
+
+<style is:inline>
+  .money-intro {
+    display: grid;
+    gap: var(--text-gap);
+    max-width: var(--content);
+  }
+
+  .money-intro p {
+    margin: 0;
+    color: #5d544d;
+    line-height: 1.65;
+  }
+
+  .facts-list {
+    margin: 0.9rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.55rem;
+    max-width: var(--content);
+  }
+
+  .facts-list li {
+    border-radius: 0.75rem;
+    border: 1px solid #eaded4;
+    background: #fff;
+    padding: 0.7rem 0.85rem;
+    color: #4b4039;
+    line-height: 1.6;
+  }
+
+  .geo-anchor-list {
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .geo-anchor-link {
+    display: flex;
+    min-height: 100%;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1rem;
+    border: 1px solid #e4d4c7;
+    background: linear-gradient(180deg, #fdf8f3 0%, #f7eee5 100%);
+    color: #7f5438;
+    font-weight: 700;
+    line-height: 1.5;
+    padding: 1rem;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .geo-anchor-link:hover {
+    border-color: #cfb39f;
+  }
+
+  .money-checklist {
+    margin: 0.95rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .money-checklist li {
+    border-radius: 999px;
+    border: 1px solid #e6d8cd;
+    background: #faf6f2;
+    color: #5f534b;
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .price-block {
+    border: 1px solid #eaded4;
+    border-radius: 1rem;
+    background: #fcfaf8;
+  }
+
+  .price-grid {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .price-card {
+    padding: 0.85rem;
+    border-radius: 0.9rem;
+    background: linear-gradient(180deg, #fdf8f3 0%, #f7eee5 100%);
+    border: 1px solid #eaded4;
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .price-card strong {
+    color: #3b2f28;
+    font-size: 0.92rem;
+  }
+
+  .price-card-value {
+    color: #7f5438;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .price-grid--case {
+    align-items: stretch;
+  }
+
+  .price-card--case {
+    align-content: start;
+    gap: 0.55rem;
+  }
+
+  .price-card-kicker,
+  .price-card-meta,
+  .price-card-location,
+  .price-card-summary,
+  .price-card-note {
+    margin: 0;
+  }
+
+  .price-card-kicker {
+    color: #8b6b55;
+    font-size: 0.73rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .price-card-meta,
+  .price-card-location {
+    color: #7a6c61;
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+
+  .price-card-summary {
+    color: #564b44;
+    line-height: 1.6;
+  }
+
+  .price-card-note {
+    color: #7a6c61;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .price-card-link {
+    display: inline-flex;
+    align-items: center;
+    margin-top: auto;
+    color: #7f5438;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .price-card-link:hover {
+    text-decoration: underline;
+  }
+
+  .price-evidence {
+    margin: 0.55rem 0 0;
+    color: #7a6c61;
+    font-size: 0.86rem;
+  }
+
+  .price-note {
+    margin: 0.9rem 0 0;
+    color: #5d544d;
+    line-height: 1.6;
+  }
+
+  .price-next {
+    margin-top: 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    color: #7f5438;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .price-next:hover {
+    text-decoration: underline;
+  }
+
+  .city-blocks-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .city-block {
+    padding: 1.1rem;
+  }
+
+  .city-block-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.8rem;
+  }
+
+  .city-block-kicker {
+    margin: 0;
+    color: #7f5438;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .city-block-head h3 {
+    margin: 0.3rem 0 0;
+    color: #1b1714;
+    font-size: 1.25rem;
+  }
+
+  .city-block-cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    padding: 0 0.85rem;
+    border-radius: 999px;
+    border: 1px solid #dcc8b8;
+    color: #8c5d3d;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .city-block-description,
+  .city-block-note,
+  .city-block-offer p {
+    margin: 0.8rem 0 0;
+    color: #5c544d;
+    line-height: 1.65;
+  }
+
+  .city-block-geo-mention {
+    margin: 0.8rem 0 0;
+    border-left: 3px solid #d2b39a;
+    padding-left: 0.85rem;
+    color: #5d534b;
+    line-height: 1.7;
+  }
+
+  .city-block-stats {
+    margin: 0.95rem 0 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+  }
+
+  .city-block-stats div {
+    border: 1px solid #eaded4;
+    border-radius: 0.9rem;
+    background: #faf7f4;
+    padding: 0.8rem;
+  }
+
+  .city-block-stats dt {
+    color: #8b6b55;
+    font-size: 0.73rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .city-block-stats dd {
+    margin: 0.3rem 0 0;
+    color: #29231f;
+    line-height: 1.5;
+  }
+
+  .city-block-subsection {
+    margin-top: 1rem;
+  }
+
+  .city-block-subsection h4 {
+    margin: 0 0 0.55rem;
+    color: #201a16;
+    font-size: 1rem;
+  }
+
+  .city-case-list,
+  .city-review-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  .city-case-item,
+  .city-review-item {
+    border: 1px solid #ebe2db;
+    border-radius: 0.85rem;
+    background: #fcfaf8;
+    padding: 0.8rem;
+  }
+
+  .city-case-media {
+    display: grid;
+    gap: 0.55rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .city-case-preview,
+  .city-case-gallery img {
+    width: 100%;
+    border-radius: 0.8rem;
+    object-fit: cover;
+  }
+
+  .city-case-preview {
+    aspect-ratio: 16 / 10;
+    border: 1px solid #ecdfd5;
+  }
+
+  .city-case-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .city-case-gallery img {
+    aspect-ratio: 4 / 3;
+    border: 1px solid #ecdfd5;
+  }
+
+  .city-case-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .city-case-meta span {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: #f4ebe2;
+    color: #7f6554;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.22rem 0.55rem;
+  }
+
+  .city-case-item strong,
+  .city-review-item strong {
+    display: block;
+    color: #201b17;
+  }
+
+  .city-case-location,
+  .city-review-item span,
+  .city-review-item small {
+    display: block;
+    margin-top: 0.2rem;
+    color: #7a6c61;
+  }
+
+  .city-case-item p,
+  .city-review-item p {
+    margin: 0.45rem 0 0;
+    color: #5d5550;
+    line-height: 1.6;
+  }
+
+  .city-case-link {
+    display: inline-flex;
+    margin-top: 0.5rem;
+    color: #7f5438;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .city-case-link:hover {
+    text-decoration: underline;
+  }
+
+  .city-block-offer {
+    margin-top: 1rem;
+    border-radius: 0.9rem;
+    background: linear-gradient(180deg, #f9f3ed 0%, #f4ebe2 100%);
+    padding: 0.9rem;
+  }
+
+  .city-block-offer strong {
+    color: #201b17;
+  }
+
+  .money-faq-list {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .final-proof {
+    border: 1px solid #eaded4;
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #fff 0%, #fbf6f2 100%);
+    padding: 1rem;
+  }
+
+  .final-proof-list {
+    margin: 0.9rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.5rem;
+    max-width: var(--content);
+  }
+
+  .final-proof-list li {
+    border-radius: 0.75rem;
+    border: 1px solid #eaded4;
+    background: #fff;
+    padding: 0.6rem 0.75rem;
+    color: #4b4039;
+    font-weight: 600;
+  }
+
+  .final-proof-note {
+    margin: 0.75rem 0 0;
+    color: #6d625b;
+  }
+
+  @media (min-width: 1024px) {
+    .city-blocks-grid {
+      gap: 1.2rem;
+    }
+
+    .city-block {
+      padding: 1.3rem;
+    }
+
+    .city-case-list,
+    .city-review-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+    }
+
+    .city-case-item,
+    .city-review-item {
+      height: 100%;
+      box-shadow: 0 16px 30px rgba(25, 18, 13, 0.08);
+    }
+
+    .city-case-media {
+      gap: 0.65rem;
+    }
+
+    .city-case-preview {
+      border-radius: 0.9rem;
+    }
+
+    .city-case-gallery img {
+      border-radius: 0.75rem;
+    }
+  }
+
+  @media (max-width: 960px) {
+    .geo-anchor-list,
+    .money-checklist,
+    .city-block-stats,
+    .price-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .city-block-head {
+      flex-direction: column;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .geo-anchor-list,
+    .money-checklist,
+    .city-block-stats,
+    .price-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .city-block {
+      padding: 0.9rem;
+    }
+
+    .city-case-gallery {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

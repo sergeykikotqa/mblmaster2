@@ -1,0 +1,24 @@
+---
+import CaseFaq from '~/components/case-blocks/CaseFaq.astro';
+import type { ProjectBlockProps } from './types';
+
+const { block, viewModel } = Astro.props as ProjectBlockProps;
+const { data, faq } = viewModel;
+
+const items =
+  Array.isArray((block as { items?: typeof faq.items }).items) && (block as { items?: typeof faq.items }).items?.length
+    ? (block as { items?: typeof faq.items }).items
+    : faq.items;
+const resolvedItems = Array.isArray(items) ? items : [];
+
+const shouldRender = resolvedItems.length > 0;
+---
+
+{
+  shouldRender && (
+    <section id="faq" class="section project-section project-faq">
+      <p class="project-section-kicker">Вопросы</p>
+      <CaseFaq city={data.city} service={data.service} items={resolvedItems} />
+    </section>
+  )
+}

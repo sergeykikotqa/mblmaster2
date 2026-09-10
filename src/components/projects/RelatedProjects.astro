@@ -1,0 +1,32 @@
+---
+import ProjectsGrid from '~/components/projects/ProjectsGrid.astro';
+import type { ProjectCardData } from '~/types/project';
+import '~/styles/components/related-projects.css';
+
+interface Props {
+  relatedProjects: ProjectCardData[];
+  title?: string;
+  showAllLink?: boolean;
+}
+
+const { relatedProjects, title = 'Похожие проекты', showAllLink = true } = Astro.props as Props;
+---
+
+{
+  relatedProjects.length > 0 && (
+    <section class="project-related">
+      <div class="project-related-head">
+        <p class="project-section-kicker">{title}</p>
+        <div class="project-related-title">
+          <h2>{title}</h2>
+          {showAllLink && (
+            <a href="/projects" class="project-related-link">
+              Все кейсы →
+            </a>
+          )}
+        </div>
+      </div>
+      <ProjectsGrid projects={relatedProjects} />
+    </section>
+  )
+}

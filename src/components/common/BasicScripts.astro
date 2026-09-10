@@ -1,0 +1,13 @@
+---
+import { UI } from 'astrowind:config';
+
+const defaultTheme = UI.theme || 'system';
+---
+
+<script
+  type="module"
+  src="/scripts/basic-scripts.js"
+  data-basic-scripts
+  data-default-theme={defaultTheme}
+></script>
+<script type="module" src="/scripts/mbl-motion.js"></script>

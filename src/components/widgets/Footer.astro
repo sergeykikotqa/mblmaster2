@@ -1,0 +1,107 @@
+---
+import { Icon } from 'astro-icon/components';
+import { getHomePermalink } from '~/utils/permalinks';
+import { getBusinessInfo } from '~/config/business-info';
+
+interface Link {
+  text?: string;
+  href?: string;
+  ariaLabel?: string;
+  icon?: string;
+  iconClass?: string;
+  target?: string;
+  rel?: string;
+}
+
+interface LinksSection {
+  title?: string;
+  links: Array<Link>;
+}
+
+export interface Props {
+  links: Array<LinksSection>;
+  secondaryLinks: Array<Link>;
+  socialLinks: Array<Link>;
+  footNote?: string;
+  theme?: string;
+}
+
+const { secondaryLinks = [], links = [] } = Astro.props as Props;
+const companyName = process.env.COMPANY_NAME || 'мбл мастер';
+const businessInfo = getBusinessInfo();
+---
+
+<footer class="mbl-site-footer not-prose" aria-label="Подвал сайта">
+  <div class="mbl-container mbl-footer-inner">
+    <div class="mbl-footer-top">
+      <div class="mbl-footer-brand">
+        <a class="mbl-footer-logo ui-btn-state" href={getHomePermalink()} aria-label="Перейти на главную">
+          <span class="mbl-footer-mark" aria-hidden="true">МБЛ</span>
+          <span class="mbl-footer-name">{companyName}</span>
+        </a>
+        <p class="mbl-footer-lead">Мебель, которая остаётся частью пространства надолго.</p>
+      </div>
+
+      <div class="mbl-footer-contact">
+        <p class="mbl-kicker">Начать проект</p>
+        <a
+          class="mbl-footer-phone ui-btn-state"
+          href={'tel:' + businessInfo.phoneHref}
+          data-cta-placement="footer"
+          data-cta="footer_phone"
+          data-cta-type="phone"
+        >
+          {businessInfo.phone}
+        </a>
+        <p>{businessInfo.fullAddress}</p>
+        <p>{businessInfo.openingHoursText}</p>
+        <a class="mbl-footer-link ui-btn-state" href={'mailto:' + businessInfo.email}>{businessInfo.email}</a>
+      </div>
+    </div>
+
+    <div class="mbl-footer-grid">
+      {
+        links.map((section) => (
+          <section aria-label={section.title}>
+            {section.title && <h2 class="mbl-footer-heading">{section.title}</h2>}
+            <ul class="mbl-footer-links">
+              {section.links.map((link) => (
+                <li>
+                  <a
+                    href={link.href || '#'}
+                    aria-label={link.ariaLabel || link.text}
+                    target={link.target}
+                    rel={link.rel}
+                    class="mbl-footer-link ui-btn-state"
+                  >
+                    {link.icon && <Icon name={link.icon} class="h-4 w-4" aria-hidden="true" />}
+                    <span>{link.text || ''}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </div>
+
+    <div class="mbl-footer-bottom">
+      <nav class="mbl-footer-legal" aria-label="Юридическая информация">
+        {
+          secondaryLinks.map((link) => (
+            <a
+              href={link.href || '#'}
+              aria-label={link.ariaLabel}
+              target={link.target}
+              rel={link.rel}
+              class="ui-btn-state"
+            >
+              {link.text || ''}
+            </a>
+          ))
+        }
+      </nav>
+      <p>© {new Date().getFullYear()} {companyName}. Все права защищены.</p>
+    </div>
+  </div>
+</footer>

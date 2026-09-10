@@ -1,0 +1,85 @@
+---
+import { type CollectionEntry } from 'astro:content';
+import PageLayout from '~/layouts/PageLayout.astro';
+import Breadcrumb from '~/components/Breadcrumb.astro';
+import ContactForm from '~/components/ContactForm.astro';
+import JsonLd from '~/components/seo/JsonLd.astro';
+
+interface Props {
+  faqPage: CollectionEntry<'faq'>;
+}
+
+const { faqPage } = Astro.props;
+const { data } = faqPage;
+
+const slug = faqPage.id.replace(/\.mdx?$/, '');
+
+const metadata = {
+  title: data.title,
+  description: data.description,
+};
+
+const faqSchema =
+  Array.isArray(data.questions) && data.questions.length > 0
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: data.questions.map((qa) => ({
+          '@type': 'Question',
+          name: qa.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: qa.answer,
+          },
+        })),
+      }
+    : null;
+
+
+const breadcrumbItems = [
+  { label: 'FAQ', href: '/faq' },
+  { label: data.title, href: `/faq/${slug}` },
+];
+---
+
+<PageLayout metadata={metadata}>
+  {faqSchema && <JsonLd schema={faqSchema} />}
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+    <header class="ds-section-head left mb-12">
+      <div class="ds-pill">FAQ</div>
+      <h1 class="text-4xl font-bold mb-4">{data.title}</h1>
+      <p class="text-xl text-[#665f5a]">{data.description}</p>
+    </header>
+
+    <!-- FAQ Accordion -->
+    {
+      data.questions && data.questions.length > 0 && (
+        <div class="space-y-4 mb-12">
+          {data.questions.map((qa) => (
+            <details class="ds-faq">
+              <summary>{qa.question}</summary>
+              <div class="mt-4 text-[#665f5a] leading-relaxed">
+                <p>{qa.answer}</p>
+                {qa.category && (
+                  <p class="text-sm text-[#7a6f68] mt-3">
+                    Категория: <span class="font-semibold">{qa.category}</span>
+                  </p>
+                )}
+              </div>
+            </details>
+          ))}
+        </div>
+      )
+    }
+
+    <!-- Still have questions? -->
+    <section class="my-12 ds-card-soft p-8">
+      <h2 class="text-2xl font-bold mb-4">Не нашли ответ?</h2>
+      <p class="text-[#665f5a] mb-6">Оставьте заявку и наш специалист свяжется с вами в течение 10 минут</p>
+      <ContactForm />
+    </section>
+  </div>
+
+</PageLayout>

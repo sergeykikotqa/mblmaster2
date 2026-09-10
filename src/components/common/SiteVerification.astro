@@ -1,0 +1,7 @@
+---
+import { SITE } from 'astrowind:config';
+const yandexVerificationId = String(import.meta.env.PUBLIC_YANDEX_VERIFICATION || '').trim();
+---
+
+{SITE.googleSiteVerificationId && <meta name="google-site-verification" content={SITE.googleSiteVerificationId} />}
+{yandexVerificationId && <meta name="yandex-verification" content={yandexVerificationId} />}

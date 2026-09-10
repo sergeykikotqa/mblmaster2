@@ -1,0 +1,42 @@
+---
+import Image from '~/components/common/Image.astro';
+import { resolveProjectImage } from '~/lib/projects/project-adapters';
+import type { ProjectBlockProps } from './types';
+
+const { block, viewModel, typeIndex = 0 } = Astro.props as ProjectBlockProps;
+const { slug, gallery } = viewModel;
+const imageBaseDir = viewModel.project.imageBaseDir;
+
+const anchor = String((block as { anchor?: string }).anchor || '').trim() || `split-${typeIndex + 1}`;
+const baseLayout =
+  (block as { layout?: 'imageLeft' | 'imageRight' }).layout || (typeIndex % 2 === 0 ? 'imageRight' : 'imageLeft');
+const layout = anchor === 'solution' ? 'imageRight' : baseLayout;
+const imageSrc = (block as { image?: string }).image
+  ? resolveProjectImage(slug, (block as { image?: string }).image, imageBaseDir)
+  : '';
+const imageAlt = (block as { imageAlt?: string }).imageAlt || gallery.alt;
+const kicker = String((block as { tocLabel?: string }).tocLabel || '').trim();
+const title = (block as { title?: string }).title;
+const text = (block as { text?: string }).text;
+---
+
+<section id={anchor} class={`section project-section project-split ${layout === 'imageLeft' ? 'project-split--reverse' : ''}`}>
+  {kicker && <p class="project-section-kicker">{kicker}</p>}
+  <div class="project-split-text split-text prose">
+    {title && <h2>{title}</h2>}
+    {text && <p>{text}</p>}
+  </div>
+  {imageSrc && (
+    <div class="project-split-media split-image">
+      <Image
+        src={imageSrc}
+        alt={imageAlt}
+        width={1200}
+        height={900}
+        layout="cover"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  )}
+</section>

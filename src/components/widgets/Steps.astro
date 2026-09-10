@@ -1,0 +1,105 @@
+---
+import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
+import Image from '~/components/common/Image.astro';
+import type { Steps as Props } from '~/types';
+
+const {
+  items = [
+    { title: '1. Звонок или заявка', description: 'Вы позвоните нам или оставите заявку на сайте' },
+    { title: '2. Согласование времени', description: 'Мы согласуем удобное время для выезда замерщика' },
+    { title: '3. Бесплатный замер', description: 'Наш специалист приедет и снимет точные размеры' },
+    { title: '4. Расчет стоимости', description: 'Мы рассчитаем смету и предложим цену' },
+    { title: '5. Создание проекта', description: 'Разработаем проект дизайна по вашим пожеланиям' },
+    { title: '6. Производство и монтаж', description: 'Изготовим и установим мебель под ключ' },
+  ],
+  image,
+  isReversed = false,
+
+  id,
+  isDark = false,
+  classes = {},
+} = Astro.props;
+
+const hasImageSlot = Astro.slots.has('image');
+const hasBgSlot = Astro.slots.has('bg');
+
+const imageAttributes = typeof image === 'object' && image ? (image as unknown as Record<string, unknown>) : null;
+const imageSrc = typeof image === 'string' ? image : (imageAttributes?.src as string | undefined);
+const imageAlt =
+  (imageAttributes?.alt as string | undefined) ||
+  'Процесс работы';
+---
+
+<WidgetWrapper id={id} isDark={isDark} containerClass={`max-w-7xl ${classes?.container ?? ''}`}>
+  {hasBgSlot && (
+    <Fragment slot="bg">
+      <slot name="bg" />
+    </Fragment>
+  )}
+  <div class="text-center mb-12 sm:mb-16">
+    <div class="inline-flex items-center bg-blue-100 px-4 py-2 rounded-full mb-4">
+      <span class="text-sm font-semibold text-blue-600">ПРОЦЕСС РАБОТЫ</span>
+    </div>
+    <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Как мы работаем</h2>
+    <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+      Простой и понятный процесс от первого контакта до доставки и монтажа
+    </p>
+  </div>
+
+  <div
+    class:list={['grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start', { 'lg:grid-flow-dense': isReversed }]}
+  >
+    <!-- Steps Column -->
+    <div class:list={[{ 'lg:order-2': isReversed }]}>
+      <div class="space-y-4 sm:space-y-5">
+        {
+          items.map((item, index) => (
+            <div class="group relative">
+              <div class="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-blue-400/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div class="relative flex gap-4 sm:gap-6 p-4 sm:p-6 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors duration-300">
+                <div class="flex-shrink-0">
+                  <div class="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 text-white font-bold text-lg">
+                    {index + 1}
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-lg font-semibold text-slate-900 mb-2">{item.title}</h3>
+                  {item.description && <p class="text-slate-600 text-sm leading-relaxed">{item.description}</p>}
+                </div>
+
+                {index < items.length - 1 && (
+                  <div class="absolute -bottom-5 left-5 sm:left-7 w-0.5 h-5 bg-gradient-to-b from-blue-200 to-transparent hidden sm:block" />
+                )}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- Image Column -->
+    {
+      (image || hasImageSlot) && (
+        <div class="relative lg:order-1">
+          <div class="relative group rounded-2xl overflow-hidden">
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-blue-400 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-300" />
+            {hasImageSlot ? (
+              <slot name="image" />
+            ) : (
+              <Image
+                class="relative w-full h-auto rounded-2xl shadow-2xl object-cover"
+                widths={[400, 600]}
+                sizes="(max-width: 1024px) 100vw, 600px"
+                width={600}
+                height={600}
+                src={imageSrc}
+                alt={imageAlt}
+                {...(imageAttributes ?? {})}
+              />
+            )}
+          </div>
+        </div>
+      )
+    }
+  </div>
+</WidgetWrapper>

@@ -1,0 +1,54 @@
+---
+import Image from '~/components/common/Image.astro';
+import { resolveProjectImage } from '~/lib/projects/project-adapters';
+import type { ProjectBlockProps } from './types';
+
+const { block, viewModel, typeIndex = 0 } = Astro.props as ProjectBlockProps;
+const { slug } = viewModel;
+const imageBaseDir = viewModel.project.imageBaseDir;
+
+const anchor = String((block as { anchor?: string }).anchor || '').trim() || `quote-${typeIndex + 1}`;
+const author = String((block as { author?: string }).author || '').trim();
+const role = String((block as { role?: string }).role || '').trim();
+const imageSrc = (block as { image?: string }).image
+  ? resolveProjectImage(slug, (block as { image?: string }).image, imageBaseDir)
+  : '';
+const authorInitial = author ? author.slice(0, 1).toUpperCase() : '★';
+const text = (block as { text?: string }).text;
+---
+
+<section id={anchor} class="section project-section project-quote">
+  <p class="project-section-kicker">Отзыв клиента</p>
+  <div class="project-quote-card">
+    <div class="project-quote-rating">
+      <span class="project-quote-stars" aria-hidden="true">★★★★★</span>
+    </div>
+    <blockquote class="quote">
+      <p>{text}</p>
+    </blockquote>
+    {(author || role || imageSrc) && (
+      <div class="project-quote-footer quote-author">
+        {imageSrc ? (
+          <div class="project-quote-avatar">
+            <Image
+              src={imageSrc}
+              alt={author || 'Фото клиента'}
+              width={120}
+              height={120}
+              layout="cover"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        ) : (
+          <div class="project-quote-avatar project-quote-avatar--fallback">{authorInitial}</div>
+        )}
+        <div>
+          {author && <strong>{author}</strong>}
+          {role && <span>{role}</span>}
+        </div>
+        <span class="project-quote-verified">Подтвержденный отзыв</span>
+      </div>
+    )}
+  </div>
+</section>

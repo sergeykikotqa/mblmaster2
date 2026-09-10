@@ -1,0 +1,219 @@
+---
+import Image from '~/components/common/Image.astro';
+import { Icon } from 'astro-icon/components';
+import { getPublicImageMetadata } from '~/utils/public-image-metadata';
+
+type QuickSpec = { label: string; value: string };
+type HeroTag = { text: string; tone?: 'accent' | 'neutral' | 'success' };
+type HeroStat = { label: string; value: string };
+type BreadcrumbItem = { label: string; href?: string };
+
+type Props = {
+  heading: string;
+  description: string;
+  microGeoText: string;
+  cityLabel: string;
+  cityInCase?: string;
+  heroImage?: string;
+  heroAlt: string;
+  quickSpecs: QuickSpec[];
+  service: string;
+  hasGallery: boolean;
+  microFacts?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  ctaAttrs?: Record<string, string | number | boolean>;
+  heroTags?: HeroTag[];
+  heroStats?: HeroStat[];
+  breadcrumbs?: BreadcrumbItem[];
+  rating?: { value: string; label: string };
+};
+
+const {
+  heading,
+  description,
+  microGeoText,
+  cityLabel,
+  cityInCase,
+  heroImage,
+  heroAlt,
+  quickSpecs,
+  service,
+  hasGallery,
+  microFacts = '',
+  ctaLabel = 'Рассчитать проект',
+  ctaHref = '',
+  ctaAttrs = {},
+  heroTags = [],
+  heroStats = [],
+  breadcrumbs = [],
+  rating,
+} = Astro.props as Props;
+
+const resolvedBreadcrumbs = [{ label: 'Главная', href: '/' }, ...breadcrumbs];
+const resolvedHeroTags = heroTags.length > 0 ? heroTags : cityLabel ? [{ text: cityLabel }] : [];
+const accentTarget = String(cityInCase || '').trim();
+const accentIndex = accentTarget ? heading.indexOf(accentTarget) : -1;
+const headingStart = accentIndex >= 0 ? heading.slice(0, accentIndex) : heading;
+const headingEnd = accentIndex >= 0 ? heading.slice(accentIndex + accentTarget.length) : '';
+const resolvedCtaHref = ctaHref || `/${service}#contact`;
+const isStaticHeroImage = heroImage?.startsWith('/hero/');
+const staticHeroMetadata = isStaticHeroImage ? await getPublicImageMetadata(heroImage) : null;
+
+const trustItems = [
+  { icon: 'tabler:briefcase', label: '10+ лет на рынке Иркутска' },
+  { icon: 'tabler:stars', label: '300+ реализованных проектов' },
+  { icon: 'tabler:shield-check', label: 'Гарантия 2 года' },
+];
+---
+
+<header class="project-hero">
+  <div class="project-hero__media">
+    {
+      heroImage && (
+        isStaticHeroImage ? (
+          <img
+            src={heroImage}
+            alt={heroAlt}
+            width={staticHeroMetadata?.width}
+            height={staticHeroMetadata?.height}
+            sizes="100vw"
+            loading="eager"
+            decoding="sync"
+            fetchpriority="high"
+          />
+        ) : (
+          <Image
+            src={heroImage}
+            alt={heroAlt}
+            width={1000}
+            height={625}
+            layout="cover"
+            loading="eager"
+            decoding="sync"
+            fetchpriority="high"
+            sizes="(min-width: 1200px) 1000px, (min-width: 900px) 900px, 100vw"
+            widths={[360, 720, 900, 1000]}
+            quality={50}
+          />
+        )
+      )
+    }
+  </div>
+  <div class="project-hero__content">
+    <div class="project-hero__content-inner">
+      {
+        resolvedBreadcrumbs.length > 0 && (
+          <nav class="project-hero-breadcrumbs" aria-label="Breadcrumb">
+            <ol>
+              {resolvedBreadcrumbs.map((item, index) => (
+                <li>
+                  {index === resolvedBreadcrumbs.length - 1 || !item.href ? (
+                    <span aria-current={index === resolvedBreadcrumbs.length - 1 ? 'page' : undefined}>
+                      {item.label}
+                    </span>
+                  ) : (
+                    <a href={item.href}>{item.label}</a>
+                  )}
+                  {index < resolvedBreadcrumbs.length - 1 && <span class="project-hero-breadcrumbs-sep">›</span>}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )
+      }
+      {
+        resolvedHeroTags.length > 0 && (
+          <div class="project-hero-tags">
+            {resolvedHeroTags.map((tag) => (
+              <span class={`project-hero-tag${tag.tone ? ` is-${tag.tone}` : ''}`}>{tag.text}</span>
+            ))}
+          </div>
+        )
+      }
+      <h1>
+        {accentIndex >= 0 ? (
+          <>
+            {headingStart}
+            <span class="project-hero-accent">{accentTarget}</span>
+            {headingEnd}
+          </>
+        ) : (
+          heading
+        )}
+      </h1>
+      {microFacts && <p class="project-hero-facts">{microFacts}</p>}
+      <p class="project-description">{description}</p>
+      <p class="project-micro-geo">{microGeoText}</p>
+
+      {
+        quickSpecs.length > 0 && (
+          <dl class="project-quick-specs">
+            {quickSpecs.map((item) => (
+              <div>
+                <dt>{item.label}</dt>
+                <dd>{item.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )
+      }
+
+      <div class="project-hero-actions">
+        {
+          rating && (
+            <div class="project-hero-rating">
+              <span class="project-hero-stars" aria-hidden="true">
+                ★★★★★
+              </span>
+              <strong>{rating.value}</strong>
+              <span>{rating.label}</span>
+            </div>
+          )
+        }
+        <a
+          href={resolvedCtaHref}
+          class="ui-btn-state ds-action-primary"
+          data-cta="project_hero_calc"
+          data-cta-type="primary"
+          data-cta-placement="hero"
+          {...ctaAttrs}
+        >
+          {ctaLabel}
+        </a>
+        {
+          hasGallery && (
+            <a href="#gallery" class="project-hero-gallery-link">
+              Смотреть фото
+            </a>
+          )
+        }
+      </div>
+    </div>
+    {
+      heroStats.length > 0 && (
+        <div class="project-hero-stats">
+          {heroStats.map((item) => (
+            <div class="project-hero-stat">
+              <strong>{item.value}</strong>
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </div>
+      )
+    }
+  </div>
+</header>
+
+<section class="project-trust">
+  <ul>
+    {trustItems.map((item) => (
+      <li>
+        <span class="project-trust-icon">
+          <Icon name={item.icon} class="icon" />
+        </span>
+        <span>{item.label}</span>
+      </li>
+    ))}
+  </ul>
+</section>

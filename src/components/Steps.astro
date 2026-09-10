@@ -1,0 +1,13 @@
+---
+import StepsWidget from '~/components/widgets/Steps.astro';
+
+const { title = 'Этапы работы', steps = [] } = Astro.props;
+const items = Array.isArray(steps)
+  ? steps.map((step) => ({ title: step?.title ?? '', description: step?.desc ?? '' }))
+  : [];
+---
+
+<section class="max-w-7xl mx-auto px-4 py-14">
+  <h2 class="text-3xl font-bold text-slate-900 mb-8 text-center">{title}</h2>
+  <StepsWidget items={items.length ? items : undefined} />
+</section>

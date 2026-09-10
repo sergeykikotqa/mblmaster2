@@ -1,0 +1,25 @@
+.project-related {
+  margin-top: 0;
+}
+
+.project-related-head {
+  margin-bottom: 0.85rem;
+}
+
+.project-related-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.project-related-link {
+  color: #7f5438;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.project-related-link:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,26 @@
+---
+import PageLayout from '~/layouts/PageLayout.astro';
+
+const metadata = {
+  title: 'Страница не найдена',
+  description: 'Запрошенная страница не найдена. Перейдите в основные разделы сайта.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+---
+
+<PageLayout metadata={metadata}>
+  <section class="max-w-3xl mx-auto px-4 py-16 sm:py-20">
+    <div class="ds-card-soft p-8 sm:p-10">
+      <div class="ds-pill">Ошибка 404</div>
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Страница не найдена</h1>
+      <p class="text-lg text-[#665f5a] mb-6">Возможно, ссылка устарела или URL введен с ошибкой.</p>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <a href="/" class="ds-action-primary">На главную</a>
+        <a href="/contacts" class="ds-action-secondary">Связаться с нами</a>
+      </div>
+    </div>
+  </section>
+</PageLayout>

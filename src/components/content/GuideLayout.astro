@@ -1,0 +1,238 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import PageLayout from '~/layouts/PageLayout.astro';
+import Breadcrumb from '~/components/Breadcrumb.astro';
+import ContactForm from '~/components/ContactForm.astro';
+import Image from '~/components/common/Image.astro';
+import JsonLd from '~/components/seo/JsonLd.astro';
+import { toAbsoluteUrl } from '~/lib/url-builder';
+
+interface Props {
+  guide: CollectionEntry<'guides'>;
+  relatedItems?: { title: string; description: string; href: string; type: 'guide' | 'article' }[];
+}
+
+const { guide, relatedItems = [] } = Astro.props;
+const { data } = guide;
+
+const slug = guide.id.replace(/\.mdx?$/, '');
+const readingTime = data.readingTime || Math.ceil((data.title.length + (data.excerpt?.length || 0)) / 200);
+
+const pubDate = new Date(data.publishDate).toLocaleDateString('ru-RU', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const metadata = {
+  title: data.title,
+  description: data.description,
+  image: data.image,
+};
+
+const siteUrl = Astro.site ? new URL(Astro.site).toString().replace(/\/$/, '') : '';
+const resolvedImage = data.image ? (siteUrl ? new URL(data.image, siteUrl).toString() : data.image) : undefined;
+const howToSchema =
+  Array.isArray(data.steps) && data.steps.length > 0
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'HowTo',
+        name: data.title,
+        description: data.description,
+        image: resolvedImage ? [resolvedImage] : undefined,
+        step: data.steps.map((step, index) => ({
+          '@type': 'HowToStep',
+          position: index + 1,
+          name: step.title,
+          text: step.description,
+          image: step.image ? toAbsoluteUrl(step.image, Astro.site) : undefined,
+        })),
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': Astro.url.href,
+        },
+      }
+    : null;
+
+
+const breadcrumbItems = [
+  { label: 'Гайды', href: '/guides' },
+  { label: data.title, href: `/guides/${slug}` },
+];
+---
+
+<PageLayout metadata={metadata}>
+  {howToSchema && <JsonLd schema={howToSchema} />}
+  <Breadcrumb items={breadcrumbItems} />
+
+  <article class="section-inner">
+    <!-- Guide Header -->
+    <header class="section section-sm">
+      <div class="section-content ds-section-head left">
+        <div class="ds-pill">Гайд</div>
+        <h1 class="text-4xl md:text-5xl font-bold mb-6 text-gray-900">{data.title}</h1>
+        <p class="text-xl text-[#665f5a] mb-8">{data.description}</p>
+
+        <!-- Meta Info -->
+        <div class="flex flex-wrap gap-4 text-sm text-[#7a6f68] mb-8">
+          <div class="flex items-center gap-2">
+            <span>📅</span>
+            <time datetime={data.publishDate.toISOString()}>{pubDate}</time>
+          </div>
+          <div class="flex items-center gap-2">
+            <span>⏱️</span>
+            <span>{readingTime} мин. чтения</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Steps Overview -->
+    {
+      data.steps && data.steps.length > 0 && (
+        <section class="section section-sm">
+          <div class="section-content">
+            <h2 class="text-2xl font-bold mb-6">Процесс в {data.steps.length} шагов</h2>
+            <div class="space-y-4">
+              {data.steps.map((step, idx) => (
+                <div class="flex gap-4 card card-soft">
+                  <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#8b5a3c] font-bold text-white">
+                    {idx + 1}
+                  </div>
+                  <div class="flex-1">
+                    <h3 class="font-semibold text-lg">{step.title}</h3>
+                    <p class="text-[#665f5a] text-sm mt-1">{step.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )
+    }
+
+    <!-- Main Content -->
+    <section class="section section-sm">
+      <div class="section-content prose">
+        <slot />
+      </div>
+    </section>
+
+    <!-- Featured Image -->
+    {
+      data.image && (
+        <section class="section section-sm">
+          <div class="section-content">
+            <Image
+              src={data.image}
+              alt={data.title}
+              class="w-full h-96 object-cover rounded-lg"
+              loading="lazy"
+              widths={[480, 768, 1024, 1280]}
+              sizes="(max-width: 767px) 100vw, 768px"
+              width={1280}
+              height={751}
+              layout="responsive"
+            />
+          </div>
+        </section>
+      )
+    }
+  </article>
+
+  {
+    relatedItems.length > 0 && (
+      <section class="section bg-[#f7f1ec]">
+        <div class="section-inner">
+          <div class="ds-section-head left mb-8">
+            <div class="ds-pill">Читайте также</div>
+            <h2 class="text-3xl font-bold">Похожие материалы</h2>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {relatedItems.map((item) => (
+              <a href={item.href} class="ui-btn-state ds-card ds-card-interactive p-6">
+                <p class="text-xs font-semibold text-[#7f5438] uppercase mb-2">
+                  {item.type === 'guide' ? 'Гайд' : 'Статья'}
+                </p>
+                <h3 class="font-semibold text-lg mb-2">{item.title}</h3>
+                <p class="text-[#665f5a] text-sm">{item.description}</p>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- CTA Section -->
+  <section class="section bg-[#f7f1ec]">
+    <div class="section-inner section-content">
+      <h2 class="text-3xl font-bold mb-2">Готовы начать?</h2>
+      <p class="mb-8 text-[#665f5a]">Закажите консультацию у нашего специалиста прямо сейчас</p>
+      <ContactForm />
+    </div>
+  </section>
+
+</PageLayout>
+
+<style is:global>
+  .prose {
+    color: #4f4843;
+  }
+
+  .prose h2 {
+    margin-top: calc(var(--section-y-sm) / 2);
+    margin-bottom: var(--text-gap);
+    font-size: var(--h2);
+    font-weight: bold;
+    color: #171514;
+  }
+
+  .prose h3 {
+    margin-top: var(--text-gap);
+    margin-bottom: 0.5rem;
+    font-size: var(--h3);
+  }
+
+  .prose p {
+    margin-bottom: var(--text-gap);
+    line-height: 1.65;
+  }
+
+  .prose ul,
+  .prose ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+  }
+
+  .prose li {
+    margin-bottom: 0.5rem;
+  }
+
+  .prose a {
+    color: #7f5438;
+    text-decoration: underline;
+  }
+
+  .prose a:hover {
+    color: #7f5438;
+  }
+
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+  }
+
+  .prose th,
+  .prose td {
+    border: 1px solid #e5e7eb;
+    padding: 0.75rem;
+  }
+
+  .prose th {
+    background: #f3f4f6;
+    font-weight: bold;
+  }
+</style>
+

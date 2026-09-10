@@ -1,0 +1,743 @@
+---
+import { Icon } from 'astro-icon/components';
+import ToggleTheme from '~/components/common/ToggleTheme.astro';
+import ToggleMenu from '~/components/common/ToggleMenu.astro';
+
+import { getBusinessInfo } from '~/config/business-info';
+import { getHomePermalink } from '~/utils/permalinks';
+import { trimSlash } from '~/utils/permalinks';
+import type { CallToAction } from '~/types';
+
+interface Link {
+  text?: string;
+  href?: string;
+  ariaLabel?: string;
+  icon?: string;
+}
+
+interface MenuLink extends Link {
+  links?: Array<MenuLink>;
+}
+
+export interface Props {
+  id?: string;
+  links?: Array<MenuLink>;
+  actions?: Array<CallToAction>;
+  isSticky?: boolean;
+  isDark?: boolean;
+  isFullWidth?: boolean;
+  showToggleTheme?: boolean;
+  showRssFeed?: boolean;
+  position?: string;
+  pageType?: string;
+}
+
+const {
+  id = 'header',
+  links = [],
+  actions = [],
+  isSticky = false,
+  isDark = false,
+  isFullWidth = false,
+  showToggleTheme = false,
+  pageType,
+} = Astro.props as Props;
+
+const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
+const brandName = process.env.SITE_NAME || 'мбл мастер';
+const businessInfo = getBusinessInfo();
+const phoneHref = `tel:${businessInfo.phoneHref}`;
+const hideMobileCall = pageType === 'service-money' || pageType === 'project';
+
+const resolvedActions: Array<CallToAction> = actions.length
+  ? actions
+  : [
+      { text: 'Рассчитать проект', href: '/contacts#contact', variant: 'primary' },
+      { text: 'Вызвать замерщика', href: '/contacts#contacts-info', variant: 'secondary' },
+    ];
+
+function toCtaId(value: string | undefined, fallback: string) {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return normalized || fallback;
+}
+---
+
+<header
+  role="banner"
+  aria-label="Основная шапка сайта"
+  data-header
+  class:list={[
+    { sticky: isSticky, relative: !isSticky, dark: isDark },
+    'mbl-site-header top-0 z-50 w-full',
+  ]}
+  {...isSticky ? { 'data-aw-sticky-header': true } : {}}
+  {...id ? { id } : {}}
+>
+  <div class:list={['mx-auto px-4 sm:px-6', { 'max-w-7xl': !isFullWidth }]}>
+    <div class="header-shell">
+      <a class="header-brand ui-btn-state" href={getHomePermalink()} aria-label="На главную">
+        <span class="header-mark" aria-hidden="true">МБЛ</span>
+        <span class="header-brand-copy">
+          <span class="header-brand-text">{brandName}</span>
+          <span class="header-brand-meta">Кухни и шкафы на заказ</span>
+        </span>
+      </a>
+
+      <nav class="hidden lg:block" aria-label="Main navigation">
+        <ul class="header-nav-list">
+          {
+            links.map(({ text, href, links: subLinks }) => (
+              <li>
+                {subLinks?.length ? (
+                  <details class="header-dropdown">
+                    <summary class="header-link ui-btn-state">
+                      {text}
+                      <Icon name="tabler:chevron-down" class="h-4 w-4" aria-hidden="true" />
+                    </summary>
+                    <ul class="header-dropdown-menu">
+                      {subLinks.map(({ text: childText, href: childHref }) => (
+                        <li>
+                          <a
+                            class:list={[
+                              'header-dropdown-link ui-btn-state',
+                              { 'active-link': childHref === currentPath },
+                            ]}
+                            href={childHref}
+                          >
+                            {childText}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : (
+                  <a class:list={['header-link ui-btn-state', { 'active-link': href === currentPath }]} href={href}>
+                    {text}
+                  </a>
+                )}
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div class="header-actions hidden items-center gap-2 xl:flex">
+        <a
+          class="header-phone ui-btn-state"
+          href={phoneHref}
+          aria-label="Позвонить"
+          data-cta-placement="header"
+          data-cta="header_phone_main"
+          data-cta-type="phone"
+        >
+          <Icon name="tabler:phone" class="h-4 w-4" aria-hidden="true" />
+          <span class="sr-only">Позвонить: {businessInfo.phone}</span>
+        </a>
+
+        {
+          resolvedActions.slice(0, 1).map((btnProps, idx) => {
+            const isPrimary = idx === 0 || btnProps.variant === 'primary';
+            const ctaId = `header_action_${idx + 1}_${toCtaId(btnProps.text, 'cta')}`;
+            return (
+              <a
+                href={btnProps.href}
+                target={btnProps.target}
+                rel={btnProps.target ? 'noopener noreferrer' : undefined}
+                class:list={['header-cta', isPrimary ? 'header-cta-primary' : 'header-cta-outline']}
+                data-cta={ctaId}
+                data-cta-type={isPrimary ? 'primary' : 'secondary'}
+                data-cta-placement="header"
+                aria-label={btnProps.ariaLabel ?? btnProps['aria-label']}
+              >
+                {btnProps.text}
+              </a>
+            );
+          })
+        }
+
+        {showToggleTheme && <ToggleTheme iconClass="h-5 w-5" />}
+
+        <a class="header-search-trigger ui-btn-state" href="/guides" aria-label="Открыть поиск">
+          <Icon name="tabler:search" class="h-4 w-4" aria-hidden="true" />
+        </a>
+      </div>
+
+      <div class="header-mobile-controls inline-flex lg:hidden">
+        {
+          !hideMobileCall && (
+            <a
+              class="header-mobile-call ui-btn-state"
+              href={phoneHref}
+              data-cta-placement="header"
+              data-cta="header_phone_mobile"
+              data-cta-type="phone"
+            >
+              Позвонить
+            </a>
+          )
+        }
+        <ToggleMenu class="header-menu-toggle ui-btn-state" label="Toggle Menu" controls="header-mobile-panel" />
+      </div>
+    </div>
+
+    <div id="header-mobile-panel" data-aw-mobile-panel class="header-mobile-panel hidden lg:hidden" aria-hidden="true">
+      <form class="header-search mobile" role="search" action="/guides" method="get">
+        <label class="sr-only" for="header-search-input-mobile">Поиск по сайту</label>
+        <Icon name="tabler:search" class="header-search-icon" aria-hidden="true" />
+        <input id="header-search-input-mobile" name="q" type="search" placeholder="Найти мебель" />
+      </form>
+
+      <nav data-aw-mobile-nav aria-label="Mobile navigation">
+        <ul class="header-mobile-nav-list">
+          {
+            links.map(({ text, href, links: subLinks }) => (
+              <li>
+                {subLinks?.length ? (
+                  <details class="header-mobile-dropdown">
+                    <summary class="header-mobile-link ui-btn-state">
+                      {text}
+                      <Icon name="tabler:chevron-down" class="h-4 w-4" aria-hidden="true" />
+                    </summary>
+                    <ul class="header-mobile-dropdown-menu">
+                      {subLinks.map(({ text: childText, href: childHref }) => (
+                        <li>
+                          <a
+                            class:list={[
+                              'header-mobile-sub-link ui-btn-state',
+                              { 'active-link': childHref === currentPath },
+                            ]}
+                            href={childHref}
+                          >
+                            {childText}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : (
+                  <a
+                    class:list={['header-mobile-link ui-btn-state', { 'active-link': href === currentPath }]}
+                    href={href}
+                  >
+                    {text}
+                  </a>
+                )}
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div data-aw-mobile-actions class="header-mobile-actions">
+        {
+          resolvedActions.slice(0, 1).map((btnProps, idx) => {
+            const isPrimary = idx === 0 || btnProps.variant === 'primary';
+            const ctaId = `header_mobile_action_${idx + 1}_${toCtaId(btnProps.text, 'cta')}`;
+            return (
+              <a
+                href={btnProps.href}
+                target={btnProps.target}
+                rel={btnProps.target ? 'noopener noreferrer' : undefined}
+                class:list={[
+                  'header-cta w-full justify-center',
+                  isPrimary ? 'header-cta-primary' : 'header-cta-outline',
+                ]}
+                data-cta={ctaId}
+                data-cta-type={isPrimary ? 'primary' : 'secondary'}
+                data-cta-placement="header"
+                aria-label={btnProps.ariaLabel ?? btnProps['aria-label']}
+              >
+                {btnProps.text}
+              </a>
+            );
+          })
+        }
+      </div>
+
+      <p class="header-mobile-meta">{businessInfo.fullAddress} • {businessInfo.openingHoursText}</p>
+    </div>
+  </div>
+</header>
+
+<style is:inline>
+  .header-shell {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.9rem;
+    min-height: 4rem;
+  }
+
+  .header-actions {
+    justify-self: end;
+  }
+
+  .header-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.5rem;
+    min-width: 0;
+    padding: 0.16rem 0.12rem;
+    border-radius: 0.55rem;
+    color: #161514;
+    text-decoration: none;
+  }
+
+  .header-brand:hover {
+    text-decoration: none;
+  }
+
+  .header-brand-copy {
+    display: inline-grid;
+    gap: 0.1rem;
+    min-width: 0;
+  }
+
+  .header-brand-text {
+    font-size: 1rem;
+    line-height: 1;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .header-brand-meta {
+    color: #6b5d55;
+    font-size: 0.66rem;
+    line-height: 1.2;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .header-mark {
+    display: inline-flex;
+    min-width: 2.2rem;
+    height: 1.55rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #8b5a3c;
+    color: #fff;
+    font-size: 0.52rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    flex-shrink: 0;
+    padding: 0 0.35rem;
+  }
+
+  .header-nav-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .header-nav-list > li {
+    flex-shrink: 0;
+  }
+
+  .header-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 0.48rem;
+    color: #2f2a26;
+    text-decoration: none;
+    font-size: 0.74rem;
+    font-weight: 700;
+    white-space: nowrap;
+    min-height: 2.5rem;
+    padding: 0.56rem 0.64rem;
+  }
+
+  .header-link:hover {
+    color: #7f5438;
+    background: #f9f2ec;
+    text-decoration: none;
+  }
+
+  .active-link {
+    color: #7f5438;
+    background: #f5ebe3;
+  }
+
+  .header-dropdown {
+    position: relative;
+  }
+
+  .header-dropdown summary {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .header-dropdown summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .header-dropdown-menu {
+    margin: 0;
+    padding: 0.35rem;
+    list-style: none;
+    border: 1px solid #eadbcf;
+    border-radius: 0.55rem;
+    background: #fff;
+    box-shadow: 0 10px 26px rgb(30 19 13 / 12%);
+    position: absolute;
+    left: 0;
+    top: calc(100% + 0.35rem);
+    min-width: 12rem;
+    z-index: 20;
+  }
+
+  .header-dropdown:not([open]) .header-dropdown-menu {
+    display: none;
+  }
+
+  .header-dropdown-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    width: 100%;
+    border-radius: 0.45rem;
+    color: #4d433d;
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .header-dropdown-link:hover {
+    background: #f8f2ee;
+    color: #7f5438;
+    text-decoration: none;
+  }
+
+  .header-search-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.5rem;
+    width: 2.5rem;
+    border-radius: 999px;
+    border: 1px solid #d9cdc4;
+    background: #fff;
+    color: #6c615b;
+    text-decoration: none;
+  }
+
+  .header-search-trigger:hover {
+    color: #7f5438;
+    border-color: #cdb6a5;
+    background: #faf3ee;
+    text-decoration: none;
+  }
+
+  .header-search {
+    position: relative;
+    width: 100%;
+  }
+
+  .header-search.mobile {
+    width: 100%;
+  }
+
+  .header-search-icon {
+    position: absolute;
+    left: 0.72rem;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 1rem;
+    width: 1rem;
+    color: #99908a;
+  }
+
+  .header-search input {
+    width: 100%;
+    height: 2.05rem;
+    border-radius: 999px;
+    border: 1px solid #d9cdc4;
+    background: #fff;
+    color: #1d1b1a;
+    font-size: 0.78rem;
+    padding: 0 0.8rem 0 2.25rem;
+    outline: none;
+  }
+
+  .header-search input:focus-visible {
+    border-color: #8b5a3c;
+    box-shadow: 0 0 0 2px rgb(182 127 89 / 20%);
+  }
+
+  .header-phone {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.5rem;
+    width: 2.5rem;
+    border-radius: 999px;
+    border: 1px solid #d9cdc4;
+    background: #fff;
+    color: #6c615b;
+    text-decoration: none;
+  }
+
+  .header-phone:hover {
+    color: #7f5438;
+    border-color: #cdb6a5;
+    background: #faf3ee;
+    text-decoration: none;
+  }
+
+  .header-cta {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 0.5rem;
+    border: 1px solid #8b5a3c;
+    padding: 0.5rem 0.64rem;
+    font-size: 0.71rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .header-cta:hover {
+    text-decoration: none;
+  }
+
+  .header-cta-primary {
+    color: #fff;
+    background: #8b5a3c;
+    border-color: #8b5a3c;
+  }
+
+  .header-cta-primary:hover {
+    background: #7f5438;
+    border-color: #7f5438;
+  }
+
+  .header-cta-outline {
+    color: #7f5438;
+    background: #fff;
+    border-color: #dcc7b7;
+  }
+
+  .header-cta-outline:hover {
+    color: #fff;
+    background: #7f5438;
+    border-color: #7f5438;
+  }
+
+  .header-mobile-call {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 0.55rem;
+    border: 1px solid #c39a7d;
+    color: #6f4b33;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-decoration: none;
+    min-height: 2.5rem;
+    padding: 0.58rem 0.72rem;
+  }
+
+  .header-mobile-call:hover {
+    background: #f9f2ec;
+    text-decoration: none;
+  }
+
+  .header-mobile-controls {
+    align-items: center;
+    justify-self: end;
+    gap: 0.5rem;
+  }
+
+  :global(.header-menu-toggle) {
+    border: 1px solid #dcc7b7;
+    background: #fff;
+    color: #6f4b33;
+    box-shadow: 0 6px 16px rgb(40 24 12 / 8%);
+  }
+
+  :global(.header-menu-toggle:hover) {
+    border-color: #cba88e;
+    background: #faf3ee;
+    color: #7f5438;
+  }
+
+  :global(#header.menu-open .header-menu-toggle) {
+    border-color: #7f5438;
+    background: #7f5438;
+    color: #fff;
+    box-shadow: 0 10px 20px rgb(159 109 75 / 22%);
+  }
+
+  .header-mobile-panel {
+    border-top: 1px solid #f1e7de;
+    padding: 0.7rem 0 0.8rem;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+  }
+
+  .header-mobile-nav-list {
+    margin: 0.65rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .header-mobile-link {
+    width: 100%;
+    display: inline-flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 0.55rem;
+    border: 1px solid #e7d7cb;
+    background: #fff;
+    color: #2f2a26;
+    text-decoration: none;
+    font-size: 0.84rem;
+    font-weight: 700;
+    min-height: 2.5rem;
+    padding: 0.66rem 0.8rem;
+  }
+
+  .header-mobile-link:hover {
+    background: #faf3ee;
+    text-decoration: none;
+  }
+
+  .header-mobile-dropdown summary {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .header-mobile-dropdown summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .header-mobile-dropdown-menu {
+    margin: 0.35rem 0 0;
+    padding: 0 0 0 0.4rem;
+    list-style: none;
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .header-mobile-sub-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    width: 100%;
+    border-left: 2px solid #ead4c4;
+    color: #5d4f45;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.45rem 0.62rem;
+  }
+
+  .header-mobile-sub-link:hover {
+    color: #7f5438;
+    text-decoration: none;
+  }
+
+  .header-mobile-actions {
+    margin-top: 0.75rem;
+    gap: 0.45rem;
+  }
+
+  .header-mobile-actions:not(.hidden) {
+    display: grid;
+  }
+
+  .header-mobile-meta {
+    margin: 0.7rem 0 0;
+    color: #746a63;
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  #header.scroll {
+    border-color: rgba(182, 127, 89, 0.35);
+    box-shadow: 0 8px 24px rgba(30, 20, 15, 0.08);
+  }
+
+  @media (max-width: 1399px) {
+    .header-phone {
+      display: none;
+    }
+  }
+
+  @media (max-width: 1599px) {
+    .header-link {
+      font-size: 0.7rem;
+      padding: 0.5rem 0.5rem;
+    }
+
+    .header-cta {
+      padding: 0.46rem 0.56rem;
+      font-size: 0.68rem;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .header-shell {
+      min-height: 3.9rem;
+      grid-template-columns: auto 1fr auto;
+    }
+
+    .header-brand-text {
+      font-size: 0.96rem;
+    }
+
+    .header-brand-meta {
+      display: none;
+    }
+
+    .header-mark {
+      min-width: 2rem;
+      height: 1.4rem;
+      font-size: 0.48rem;
+      padding: 0 0.3rem;
+    }
+  }
+
+  @media (max-width: 479px) {
+    .header-brand-text {
+      font-size: 0.9rem;
+    }
+
+    .header-mobile-controls {
+      gap: 0.4rem;
+    }
+
+    .header-mobile-call {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+
+    :global(.header-menu-toggle) {
+      height: 2.5rem;
+      width: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .header-shell {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 0.75rem;
+    }
+  }
+</style>
+

@@ -1,0 +1,162 @@
+---
+import Image from '~/components/common/Image.astro';
+import ContactForm from '~/components/ContactForm.astro';
+import { getBusinessInfo } from '~/config/business-info';
+import Button from '~/components/ui/Button.astro';
+
+import type { Hero as Props } from '~/types';
+
+const props = Astro.props as Props;
+const { title, subtitle, tagline, actions, image, id } = props;
+
+const hasTitleSlot = Astro.slots.has('title');
+const hasSubtitleSlot = Astro.slots.has('subtitle');
+const hasTaglineSlot = Astro.slots.has('tagline');
+const hasActionsSlot = Astro.slots.has('actions');
+const hasImageSlot = Astro.slots.has('image');
+
+const actionsList = Array.isArray(actions) ? actions : null;
+const actionsText = typeof actions === 'string' ? actions : null;
+
+const imageAttributes = typeof image === 'object' && image ? (image as Record<string, unknown>) : null;
+const imageSrc = typeof image === 'string' ? image : (imageAttributes?.src as string | undefined);
+const imageAlt =
+  (imageAttributes?.alt as string | undefined) ||
+  (typeof title === 'string' && title) ||
+  (typeof subtitle === 'string' && subtitle) ||
+  'Hero image';
+const businessInfo = getBusinessInfo();
+const phoneHref = `tel:${businessInfo.phoneHref}`;
+---
+
+<section
+  class="relative md:-mt-[76px] not-prose min-h-[60vh] md:min-h-[72vh] flex items-center bg-[#0d1720] text-white"
+  {...id ? { id } : {}}
+>
+  <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+    <slot name="bg">
+      <svg
+        class="absolute -right-20 top-0 w-[900px] max-w-none opacity-40 pointer-events-none"
+        viewBox="0 0 900 600"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        role="img"
+      >
+        <defs>
+          <linearGradient id="g1" x1="0" x2="1">
+            <stop offset="0%" stop-color="#0ea5a3" stop-opacity="0.12" />
+            <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.08" />
+          </linearGradient>
+          <radialGradient id="r1" cx="0.3" cy="0.2" r="0.8">
+            <stop offset="0%" stop-color="#fff" stop-opacity="0.06" />
+            <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+          </radialGradient>
+        </defs>
+        <rect x="0" y="0" width="900" height="600" fill="url(#g1)" />
+        <circle cx="640" cy="120" r="140" fill="url(#r1)" />
+        <path d="M300 500 C420 430, 620 430,740 500 L740 700 L300 700 Z" fill="#072026" opacity="0.12" />
+      </svg>
+    </slot>
+  </div>
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6">
+    <div class="pt-0 md:pt-[76px] pointer-events-none"></div>
+    <div class="py-8 md:py-16 w-full">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pb-8 md:pb-12 max-w-7xl mx-auto">
+        <div class="max-w-2xl mx-auto md:mx-0">
+          {(tagline || hasTaglineSlot) && (
+            <p class="text-sm text-secondary font-semibold tracking-wide uppercase mb-3">
+              {hasTaglineSlot ? <slot name="tagline" /> : tagline}
+            </p>
+          )}
+          {(title || hasTitleSlot) && (
+            <h1 class="text-4xl sm:text-5xl md:text-[56px] lg:text-[64px] font-extrabold leading-tight tracking-tight mb-4 font-heading text-white">
+              {hasTitleSlot ? <slot name="title" /> : title}
+            </h1>
+          )}
+          <div class="max-w-3xl mx-auto">
+            {(subtitle || hasSubtitleSlot) && (
+              <>
+                <p class="text-lg text-muted mb-4">{hasSubtitleSlot ? <slot name="subtitle" /> : subtitle}</p>
+                {/* Trust badges / local signals */}
+                <div class="flex flex-wrap items-center gap-3 text-sm text-white/90 mt-2 mb-4">
+                  <span class="inline-flex items-center px-3 py-2 bg-white/6 rounded">✓ Выезд замерщика за 24 ч</span>
+                  <span class="inline-flex items-center px-3 py-2 bg-white/6 rounded">✓ Бесплатный замер</span>
+                  <span class="inline-flex items-center px-3 py-2 bg-white/6 rounded">✓ Гарантия 5 лет</span>
+                </div>
+              </>
+            )}
+            {(actionsList || hasActionsSlot || actionsText) && (
+              <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                {actionsList ? (
+                  actionsList.map((action, index) => (
+                    <Button
+                      {...(action || {})}
+                      variant={action?.variant ?? (index === 0 ? 'primary' : 'ghost')}
+                      class={action?.class ?? ''}
+                    />
+                  ))
+                ) : hasActionsSlot ? (
+                  <slot name="actions" />
+                ) : (
+                  <span>{actionsText}</span>
+                )}
+              </div>
+            )}
+
+            {/* Desktop inline form */}
+            <div class="hidden md:block mt-6">
+              <ContactForm successText="Спасибо! Мы свяжемся с вами в течение 10 минут." />
+            </div>
+
+            {/* Mobile compact CTA */}
+            <div class="md:hidden mt-4 flex items-center gap-3">
+              <a
+                href="#contact"
+                class="ui-btn-state inline-flex items-center px-4 py-3 bg-white text-[#0d1720] rounded-lg font-medium"
+                data-cta="hero_mobile_primary"
+                data-cta-type="primary"
+                data-cta-placement="hero">Оставить заявку на замер</a
+              >
+              <a
+                href={phoneHref}
+                class="ui-btn-state rounded-sm text-white underline"
+                data-cta-placement="hero"
+                data-cta="hero_phone_mobile"
+                data-cta-type="phone">{businessInfo.phone}</a
+              >
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="intersect-once intersect-no-queue intersect-quarter motion-safe:md:opacity-0 motion-safe:md:intersect:animate-fade"
+        >
+          {
+            (image || hasImageSlot) && (
+              <div class="relative m-auto max-w-5xl">
+                <div class="absolute -inset-y-6 -right-10 w-64 h-64 rounded-full bg-gradient-to-br from-white/6 to-transparent blur-3xl pointer-events-none" />
+                {hasImageSlot ? (
+                  <slot name="image" />
+                ) : (
+                  <Image
+                    class="mx-auto rounded-md w-full shadow-lg relative z-10"
+                    widths={[400, 768, 1024, 2040]}
+                    sizes="(max-width: 767px) 400px, (max-width: 1023px) 768px, (max-width: 2039px) 1024px, 2040px"
+                    loading="eager"
+                    fetchpriority="high"
+                    width={1400}
+                    height={820}
+                    src={imageSrc}
+                    alt={imageAlt}
+                    {...(imageAttributes ?? {})}
+                  />
+                )}
+              </div>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

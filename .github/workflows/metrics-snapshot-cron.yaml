@@ -1,0 +1,38 @@
+name: Metrics Snapshot Cron
+
+on:
+  schedule:
+    - cron: '15 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  trigger-metrics-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate snapshot worker configuration
+        id: config
+        run: |
+          token="${METRICS_WORKER_TOKEN:-$CONTACT_WORKER_TOKEN}"
+          if [ -z "${METRICS_SNAPSHOT_WORKER_URL}" ] || [ -z "$token" ]; then
+            echo "Metrics snapshot worker config is missing, skipping trigger."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+        env:
+          METRICS_SNAPSHOT_WORKER_URL: ${{ vars.METRICS_SNAPSHOT_WORKER_URL }}
+          METRICS_WORKER_TOKEN: ${{ secrets.METRICS_WORKER_TOKEN }}
+          CONTACT_WORKER_TOKEN: ${{ secrets.CONTACT_WORKER_TOKEN }}
+
+      - name: Trigger daily conversion snapshot worker
+        if: ${{ steps.config.outputs.ready == 'true' }}
+        run: |
+          curl --fail --silent --show-error \
+            -X POST "${METRICS_SNAPSHOT_WORKER_URL}" \
+            -H "Authorization: Bearer ${WORKER_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"sendAlert":true}'
+        env:
+          METRICS_SNAPSHOT_WORKER_URL: ${{ vars.METRICS_SNAPSHOT_WORKER_URL }}
+          WORKER_TOKEN: ${{ steps.config.outputs.token }}

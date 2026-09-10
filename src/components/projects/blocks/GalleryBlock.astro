@@ -1,0 +1,42 @@
+---
+import ProjectGallery from '~/components/projects/ProjectGallery.astro';
+import type { ProjectBlockProps } from './types';
+
+const { block, viewModel, typeIndex = 0 } = Astro.props as ProjectBlockProps;
+const { slug, gallery } = viewModel;
+const imageBaseDir = viewModel.project.imageBaseDir;
+
+const images =
+  Array.isArray((block as { images?: string[] }).images) && (block as { images?: string[] }).images?.length
+    ? (block as { images?: string[] }).images
+    : gallery.images;
+const resolvedImages = Array.isArray(images) ? images : [];
+
+const captions =
+  (block as { captions?: Record<string, string> }).captions &&
+  typeof (block as { captions?: Record<string, string> }).captions === 'object'
+    ? (block as { captions?: Record<string, string> }).captions
+    : gallery.captions;
+
+const includeHero = Boolean((block as { includeHero?: boolean }).includeHero);
+const hasDedicatedHero = Boolean(viewModel.sectionVisibility.hasHero && gallery.heroImage);
+const exclude = !includeHero || hasDedicatedHero ? (gallery.heroImage ? [gallery.heroImage] : []) : [];
+const shouldRender = resolvedImages.length > 0;
+const sectionId = typeIndex === 0 ? 'gallery' : undefined;
+--- 
+
+{
+  shouldRender && (
+    <section id={sectionId} class="section project-section project-gallery-section">
+      <p class="project-section-kicker">Фотографии проекта</p>
+      <ProjectGallery
+        slug={slug}
+        imageBaseDir={imageBaseDir}
+        images={resolvedImages}
+        alt={gallery.alt}
+        captions={captions}
+        exclude={exclude}
+      />
+    </section>
+  )
+}

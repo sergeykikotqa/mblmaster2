@@ -1,0 +1,451 @@
+---
+import Image from '~/components/common/Image.astro';
+import { resolveProjectImage } from '~/lib/projects/project-adapters';
+
+interface Props {
+  slug: string;
+  imageBaseDir?: string;
+  images: string[];
+  alt: string;
+  captions?: Record<string, string>;
+  exclude?: string[];
+}
+
+const { slug, imageBaseDir = '', images = [], alt, captions = {}, exclude = [] } = Astro.props as Props;
+
+const normalizeImage = (value: string) => resolveProjectImage(slug, value, imageBaseDir);
+
+const normalizedImages = images
+  .map((value) => String(value || '').trim())
+  .filter(Boolean)
+  .map(normalizeImage);
+
+const normalizedExclude = exclude
+  .map((value) => String(value || '').trim())
+  .filter(Boolean)
+  .map(normalizeImage);
+const excludeSet = new Set(normalizedExclude);
+const filteredImages = normalizedImages.filter((src) => !excludeSet.has(src));
+const galleryImages = filteredImages.length > 0 ? filteredImages : normalizedImages;
+const hasMultiple = galleryImages.length > 1;
+const galleryId = `project-gallery-${slug}`;
+const galleryItems = galleryImages.map((src, index) => ({
+  src,
+  index,
+  caption: resolveCaption(src, index),
+}));
+
+function getStageLabel(src: string, index: number): string {
+  const lower = String(src || '').toLowerCase();
+  if (lower.includes('before')) return 'до';
+  if (lower.includes('process')) return 'процесс';
+  if (lower.includes('after')) return 'результат';
+  return `фото ${index + 1}`;
+}
+
+function resolveCaption(src: string, index: number): string {
+  const normalized = String(src || '').trim();
+  if (!normalized) return getStageLabel(src, index);
+  if (captions[normalized]) return captions[normalized];
+  const fileName = normalized.split('/').pop() || normalized;
+  if (captions[fileName]) return captions[fileName];
+  return getStageLabel(src, index);
+}
+---
+
+{
+  galleryImages.length > 0 && (
+    <div class="project-gallery-shell" data-project-gallery>
+      <div class="project-gallery-stage">
+        {galleryItems.map((item) => {
+          const stageLabel = item.caption;
+          const tabId = `${galleryId}-tab-${item.index}`;
+          const panelId = `${galleryId}-panel-${item.index}`;
+          const isPrimary = item.index === 0;
+          return (
+            <figure
+              id={panelId}
+              role="tabpanel"
+              aria-labelledby={tabId}
+              class={`project-gallery-slide${isPrimary ? ' is-active' : ''}`}
+              data-gallery-slide
+              data-index={item.index}
+              aria-hidden={isPrimary ? 'false' : 'true'}
+              hidden={!isPrimary}
+              data-caption={stageLabel}
+            >
+              <Image
+                src={item.src}
+                alt={`${alt} — ${stageLabel}`}
+                width={1400}
+                height={900}
+                layout="cover"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+                sizes="(min-width: 1024px) 70vw, 100vw"
+                widths={[640, 960, 1200, 1400]}
+              />
+            </figure>
+          );
+        })}
+        <button
+          type="button"
+          class="project-gallery-open ui-btn-state"
+          data-gallery-open
+          aria-label="Открыть фото в большом размере"
+        >
+          Увеличить
+        </button>
+        {hasMultiple && (
+          <button type="button" class="project-gallery-nav prev" data-gallery-prev aria-label="Предыдущее фото">
+            ‹
+          </button>
+        )}
+        {hasMultiple && (
+          <button type="button" class="project-gallery-nav next" data-gallery-next aria-label="Следующее фото">
+            ›
+          </button>
+        )}
+        {hasMultiple && (
+          <span class="project-gallery-counter" data-gallery-counter aria-live="polite">
+            1 / {galleryImages.length}
+          </span>
+        )}
+      </div>
+      {hasMultiple && (
+        <div class="project-gallery-thumbs" role="tablist" aria-label="Миниатюры проекта">
+          {galleryItems.map((item) => {
+            const stageLabel = item.caption;
+            const tabId = `${galleryId}-tab-${item.index}`;
+            const panelId = `${galleryId}-panel-${item.index}`;
+            return (
+              <button
+                type="button"
+                role="tab"
+                id={tabId}
+                aria-controls={panelId}
+                aria-selected={item.index === 0 ? 'true' : 'false'}
+                tabindex={item.index === 0 ? '0' : '-1'}
+                class={`project-gallery-thumb${item.index === 0 ? ' is-active' : ''}`}
+                data-gallery-thumb
+                data-index={item.index}
+                aria-label={`Показать фото: ${stageLabel}`}
+              >
+                <Image
+                  src={item.src}
+                  alt={`${alt} — ${stageLabel}`}
+                  width={220}
+                  height={160}
+                  layout="cover"
+                  loading="lazy"
+                  decoding="async"
+                  sizes="(min-width: 1024px) 140px, 120px"
+                  widths={[120, 160, 200]}
+                />
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <div class="project-gallery-lightbox mbl-modal" data-gallery-lightbox aria-hidden="true" hidden>
+        <div class="project-gallery-lightbox-backdrop mbl-modal-backdrop" data-gallery-backdrop></div>
+        <div
+          class="project-gallery-lightbox-panel mbl-modal-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Просмотр фото"
+        >
+          <button
+            type="button"
+            class="project-gallery-lightbox-close ui-btn-state"
+            data-gallery-close
+            aria-label="Закрыть просмотр"
+          >
+            ×
+          </button>
+          <figure class="project-gallery-lightbox-figure">
+            <img
+              data-gallery-lightbox-image
+              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption class="project-gallery-lightbox-caption" data-gallery-lightbox-caption></figcaption>
+          </figure>
+          {hasMultiple && (
+            <button
+              type="button"
+              class="project-gallery-lightbox-nav prev"
+              data-gallery-lightbox-prev
+              aria-label="Предыдущее фото"
+            >
+              ‹
+            </button>
+          )}
+          {hasMultiple && (
+            <button
+              type="button"
+              class="project-gallery-lightbox-nav next"
+              data-gallery-lightbox-next
+              aria-label="Следующее фото"
+            >
+              ›
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+<script src="/scripts/project-gallery-thumbs.js" defer></script>
+<script src="/scripts/project-gallery-lightbox.js" defer></script>
+
+<style>
+  .project-gallery-shell {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .project-gallery-stage {
+    position: relative;
+    border-radius: 1.4rem;
+    overflow: hidden;
+    background: #1a1511;
+    aspect-ratio: 16 / 9;
+    box-shadow: 0 22px 45px rgba(20, 16, 12, 0.2);
+  }
+
+  .project-gallery-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+
+  .project-gallery-slide.is-active {
+    position: relative;
+    opacity: 1;
+  }
+
+  .project-gallery-slide :global(img),
+  .project-gallery-slide :global(picture) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .project-gallery-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 999px;
+    border: none;
+    background: rgba(255, 255, 255, 0.9);
+    color: #3a2d24;
+    font-size: 1.4rem;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 12px 28px rgba(20, 16, 12, 0.25);
+    z-index: 2;
+  }
+
+  .project-gallery-nav:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .project-gallery-nav.prev {
+    left: 1rem;
+  }
+
+  .project-gallery-nav.next {
+    right: 1rem;
+  }
+
+  .project-gallery-counter {
+    position: absolute;
+    left: 1rem;
+    bottom: 1rem;
+    background: rgba(17, 13, 10, 0.65);
+    color: #fff;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    z-index: 2;
+  }
+
+  .project-gallery-thumbs {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(120px, 1fr);
+    gap: 0.6rem;
+    background: #efe7df;
+    padding: 0.6rem;
+    border-radius: 1rem;
+    overflow-x: auto;
+  }
+
+  .project-gallery-thumb {
+    border: 2px solid transparent;
+    border-radius: 0.85rem;
+    overflow: hidden;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .project-gallery-thumb.is-active {
+    border-color: var(--case-accent, #d6b98c);
+    box-shadow: 0 8px 18px rgba(20, 16, 12, 0.12);
+  }
+
+  .project-gallery-thumb :global(img) {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    aspect-ratio: 4 / 3;
+  }
+
+  .project-gallery-open {
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+    border-radius: 999px;
+    border: none;
+    background: rgba(255, 255, 255, 0.92);
+    color: #3a2d24;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    box-shadow: 0 12px 28px rgba(20, 16, 12, 0.2);
+    z-index: 2;
+  }
+
+  .project-gallery-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+  }
+
+  .project-gallery-lightbox[aria-hidden='true'] {
+    display: none;
+  }
+
+  .project-gallery-lightbox-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 8, 6, 0.72);
+  }
+
+  .project-gallery-lightbox-panel {
+    position: relative;
+    z-index: 1;
+    width: min(1200px, 92vw);
+    max-height: 90vh;
+    background: #0f0c0a;
+    border-radius: 1.2rem;
+    padding: 1rem;
+    display: grid;
+    gap: 0.75rem;
+    color: #fff;
+    box-shadow: 0 32px 60px rgba(0, 0, 0, 0.4);
+  }
+
+  .project-gallery-lightbox-figure {
+    margin: 0;
+    display: grid;
+    gap: 0.5rem;
+    align-items: center;
+    justify-items: center;
+  }
+
+  .project-gallery-lightbox-figure img {
+    max-height: min(68vh, 820px);
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    border-radius: 0.8rem;
+    background: #0f0c0a;
+  }
+
+  .project-gallery-lightbox-caption {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.72);
+    text-align: center;
+  }
+
+  .project-gallery-lightbox-close {
+    position: absolute;
+    top: 0.8rem;
+    right: 0.8rem;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  .project-gallery-lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 999px;
+    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 1.4rem;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+
+  .project-gallery-lightbox-nav.prev {
+    left: 0.6rem;
+  }
+
+  .project-gallery-lightbox-nav.next {
+    right: 0.6rem;
+  }
+
+  @media (max-width: 900px) {
+    .project-gallery-stage {
+      aspect-ratio: 4 / 3;
+    }
+
+    .project-gallery-nav {
+      width: 2.2rem;
+      height: 2.2rem;
+      font-size: 1.2rem;
+    }
+
+    .project-gallery-lightbox-panel {
+      padding: 0.75rem;
+    }
+
+    .project-gallery-lightbox-nav {
+      width: 2.4rem;
+      height: 2.4rem;
+      font-size: 1.2rem;
+    }
+  }
+</style>

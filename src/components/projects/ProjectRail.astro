@@ -1,0 +1,140 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { ProjectViewModel } from '~/lib/projects/project-view-model';
+import FactsGrid from '~/components/projects/blocks/atoms/FactsGrid.astro';
+import ProcessSteps from '~/components/projects/blocks/atoms/ProcessSteps.astro';
+import { formatProjectVideoDate, resolveProjectVideoPlatform } from '~/lib/projects/project-video';
+
+type Props = {
+  viewModel: ProjectViewModel;
+};
+
+const { viewModel } = Astro.props as Props;
+const { data, railFacts, materials, process, railBenefits, contact, tocItems, video, labels } = viewModel;
+const videoPlatformLabel = resolveProjectVideoPlatform(video.data?.contentUrl, video.data?.embedUrl);
+const videoPublishedLabel = formatProjectVideoDate(video.data?.uploadDate);
+const videoTitle = String(video.data?.title || `Видеообзор ${labels.service.genitive}`);
+---
+
+<aside class="project-rail rail" aria-label="Навигация по кейсу">
+  <div class="project-rail-inner">
+    <div class="project-rail-card card card-shadow cta project-rail-cta">
+      <p class="project-rail-kicker">Бесплатный расчет</p>
+      <h3>Рассчитайте стоимость вашего проекта</h3>
+      <p>Ответим за 15 минут. Замерщик — в день обращения. Проект и 3D бесплатно.</p>
+      <div class="project-rail-actions">
+        <a
+          href={`/${data.service}#contact`}
+          class="ui-btn-state ds-action-primary"
+          data-cta="project_rail_calc"
+          data-cta-type="primary"
+          data-cta-placement="rail"
+        >
+          Получить расчет
+        </a>
+        <a
+          href={`tel:${contact.phoneHref}`}
+          class="ui-btn-state ds-action-secondary"
+          data-cta="project_rail_call"
+          data-cta-type="phone"
+          data-cta-placement="rail"
+        >
+          {contact.phone}
+        </a>
+      </div>
+    </div>
+    {
+      video.data?.embedUrl && (
+        <div class="project-rail-card card card-shadow project-rail-video">
+          <p class="project-rail-kicker">Видеообзор</p>
+          <h3>{videoTitle}</h3>
+          <div class="project-video-meta" aria-label="Данные о видеообзоре">
+            <span class="project-video-chip project-video-chip-solid">{videoPlatformLabel}</span>
+            {videoPublishedLabel && <span class="project-video-chip">{videoPublishedLabel}</span>}
+          </div>
+          <div
+            class="project-video-frame project-rail-video-frame"
+            data-video-embed
+            data-embed-url={video.data.embedUrl}
+          >
+            {video.poster ? (
+              <img src={video.poster} alt={`Видео: ${data.title}`} loading="lazy" decoding="async" />
+            ) : (
+              <div class="project-video-fallback">Смотреть видео</div>
+            )}
+            <button type="button" class="project-video-play" aria-label="Запустить видео">
+              ▶
+            </button>
+          </div>
+          {video.data.contentUrl && (
+            <a href={video.data.contentUrl} target="_blank" rel="noopener noreferrer" class="project-video-link">
+              Открыть на площадке
+            </a>
+          )}
+        </div>
+      )
+    }
+    {
+      tocItems.length > 0 && (
+        <div class="project-rail-card card card-shadow project-toc" data-project-toc>
+          <p class="project-rail-kicker">Содержание</p>
+          <ol class="project-toc-list">
+            {tocItems.map((item) => (
+              <li>
+                <a class="project-toc-link" data-toc-link href={`#${item.id}`}>
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )
+    }
+    <div class="project-rail-card card card-shadow project-summary-card">
+      <p class="project-rail-kicker">Паспорт проекта</p>
+      <FactsGrid items={railFacts} variant="rail" />
+    </div>
+    {
+      materials.railItems.length > 0 && (
+        <div class="project-rail-card card card-shadow project-rail-materials">
+          <p class="project-rail-kicker">Материалы проекта</p>
+          <ul class="project-rail-materials-list">
+            {materials.railItems.map((item) => (
+              <li>
+                <span class="project-rail-materials-icon">
+                  <Icon name={item.icon || 'tabler:palette'} class="icon" />
+                </span>
+                <div>
+                  <strong>{item.label}</strong>
+                  <span>{item.value}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+    {
+      process.railSteps.length > 0 && (
+        <div class="project-rail-card card card-shadow project-rail-process">
+          <p class="project-rail-kicker">Процесс работы</p>
+          <ProcessSteps steps={process.railSteps} variant="rail" />
+        </div>
+      )
+    }
+    <div class="project-rail-benefits">
+      <ul>
+        {
+          railBenefits.map((item) => (
+            <li>
+              <span class="project-rail-benefit-icon">
+                <Icon name={item.icon} class="icon" />
+              </span>
+              <span>{item.text}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</aside>

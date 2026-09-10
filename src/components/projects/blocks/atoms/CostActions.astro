@@ -1,0 +1,42 @@
+---
+interface Props {
+  service: string;
+  phoneHref: string;
+}
+
+const { service, phoneHref } = Astro.props as Props;
+---
+
+<div class="project-cost-highlight">
+  <div>
+    <strong>Расчёт за 1 день</strong>
+    <span>Без выезда • по вашим размерам</span>
+  </div>
+  <span class="project-cost-highlight-badge">Бесплатно</span>
+</div>
+<div class="project-cost-cta">
+  <div>
+    <h3>Рассчитать стоимость аналогичного проекта</h3>
+    <p>Предложим 2–3 варианта под ваш бюджет, замер бесплатно.</p>
+  </div>
+  <div class="project-cost-actions">
+    <a
+      href={`/${service}#contact`}
+      class="ui-btn-state ds-action-primary"
+      data-cta="project_cost_calc"
+      data-cta-type="primary"
+      data-cta-placement="cost"
+    >
+      Получить расчет
+    </a>
+    <a
+      href={`tel:${phoneHref}`}
+      class="ui-btn-state ds-action-secondary"
+      data-cta="project_cost_call"
+      data-cta-type="phone"
+      data-cta-placement="cost"
+    >
+      Позвонить
+    </a>
+  </div>
+</div>

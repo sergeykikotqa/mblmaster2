@@ -1,0 +1,51 @@
+---
+// Breadcrumb navigation for SEO and UX
+interface Link {
+  label: string;
+  href?: string;
+}
+
+interface Props {
+  items: Link[];
+}
+
+const { items = [] } = Astro.props;
+---
+
+{
+  items.length > 0 && (
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 py-3 text-sm" aria-label="Breadcrumb">
+      <ol class="flex flex-wrap items-center gap-1 rounded-lg border border-[#ebddd2] bg-[#faf6f2] px-2 py-2 text-slate-500">
+        <li class="inline-flex items-center">
+          <a
+            href="/"
+            class="ui-btn-state inline-flex min-h-10 items-center rounded-md px-2 font-medium text-[#7f5438] no-underline transition-colors hover:text-[#7f5438] hover:underline"
+          >
+            Главная
+          </a>
+          {items.length > 0 && <span class="mx-2 text-slate-400">›</span>}
+        </li>
+        {items.map((item, idx) => (
+          <li class="inline-flex items-center">
+            {idx === items.length - 1 || !item.href ? (
+              <span class="text-slate-700" aria-current={idx === items.length - 1 ? 'page' : undefined}>
+                {item.label}
+              </span>
+            ) : (
+              <>
+                <a
+                  href={item.href}
+                  class="ui-btn-state inline-flex min-h-10 items-center rounded-md px-2 font-medium text-[#7f5438] no-underline transition-colors hover:text-[#7f5438] hover:underline"
+                >
+                  {item.label}
+                </a>
+                <span class="mx-2 text-slate-400">›</span>
+              </>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+

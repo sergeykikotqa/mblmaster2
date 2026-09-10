@@ -1,0 +1,53 @@
+---
+import type { ProjectBlockProps } from './types';
+
+const { block, viewModel } = Astro.props as ProjectBlockProps;
+const { ctaDefaults, contact, labels, data } = viewModel;
+
+const rawTitle = (block as { title?: string }).title || ctaDefaults.title;
+const [title, highlightFallback] = rawTitle.split('|').map((part) => part.trim());
+const highlight = (block as { highlight?: string }).highlight || highlightFallback || ctaDefaults.highlight;
+const description = (block as { description?: string }).description || ctaDefaults.description;
+const primaryLabel = (block as { primaryLabel?: string }).primaryLabel || ctaDefaults.primaryLabel;
+const secondaryLabel = (block as { secondaryLabel?: string }).secondaryLabel || ctaDefaults.secondaryLabel;
+const serviceLabels = labels.service;
+const cityLabels = labels.city;
+---
+
+<section id="cta" class="section project-section project-cta">
+  <div class="project-cta-card cta card-shadow" style={ctaDefaults.backgroundStyle}>
+    <p class="project-cta-kicker">
+      {serviceLabels.plural} на заказ · {cityLabels.base}
+    </p>
+    <h2>
+      {title}
+      <span class="project-cta-highlight">{highlight}</span>
+    </h2>
+    <p>{description}</p>
+    <div class="project-cta-actions">
+      <a
+        href={`/${data.service}#contact`}
+        class="ui-btn-state ds-action-primary"
+        data-cta="project_cta_calc"
+        data-cta-type="primary"
+        data-cta-placement="section"
+      >
+        {primaryLabel}
+      </a>
+      <a
+        href={`tel:${contact.phoneHref}`}
+        class="ui-btn-state ds-action-secondary"
+        data-cta="project_cta_call"
+        data-cta-type="phone"
+        data-cta-placement="section"
+      >
+        {secondaryLabel || contact.phone}
+      </a>
+    </div>
+    <div class="project-cta-benefits">
+      <span>Работаем в Иркутске с 2014 года</span>
+      <span>300+ реализованных проектов</span>
+      <span>Гарантия 2 года</span>
+    </div>
+  </div>
+</section>

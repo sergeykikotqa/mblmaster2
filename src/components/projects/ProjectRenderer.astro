@@ -1,0 +1,350 @@
+---
+import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
+import CaseRelated from '~/components/case-blocks/CaseRelated.astro';
+import BlockRenderer from '~/components/projects/BlockRenderer.astro';
+import FactsGrid from '~/components/projects/blocks/atoms/FactsGrid.astro';
+import LinksSection from '~/components/projects/blocks/atoms/LinksSection.astro';
+import { buildProjectRenderPlan } from '~/lib/projects/project-render-plan';
+import type { ProjectViewModel } from '~/lib/projects/project-view-model';
+import type { ProjectCardData } from '~/types/project';
+
+interface Props {
+  viewModel: ProjectViewModel;
+  Content: AstroComponentFactory;
+  modalData?: ProjectCardData;
+}
+
+const { viewModel, Content, modalData } = Astro.props as Props;
+const {
+  data,
+  labels,
+  gallery,
+  materials,
+  process,
+  cost,
+  summaryFacts,
+  shouldShowKeyFacts,
+  relatedProjects,
+  relatedArticles,
+} = viewModel;
+
+const renderPlan = buildProjectRenderPlan(viewModel);
+const blocksByTypeList = (type: string) => renderPlan.blocksByType.get(type) ?? [];
+const unknownBlocks = renderPlan.unknownBlocks;
+const hasRelatedBlock = renderPlan.hasRelatedBlock;
+const hasVideoEmbed = Boolean(viewModel.video.data?.embedUrl);
+const galleryImages = gallery.images;
+const processSteps = process.steps;
+const serviceLabels = labels.service;
+const formattedArea = data.area ? `${data.area} м²` : '';
+const formattedDuration = data.duration ? `${data.duration} дн.` : '';
+const isFeminine = serviceLabels.noun.endsWith('а') || serviceLabels.noun.endsWith('я');
+const sameServicePhrase = `${isFeminine ? 'такую же' : 'такой же'} ${serviceLabels.accusative}`;
+const sameServiceGenitive = `${isFeminine ? 'такой же' : 'такого же'} ${serviceLabels.genitive}`;
+const fitItems = [
+  formattedArea ? `У вас помещение около ${formattedArea} и важно использовать каждый сантиметр` : '',
+  labels.layoutLabel
+    ? `Нужна планировка типа «${String(labels.layoutLabel).toLowerCase()}», чтобы всё поместилось`
+    : '',
+  cost.summaryPrice ? `Хотите уложиться примерно в ${cost.summaryPrice} без переплаты` : '',
+  materials.summary ? `Хотите материалы уровня ${materials.summary}` : '',
+].filter(Boolean);
+
+const priceFactors =
+  cost.breakdown.length > 0
+    ? cost.breakdown.map((item) => {
+        const label = item.label.toLowerCase();
+        if (label.includes('производ')) {
+          return `Производство — ${item.note} (основная часть стоимости)`;
+        }
+        if (label.includes('фурнит')) {
+          return `Фурнитура — ${item.note} (влияет на удобство и срок службы)`;
+        }
+        if (label.includes('монтаж')) {
+          return `Монтаж — ${item.note} (установка под ключ)`;
+        }
+        return `${item.label} — ${item.note}`;
+      })
+    : [
+        formattedArea ? `Площадь ${formattedArea} — влияет на объём материалов и работ` : '',
+        labels.layoutLabel
+          ? `Планировка ${String(labels.layoutLabel).toLowerCase()} — влияет на количество модулей`
+          : '',
+        materials.summary ? `Материалы и фурнитура: ${materials.summary} — определяют ресурс и внешний вид` : '',
+        formattedDuration ? `Срок ${formattedDuration} — зависит от объёма работ` : '',
+      ].filter(Boolean);
+
+const whatDoneItems =
+  processSteps.length > 0
+    ? processSteps.slice(0, 3).map((step) => step.title)
+    : [
+        labels.layoutLabel
+          ? `Собрали ${String(labels.layoutLabel).toLowerCase()} планировку под размеры помещения`
+          : '',
+        materials.items.length > 0
+          ? `Подобрали материалы и фурнитуру: ${materials.items
+              .map((item) => item.value)
+              .filter(Boolean)
+              .slice(0, 2)
+              .join(', ')}`
+          : '',
+        formattedDuration ? `Изготовили и смонтировали за ${formattedDuration}` : '',
+      ].filter(Boolean);
+
+const deliverableItems = [
+  'Планировку под ваши размеры с учетом техники',
+  'Расчёт стоимости в 2–3 вариантах',
+  'Покажем, где сэкономить без потери качества',
+];
+
+const midCtaLink = `/${data.service}#contact`;
+const modalSummary = [formattedArea, labels.layoutLabel, cost.summaryPrice || cost.label].filter(Boolean).join(' • ');
+const modalProof = modalData?.proofHighlight?.value || (summaryFacts[0] ? summaryFacts[0].value : '');
+const modalAttrs = modalData
+  ? {
+      'data-project-modal-trigger': true,
+      'data-project-slug': modalData.slug,
+      'data-project-title': modalData.title,
+      'data-project-area': modalData.areaLabel || '',
+      'data-project-price': modalData.priceLabel || '',
+      'data-project-duration': modalData.durationLabel || '',
+      'data-project-proof': modalProof || '',
+      'data-project-service': modalData.serviceId || '',
+      'data-project-summary': modalSummary || '',
+      'data-project-href': modalData.href || '',
+      'data-project-page': modalData.href || '',
+    }
+  : {};
+---
+
+{
+  blocksByTypeList('hero').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{
+  blocksByTypeList('task').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{
+  blocksByTypeList('solution').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{
+  blocksByTypeList('split').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+
+{
+  fitItems.length > 0 && (
+    <section id="fit" class="section project-section project-fit">
+      <p class="project-section-kicker">Кому подойдет</p>
+      <h2>Этот проект подходит, если вам нужно</h2>
+      <ul class="project-fit-list">
+        {fitItems.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+{
+  priceFactors.length > 0 && (
+    <section id="price-factors" class="section project-section project-price-factors">
+      <p class="project-section-kicker">Цена проекта</p>
+      <h2>Почему получилась такая стоимость</h2>
+      <ul class="project-fit-list">
+        {priceFactors.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<section class="section project-section project-mid-cta">
+  <div class="project-mid-cta-card">
+    <div>
+      <p class="project-section-kicker">Хотите {sameServicePhrase}</p>
+      <h2>Рассчитаем {sameServicePhrase} под ваши размеры за 1 день</h2>
+      <p>Подберем планировку, материалы и рассчитаем стоимость без обязательств.</p>
+    </div>
+    <a
+      href={midCtaLink}
+      class="ui-btn-state ds-action-primary"
+      data-cta="project_mid_calc"
+      data-cta-type="primary"
+      data-cta-placement="mid"
+      {...modalAttrs}
+    >
+      Хочу {sameServicePhrase} →
+    </a>
+  </div>
+</section>
+
+{
+  blocksByTypeList('materials').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{
+  blocksByTypeList('process').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{
+  blocksByTypeList('gallery').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+
+{
+  galleryImages.length > 0 && (
+    <section class="section project-section project-gallery-cta">
+      <div class="project-gallery-cta-card">
+        <div>
+          <p class="project-section-kicker">Понравилось это решение?</p>
+          <h3>Рассчитаем {sameServicePhrase} под ваши размеры за 1 день</h3>
+          <p>Покажем варианты планировки и сразу скажем стоимость.</p>
+        </div>
+        <a
+          href={midCtaLink}
+          class="ui-btn-state ds-action-primary"
+          data-cta="project_gallery_calc"
+          data-cta-type="primary"
+          data-cta-placement="gallery"
+          {...modalAttrs}
+        >
+          Хочу {sameServicePhrase} →
+        </a>
+      </div>
+    </section>
+  )
+}
+
+{
+  whatDoneItems.length > 0 && (
+    <section id="what-done" class="section project-section project-what-done">
+      <p class="project-section-kicker">Что сделали</p>
+      <h2>Что реализовали в этом проекте</h2>
+      <ul class="project-fit-list">
+        {whatDoneItems.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+{
+  blocksByTypeList('beforeAfter').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{hasVideoEmbed && <div id="video" class="project-section-anchor" aria-hidden="true" />}
+{
+  blocksByTypeList('video').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{
+  blocksByTypeList('quote').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+
+{
+  shouldShowKeyFacts && (
+    <section class="section section-sm project-key-facts" aria-label="Ключевые факты проекта">
+      <div class="project-key-facts-inner card card-soft card-shadow">
+        <p class="project-key-facts-kicker">Ключевые факты</p>
+        <FactsGrid items={summaryFacts} />
+      </div>
+    </section>
+  )
+}
+
+{
+  blocksByTypeList('result').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{
+  blocksByTypeList('cost').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{
+  blocksByTypeList('specs').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{
+  blocksByTypeList('faq').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{
+  blocksByTypeList('links').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{
+  blocksByTypeList('related').map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}
+{!hasRelatedBlock && <CaseRelated relatedProjects={relatedProjects} />}
+
+{
+  relatedArticles.length > 0 && (
+    <LinksSection
+      links={relatedArticles}
+      kicker="Статьи по теме"
+      title="Полезные статьи по теме"
+      actionLabel="Читать"
+      className="section project-section project-links project-related-articles"
+    />
+  )
+}
+
+<section class="section project-section project-deliverables">
+  <div class="project-deliverables-card">
+    <p class="project-section-kicker">Что вы получите</p>
+    <h2>Что вы получите после заявки</h2>
+    <ul class="project-fit-list project-deliverables-list">
+      {deliverableItems.map((item) => <li>{item}</li>)}
+    </ul>
+    <p class="project-deliverables-note">Без выезда • расчёт по вашим размерам • за 1 день</p>
+  </div>
+</section>
+
+<section class="section project-section project-final-cta">
+  <div class="project-final-cta-card">
+    <div>
+      <p class="project-section-kicker">Хотите {sameServicePhrase}</p>
+      <h2>Рассчитаем {sameServicePhrase} под ваши размеры за 1 день</h2>
+      <p>Подберем планировку и материалы, сразу скажем стоимость. Можно без звонка.</p>
+    </div>
+    <a
+      href={midCtaLink}
+      class="ui-btn-state ds-action-primary"
+      data-cta="project_final_calc"
+      data-cta-type="primary"
+      data-cta-placement="final"
+      {...modalAttrs}
+    >
+      Получить расчет {sameServiceGenitive} →
+    </a>
+  </div>
+</section>
+
+{
+  unknownBlocks.map(({ block, index, typeIndex }) => (
+    <BlockRenderer block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+  ))
+}

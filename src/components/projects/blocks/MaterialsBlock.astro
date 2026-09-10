@@ -1,0 +1,37 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { ProjectBlockProps } from './types';
+
+const { block, viewModel } = Astro.props as ProjectBlockProps;
+const { materials } = viewModel;
+
+const items =
+  Array.isArray((block as { items?: typeof materials.items }).items) &&
+  (block as { items?: typeof materials.items }).items?.length
+    ? (block as { items?: typeof materials.items }).items
+    : materials.items;
+const resolvedItems = Array.isArray(items) ? items : [];
+
+const shouldRender = resolvedItems.length > 0;
+---
+
+{
+  shouldRender && (
+    <section id="materials" class="section project-section project-materials project-materials--main">
+      <p class="project-section-kicker">Материалы проекта</p>
+      <div class="project-materials-grid">
+        {resolvedItems.map((item) => (
+          <article class="project-material-card card card-soft">
+            <span class="project-material-icon">
+              <Icon name={(item as { icon?: string }).icon || 'tabler:palette'} class="icon" />
+            </span>
+            <div>
+              <h3>{item.label}</h3>
+              <p>{item.value}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}

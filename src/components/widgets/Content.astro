@@ -1,0 +1,135 @@
+---
+import type { Content as Props } from '~/types';
+import Headline from '~/components/ui/Headline.astro';
+import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
+import Image from '~/components/common/Image.astro';
+import Button from '~/components/ui/Button.astro';
+import ItemGrid from '~/components/ui/ItemGrid.astro';
+
+const props = Astro.props as Props;
+const {
+  title,
+  subtitle,
+  tagline,
+  content,
+  callToAction,
+  items = [],
+  columns,
+  image,
+  isReversed = false,
+  isAfterContent = false,
+
+  id,
+  isDark = false,
+  classes = {},
+} = props;
+
+const hasTitleSlot = Astro.slots.has('title');
+const hasSubtitleSlot = Astro.slots.has('subtitle');
+const hasTaglineSlot = Astro.slots.has('tagline');
+const hasContentSlot = Astro.slots.has('content');
+const hasImageSlot = Astro.slots.has('image');
+const hasBgSlot = Astro.slots.has('bg');
+
+const imageAttributes = typeof image === 'object' && image ? (image as Record<string, unknown>) : null;
+const imageSrc = typeof image === 'string' ? image : (imageAttributes?.src as string | undefined);
+const imageAlt =
+  (imageAttributes?.alt as string | undefined) ||
+  (typeof title === 'string' && title) ||
+  (typeof subtitle === 'string' && subtitle) ||
+  'Content image';
+---
+
+<WidgetWrapper
+  id={id}
+  isDark={isDark}
+  containerClass={`max-w-7xl mx-auto ${isAfterContent ? 'pt-0 md:pt-0 lg:pt-0' : ''} ${classes?.container ?? ''}`}
+>
+  {hasBgSlot && (
+    <Fragment slot="bg">
+      <slot name="bg" />
+    </Fragment>
+  )}
+  <Headline
+    title={title}
+    subtitle={subtitle}
+    tagline={tagline}
+    classes={{
+      container: 'max-w-xl sm:mx-auto lg:max-w-2xl',
+      title: 'text-4xl md:text-5xl font-bold tracking-tighter mb-4 font-heading',
+      subtitle: 'max-w-3xl mx-auto sm:text-center text-xl text-muted dark:text-slate-400',
+    }}
+  >
+    {hasTitleSlot && (
+      <Fragment slot="title">
+        <slot name="title" />
+      </Fragment>
+    )}
+    {hasSubtitleSlot && (
+      <Fragment slot="subtitle">
+        <slot name="subtitle" />
+      </Fragment>
+    )}
+    {hasTaglineSlot && (
+      <Fragment slot="tagline">
+        <slot name="tagline" />
+      </Fragment>
+    )}
+  </Headline>
+  <div class="mx-auto max-w-7xl p-4 md:px-8">
+    <div class={`md:flex ${isReversed ? 'md:flex-row-reverse' : ''} md:gap-16`}>
+      <div class="md:basis-1/2 self-center">
+        {(content || hasContentSlot) && (
+          <div class="mb-12 text-lg dark:text-slate-400">
+            {hasContentSlot ? <slot name="content" /> : <p>{content}</p>}
+          </div>
+        )}
+
+        {
+          callToAction && (
+            <div class="mt-[-40px] mb-8 text-primary">
+              <Button variant="link" {...callToAction} />
+            </div>
+          )
+        }
+
+        <ItemGrid
+          items={items}
+          columns={columns}
+          defaultIcon="tabler:check"
+          classes={{
+            container: `gap-y-4 md:gap-y-8`,
+            panel: 'max-w-none',
+            title: 'text-lg font-medium leading-6 dark:text-white ml-2 rtl:ml-0 rtl:mr-2',
+            description: 'text-muted dark:text-slate-400 ml-2 rtl:ml-0 rtl:mr-2',
+            icon: 'flex h-7 w-7 items-center justify-center rounded-full bg-green-600 dark:bg-green-700 text-gray-50 p-1',
+            action: 'text-lg font-medium leading-6 dark:text-white ml-2 rtl:ml-0 rtl:mr-2',
+          }}
+        />
+      </div>
+      <div aria-hidden="true" class="mt-10 md:mt-0 md:basis-1/2">
+        {
+          (image || hasImageSlot) && (
+            <div class="relative m-auto max-w-4xl">
+              {hasImageSlot ? (
+                <slot name="image" />
+              ) : (
+                <Image
+                  class="mx-auto w-full rounded-lg bg-gray-500 shadow-lg"
+                  width={500}
+                  height={500}
+                  widths={[400, 768]}
+                  sizes="(max-width: 768px) 100vw, 432px"
+                  layout="responsive"
+                  src={imageSrc}
+                  alt={imageAlt}
+                  {...(imageAttributes ?? {})}
+                />
+              )}
+            </div>
+          )
+        }
+      </div>
+    </div>
+  </div>
+</WidgetWrapper>

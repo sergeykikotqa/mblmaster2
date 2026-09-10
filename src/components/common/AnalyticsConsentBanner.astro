@@ -1,0 +1,43 @@
+---
+const privacyPath = '/privacy';
+---
+
+<div
+  id="analytics-consent-banner"
+  class="mbl-consent-banner hidden"
+  role="dialog"
+  aria-live="polite"
+  aria-label="Настройки аналитики"
+>
+  <div class="mbl-consent-layout">
+    <div class="mbl-consent-copy-wrap">
+      <p class="mbl-consent-kicker">Аналитика и cookies</p>
+      <p class="mbl-consent-copy">
+        Мы используем Яндекс Метрику и события формы, чтобы понимать, какие страницы и заявки работают лучше. Аналитика
+        включится только после вашего согласия.
+      </p>
+      <a class="mbl-consent-link" href={privacyPath}>
+        Политика конфиденциальности
+      </a>
+    </div>
+    <div class="mbl-consent-actions">
+      <button
+        type="button"
+        data-analytics-consent="accept"
+        class="mbl-button mbl-button-primary"
+      >
+        Разрешить
+      </button>
+      <button
+        type="button"
+        data-analytics-consent="decline"
+        class="mbl-button mbl-button-secondary"
+      >
+        Не сейчас
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/scripts/analytics-consent-banner.js" defer></script>
+

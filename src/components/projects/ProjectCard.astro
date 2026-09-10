@@ -1,0 +1,132 @@
+---
+import Image from '~/components/common/Image.astro';
+import { Icon } from 'astro-icon/components';
+import type { ProjectCardData } from '~/types/project';
+import '~/styles/components/project-card.css';
+
+interface Props {
+  project: ProjectCardData;
+  useModal?: boolean;
+}
+
+const { project, useModal = false } = Astro.props as Props;
+const showDescription = !project.proofHighlight;
+const contactHref = `/contacts?from=project&slug=${project.slug}${project.serviceId ? `&service=${project.serviceId}` : ''}`;
+const ctaNote = 'Ответим в течение дня';
+const areaLabel = project.areaLabel || '';
+const contextLabel = project.contextLabel || '';
+const audienceLabel = project.audienceLabel || '';
+const summaryLine = [contextLabel, audienceLabel].filter(Boolean).join(' • ');
+const calloutText = project.calloutText || 'Рассчитаем похожий проект под ваши размеры за 1 день';
+---
+
+<article
+  class="project-card ds-card ds-card-interactive"
+  data-area={project.areaValue ?? ''}
+  data-price={project.priceValue ?? ''}
+  data-layout={project.layoutToken ?? ''}
+  data-service={project.serviceId ?? ''}
+>
+  <a class="project-link ui-btn-state" href={project.href} aria-label={`Открыть кейс: ${project.title}`}>
+    <div class="project-cover">
+      {
+        project.coverImage ? (
+          <Image src={project.coverImage} alt={project.title} width={1200} height={800} layout="responsive" />
+        ) : (
+          <div class="project-cover-placeholder">Без фото</div>
+        )
+      }
+    </div>
+  </a>
+
+  <div class="project-body">
+    <p class="project-meta">
+      <span>{project.serviceLabel}</span>
+      <span>•</span>
+      <span>{project.cityLabel}</span>
+    </p>
+
+    {
+      areaLabel && (
+        <p class="project-summary project-meta-row">
+          <Icon name="tabler:ruler" class="project-meta-icon" />
+          <span>{areaLabel}</span>
+        </p>
+      )
+    }
+    {summaryLine && <p class="project-context">{summaryLine}</p>}
+    {
+      project.locationLabel && (
+        <p class="project-location project-meta-row">
+          <Icon name="tabler:map-pin" class="project-meta-icon" />
+          <span>{project.locationLabel}</span>
+        </p>
+      )
+    }
+
+    <h3>
+      <a class="project-title-link" href={project.href}>
+        {project.title}
+      </a>
+    </h3>
+
+    {project.description && showDescription && <p class="project-description">{project.description}</p>}
+
+    {
+      project.proofHighlight && (
+        <p class="project-proof">
+          <strong>{project.proofHighlight.label}:</strong> {project.proofHighlight.value}
+        </p>
+      )
+    }
+
+    {project.priceLabel && <p class="project-price">{project.priceLabel}</p>}
+
+    <p class="project-cta-callout">{calloutText}</p>
+
+    {
+      useModal ? (
+        <button
+          class="project-cta-primary"
+          type="button"
+          data-cta="project_primary"
+          data-cta-type="primary"
+          data-project-modal-trigger
+          data-project-slug={project.slug}
+          data-project-title={project.title}
+          data-project-area={project.areaLabel || ''}
+          data-project-price={project.priceLabel || ''}
+          data-project-duration={project.durationLabel || ''}
+          data-project-proof={project.proofHighlight?.value || ''}
+          data-project-service={project.serviceId || ''}
+          data-project-summary={summaryLine || ''}
+          data-project-href={project.href}
+          data-project-page={`/projects?project=${project.slug}`}
+          data-project-contact={contactHref}
+        >
+          {project.ctaLabel || 'Хочу такую же →'}
+        </button>
+      ) : (
+        <a class="project-cta-primary" href={contactHref} data-cta="project_primary" data-cta-type="primary">
+          {project.ctaLabel || 'Хочу такую же →'}
+        </a>
+      )
+    }
+    <span class="project-cta-note">{ctaNote}</span>
+
+    {
+      project.secondaryCtaHref && project.secondaryCtaLabel && (
+        <a
+          class="project-cta-secondary"
+          href={project.secondaryCtaHref}
+          aria-label={project.secondaryCtaLabel}
+          data-anchor-spam="ignore"
+          data-cta="project_secondary"
+          data-cta-type="secondary"
+        >
+          {project.secondaryCtaLabel}
+        </a>
+      )
+    }
+  </div>
+</article>

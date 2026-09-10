@@ -1,0 +1,108 @@
+---
+export interface Advantage {
+  title: string;
+  description?: string;
+}
+
+const defaultItems: Advantage[] = [
+  { title: 'Проект под реальные размеры', description: 'Замер + 3D‑планировка до запуска производства.' },
+  { title: 'Смета и договор до старта', description: 'Фиксируем стоимость, материалы и сроки до начала работ.' },
+  { title: 'Материалы по спецификации', description: 'Показываем образцы фасадов, фурнитуры и оттенков до оплаты.' },
+  { title: 'Монтаж по чек‑листу', description: 'Проверяем геометрию, зазоры и работу фурнитуры на объекте.' },
+  { title: 'Гарантия 24 месяца', description: 'Отвечаем за фасады, фурнитуру и монтаж по договору.' },
+  { title: 'Замер и консультация', description: 'Выезд замерщика по Иркутску, Ангарску и Шелехову.' },
+];
+
+const { items = defaultItems, id } = Astro.props as { items?: Advantage[]; id?: string };
+---
+
+<section id={id} class="adv py-12 sm:py-16 lg:py-18">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6">
+    <div class="adv-head ds-section-head">
+      <div class="adv-pill ds-pill">ПОЧЕМУ ВЫБИРАЮТ НАС</div>
+      <h2>Преимущества, которые влияют на результат</h2>
+      <p>Сфокусированы не на красивых обещаниях, а на понятном процессе и предсказуемом качестве.</p>
+    </div>
+
+    <div class="adv-grid">
+      {
+        items.map((item, idx) => (
+          <article class="adv-card ds-card ds-card-interactive">
+            <span class="adv-index">{String(idx + 1).padStart(2, '0')}</span>
+            <h3>{item.title}</h3>
+            {item.description && <p>{item.description}</p>}
+          </article>
+        ))
+      }
+    </div>
+
+    <div class="adv-cta">
+      <a
+        href="#contact"
+        data-cta-placement="section"
+        data-cta="advantages_cta"
+        data-cta-type="primary"
+        class="adv-btn ds-action-primary"
+      >
+        Заказать замер
+      </a>
+    </div>
+  </div>
+</section>
+
+<style is:inline>
+  .adv {
+    background: linear-gradient(180deg, #fff 0%, #faf6f3 100%);
+  }
+  .adv-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+  .adv-card {
+    position: relative;
+    padding: 1rem;
+  }
+  .adv-index {
+    display: inline-flex;
+    border-radius: 999px;
+    background: #f1dfd2;
+    color: #7f573c;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+  }
+  .adv-card h3 {
+    margin: 0.7rem 0 0;
+    font-size: 1.05rem;
+    line-height: 1.25;
+    color: #1e1a17;
+  }
+  .adv-card p {
+    margin: 0.45rem 0 0;
+    color: #66605c;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .adv-cta {
+    margin-top: 1.4rem;
+    text-align: center;
+  }
+  .adv-btn {
+    font-weight: 700;
+    padding-inline: 1.5rem;
+  }
+  @media (max-width: 980px) {
+    .adv-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 640px) {
+    .adv-grid {
+      grid-template-columns: 1fr;
+    }
+    .adv-btn {
+      width: 100%;
+    }
+  }
+</style>

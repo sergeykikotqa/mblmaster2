@@ -1,0 +1,64 @@
+---
+import JsonLd from '~/components/seo/JsonLd.astro';
+import { normalizePath, toAbsoluteUrl } from '~/lib/url-builder';
+
+export interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+const pathname = normalizePath(Astro.url.pathname);
+const segments = pathname === '/' ? [] : pathname.slice(1).split('/');
+
+const segmentLabels = new Map<string, string>([
+  ['projects', 'Кейсы'],
+  ['articles', 'Статьи'],
+  ['guides', 'Гайды'],
+  ['faq', 'FAQ'],
+  ['services', 'Услуги'],
+  ['contacts', 'Контакты'],
+  ['o-kompanii', 'О компании'],
+  ['privacy', 'Политика конфиденциальности'],
+  ['terms', 'Условия'],
+  ['thanks', 'Спасибо'],
+  ['irkutsk', 'Иркутск'],
+  ['angarsk', 'Ангарск'],
+  ['shelekhov', 'Шелехов'],
+  ['kuhni', 'Кухни'],
+  ['shkafy', 'Шкафы-купе'],
+  ['garderobnye', 'Гардеробные'],
+]);
+
+const decodeLabel = (value: string) =>
+  decodeURIComponent(value)
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const items: Array<{ name: string; href: string }> = [{ name: 'Главная', href: '/' }];
+
+let currentPath = '';
+segments.forEach((segment, index) => {
+  currentPath += `/${segment}`;
+  const isLast = index === segments.length - 1;
+  const mapped = segmentLabels.get(segment);
+  const resolvedName = mapped || (isLast && title ? String(title).trim() : decodeLabel(segment));
+  items.push({
+    name: resolvedName || decodeLabel(segment),
+    href: currentPath,
+  });
+});
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: items.map((item, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: item.name,
+    item: toAbsoluteUrl(item.href, Astro.site),
+  })),
+};
+---
+
+<JsonLd schema={breadcrumbSchema} />

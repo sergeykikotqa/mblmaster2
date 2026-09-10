@@ -1,0 +1,217 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import ArticleLayout from '~/components/content/ArticleLayout.astro';
+import { getRelatedEntities } from '~/lib/entities/get-related-entities';
+import { getGeneratedPages } from '~/lib/geo-data';
+import { getSlugFromEntryId } from '~/utils/content-graph';
+import { INDEX_PATHS, NOINDEX_FOLLOW_PATHS, TEMP_NOINDEX_PATHS } from '~/config/indexability-policy';
+import type { ProjectCardData } from '~/types/project';
+
+export async function getStaticPaths() {
+  const articles = await getCollection('articles', ({ data }) => !data.draft);
+  const guides = await getCollection('guides', ({ data }) => !data.draft);
+  const projects = await getCollection('projects', ({ data }) => !data.draft);
+  const articleBySlug = new Map<string, CollectionEntry<'articles'>>();
+  const guidesBySlug = new Map<string, CollectionEntry<'guides'>>();
+
+  const resolveArticleSlug = (entry: CollectionEntry<'articles'>): string =>
+    String(entry.data.slug || getSlugFromEntryId(entry.id)).trim();
+  const resolveGuideSlug = (entry: CollectionEntry<'guides'>): string =>
+    String(entry.data.slug || getSlugFromEntryId(entry.id)).trim();
+  const resolveProjectSlug = (entry: CollectionEntry<'projects'>): string =>
+    String(entry.data.slug || getSlugFromEntryId(entry.id)).trim();
+
+  for (const article of articles) {
+    articleBySlug.set(resolveArticleSlug(article), article);
+  }
+  for (const guide of guides) {
+    guidesBySlug.set(resolveGuideSlug(guide), guide);
+  }
+
+  const normalizePath = (value: string) => value.replace(/\/+$/, '') || '/';
+
+  const articleSlugs = new Set(articleBySlug.keys());
+  const guideSlugs = new Set(guidesBySlug.keys());
+  const projectSlugs = new Set(projects.map((project) => resolveProjectSlug(project)).filter(Boolean));
+  const generatedPageSlugs = new Set(getGeneratedPages().map((page) => normalizePath(page.pageSlug)));
+
+  const staticPaths = new Set(
+    [...INDEX_PATHS, ...TEMP_NOINDEX_PATHS, ...NOINDEX_FOLLOW_PATHS]
+      .filter((pattern) => !pattern.endsWith('/*'))
+      .map((pattern) => normalizePath(pattern))
+  );
+
+  const normalizeInternalLink = (slug: string): string => {
+    const trimmed = String(slug || '').trim();
+    if (!trimmed) return '/';
+    if (trimmed.startsWith('/')) return normalizePath(trimmed.split(/[?#]/)[0] || '/');
+    if (articleSlugs.has(trimmed)) return `/articles/${trimmed}`;
+    if (guideSlugs.has(trimmed)) return `/guides/${trimmed}`;
+    return normalizePath(`/${trimmed}`);
+  };
+
+  const isKnownInternalPath = (pathValue: string): boolean => {
+    const normalized = normalizePath(pathValue);
+    if (staticPaths.has(normalized)) return true;
+    if (generatedPageSlugs.has(normalized)) return true;
+
+    const parts = normalized.split('/').filter(Boolean);
+    if (parts.length === 2) {
+      const [prefix, slug] = parts;
+      if (prefix === 'articles') return articleSlugs.has(slug);
+      if (prefix === 'guides') return guideSlugs.has(slug);
+      if (prefix === 'projects') return projectSlugs.has(slug);
+      if (prefix === 'faq') return true;
+    }
+
+    return false;
+  };
+
+  const brokenLinks: string[] = [];
+
+  for (const article of articles) {
+    const currentSlug = resolveArticleSlug(article);
+    const currentPath = `/articles/${currentSlug}`;
+
+    for (const related of article.data.relatedArticles ?? []) {
+      if (!articleSlugs.has(related) && !guideSlugs.has(related)) {
+        brokenLinks.push(
+          `[articles/${currentSlug}] relatedArticles: "${related}" is missing (expected article/guide slug)`
+        );
+      }
+    }
+
+    for (const link of article.data.internalLinks ?? []) {
+      const target = normalizeInternalLink(link.slug);
+      if (!isKnownInternalPath(target)) {
+        brokenLinks.push(`[articles/${currentSlug}] internalLinks: "${link.slug}" -> "${target}" is missing`);
+      }
+      if (target === currentPath) {
+        brokenLinks.push(`[articles/${currentSlug}] internalLinks: "${link.slug}" points to itself`);
+      }
+    }
+
+    // Lint rule: external links with CTA anchors are not allowed in markdown body.
+    const ctaKeywords = [
+      'заказать',
+      'заказ',
+      'заявк',
+      'консультац',
+      'позвон',
+      'связат',
+      'расчет',
+      'расчёт',
+      'оставить',
+      'получить',
+    ];
+    const markdownExternalLink = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi;
+    let match: RegExpExecArray | null;
+    while ((match = markdownExternalLink.exec(article.body ?? '')) !== null) {
+      const anchorText = (match[1] || '').toLowerCase();
+      const href = match[2] || '';
+      const isCta = ctaKeywords.some((keyword) => anchorText.includes(keyword));
+      if (isCta) {
+        brokenLinks.push(`[articles/${currentSlug}] external CTA is forbidden: anchor="${match[1]}", href="${href}"`);
+      }
+    }
+
+    const markdownLinks: Array<{ text: string; href: string }> = [];
+    const markdownLinkRe = /\[([^\]]+)\]\(([^)\s]+)\)/gi;
+    markdownLinkRe.lastIndex = 0;
+    while ((match = markdownLinkRe.exec(article.body ?? '')) !== null) {
+      markdownLinks.push({ text: String(match[1] || ''), href: String(match[2] || '') });
+    }
+
+    const internalBodyLinks = markdownLinks.filter((link) => {
+      const href = String(link.href || '').trim();
+      if (!href) return false;
+      if (href.startsWith('#') || href.startsWith('/#')) return false;
+      if (href.startsWith('mailto:') || href.startsWith('tel:')) return false;
+      if (href.startsWith('http://') || href.startsWith('https://')) return false;
+      if (href.startsWith('./') || href.startsWith('../')) return false;
+      if (href.startsWith('//')) return false;
+      return true;
+    });
+
+    for (const link of internalBodyLinks) {
+      const normalized = normalizeInternalLink(link.href);
+      if (!isKnownInternalPath(normalized)) {
+        brokenLinks.push(`[articles/${currentSlug}] markdown link: "${link.href}" -> "${normalized}" is missing`);
+      }
+    }
+
+    const autoRelated = getRelatedEntities({
+      type: 'article',
+      slug: currentSlug,
+      projects,
+      articles,
+      limits: { projects: 3, articles: 2, services: 1 },
+    });
+    const autoRelatedSlugs = autoRelated.articles.map((item) => resolveArticleSlug(item));
+    const manualRelatedSlugs = (article.data.relatedArticles ?? []).filter((itemSlug) => articleSlugs.has(itemSlug));
+    const hasInternalLinks = (article.data.internalLinks ?? []).length > 0;
+    const hasRelatedLinks =
+      manualRelatedSlugs.length > 0 ||
+      autoRelatedSlugs.length > 0 ||
+      autoRelated.projects.length > 0 ||
+      Boolean(autoRelated.service);
+    if (!hasInternalLinks && !hasRelatedLinks) {
+      brokenLinks.push(
+        `[articles/${currentSlug}] orphan page: no internal links and no related links in cluster graph`
+      );
+    }
+  }
+
+  if (brokenLinks.length > 0) {
+    throw new Error(`Content link validation failed:\n${brokenLinks.join('\n')}`);
+  }
+
+  return articles.map((article) => {
+    const slug = resolveArticleSlug(article);
+    const manualRelated = (article.data.relatedArticles ?? [])
+      .map((itemSlug) => articleBySlug.get(itemSlug))
+      .filter((item): item is CollectionEntry<'articles'> => Boolean(item));
+    const autoRelated = getRelatedEntities({
+      type: 'article',
+      slug,
+      projects,
+      articles,
+      limits: { projects: 3, articles: 2, services: 1 },
+    });
+    const mergedRelated = [...manualRelated, ...autoRelated.articles].filter(
+      (item, index, arr) => arr.findIndex((value) => value.id === item.id) === index
+    );
+    const relatedProjects = autoRelated.projects;
+    const relatedService = autoRelated.service;
+
+    return {
+      params: { slug },
+      props: { article, relatedArticles: mergedRelated.slice(0, 2), relatedProjects, relatedService },
+    };
+  });
+}
+
+interface Props {
+  article?: CollectionEntry<'articles'>;
+  relatedArticles?: CollectionEntry<'articles'>[];
+  relatedProjects?: ProjectCardData[];
+  relatedService?: { id: string; name: string; href: string } | null;
+}
+
+const { article, relatedArticles = [], relatedProjects = [], relatedService = null }: Props = Astro.props;
+
+if (!article) {
+  return Astro.redirect('/articles/');
+}
+
+const { Content } = await render(article);
+---
+
+<ArticleLayout
+  article={article}
+  relatedArticles={relatedArticles}
+  relatedProjects={relatedProjects}
+  relatedService={relatedService}
+>
+  <Content />
+</ArticleLayout>

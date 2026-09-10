@@ -1,0 +1,599 @@
+---
+import { getCollection } from 'astro:content';
+import { getImage } from 'astro:assets';
+import PageLayout from '~/layouts/PageLayout.astro';
+import Image from '~/components/common/Image.astro';
+import ContactForm from '~/components/ContactForm.astro';
+import HomeQuiz from '~/components/home/HomeQuiz.astro';
+import { buildProjectCardData, buildProjectVideoCards } from '~/lib/projects/project-adapters';
+import { getBusinessInfo } from '~/config/business-info';
+import { footerData } from '~/navigation';
+import heroProjectImage from '~/assets/images/projects/kuhnya-piskunova/01.jpg';
+import '~/assets/styles/pages/home.css';
+
+const metadata = {
+  title: 'Мебель на заказ в Иркутске — кухни, шкафы и гардеробные МБЛ',
+  description:
+    'Проектируем и производим мебель на заказ в Иркутске: кухни, шкафы и гардеробные по вашим размерам. Замер, договор, гарантия 2 года и монтаж под ключ.',
+};
+
+const businessInfo = getBusinessInfo();
+const phoneHref = 'tel:' + businessInfo.phoneHref;
+
+const categories = [
+  {
+    title: 'Кухни',
+    number: '01',
+    description: 'Под планировку, технику и привычный сценарий готовки — без случайных модулей.',
+    href: '/kuhni',
+    image: '/images/projects/kuhnya-piskunova/01.jpg',
+    alt: 'Угловая кухня МБЛ с матовыми фасадами в Иркутске',
+  },
+  {
+    title: 'Шкафы',
+    number: '02',
+    description: 'В нишу, во всю стену или как часть интерьера спальни и прихожей.',
+    href: '/shkafy',
+    image: '/images/projects/shkaf-v-spalnyu-s-riflenymi-fasadami-irkutsk/01.jpg',
+    alt: 'Шкаф МБЛ с рифлёными фасадами в спальне',
+  },
+  {
+    title: 'Гардеробные',
+    number: '03',
+    description: 'Хранение, которое проектируется вокруг ваших вещей, а не наоборот.',
+    href: '/garderobnye',
+    image: '/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg',
+    alt: 'Угловая гардеробная МБЛ с дверями-купе',
+  },
+];
+
+const workStages = [
+  {
+    title: 'Понимаем задачу',
+    description: 'Обсуждаем помещение, хранение, технику, внешний вид и ориентир по бюджету.',
+  },
+  {
+    title: 'Замеряем и проектируем',
+    description: 'Фиксируем размеры и коммуникации, собираем компоновку, материалы и спецификацию.',
+  },
+  {
+    title: 'Производим',
+    description: 'Изготавливаем детали по утверждённому проекту и контролируем комплектацию.',
+  },
+  {
+    title: 'Монтируем и сдаём',
+    description: 'Устанавливаем мебель, настраиваем механизмы и передаём результат по договору.',
+  },
+];
+
+const materialStories = [
+  {
+    kicker: 'Оснащение',
+    title: 'Техника и хранение становятся частью проекта',
+    description: 'Мойку, посудомоечную машину и внутренние системы учитываем до утверждения компоновки.',
+    image: '/images/projects/kuhnya-piskunova/02.jpg',
+    alt: 'Встроенная посудомоечная машина и внутреннее оснащение кухни МБЛ',
+  },
+  {
+    kicker: 'Хранение',
+    title: 'Сначала сценарий вещей, потом линия фасадов',
+    description: 'Полки, ящики и штанги распределяются под реальное наполнение конкретной комнаты.',
+    image: '/images/projects/shkaf-v-spalnyu-s-riflenymi-fasadami-irkutsk/02.jpg',
+    alt: 'Внутреннее наполнение шкафа МБЛ',
+  },
+  {
+    kicker: 'Детали',
+    title: 'Механизмы выбираются под нагрузку',
+    description: 'Фурнитуру и конструкцию фиксируем в спецификации до запуска мебели в производство.',
+    image: '/images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg',
+    alt: 'Ящики и полки угловой гардеробной МБЛ',
+  },
+];
+
+const trustFacts = [
+  { value: '10+', label: 'лет работаем с мебелью в Иркутске' },
+  { value: '500+', label: 'реализованных проектов' },
+  { value: '24', unit: 'месяца', label: 'гарантия на мебель и монтаж' },
+  { value: '1', unit: 'договор', label: 'фиксирует смету, сроки и состав работ' },
+];
+
+const faqItems = [
+  {
+    q: 'Сколько стоит мебель на заказ?',
+    a: 'Стоимость зависит от размеров, материалов, наполнения и фурнитуры. После замера готовим проект и точную смету до запуска производства.',
+  },
+  {
+    q: 'Можно начать без точных размеров?',
+    a: 'Да. Для первого разговора достаточно типа мебели, фотографии помещения и примерного бюджета. Точные размеры снимет замерщик.',
+  },
+  {
+    q: 'Сколько занимает изготовление?',
+    a: 'Срок зависит от сложности и комплектации. Для стандартных проектов текущий ориентир — от 20 до 45 дней; точную дату фиксируем в договоре.',
+  },
+  {
+    q: 'Где вы работаете?',
+    a: 'В Иркутске, Ангарске, Шелехове и ближайших локациях — выезд и монтаж согласовываем для каждого проекта.',
+  },
+  {
+    q: 'Что входит в гарантию?',
+    a: 'Условия гарантии на конструкцию, фасады, фурнитуру и монтаж фиксируются в договоре. Базовый срок на мебель и монтаж — 24 месяца.',
+  },
+  {
+    q: 'Можно заказать проект под ключ?',
+    a: 'Да. В полный цикл входят замер, проектирование, подбор материалов, производство, доставка, монтаж и финальная настройка.',
+  },
+];
+
+const districts = ['Октябрьский', 'Свердловский', 'Ленинский', 'Правобережный', 'Ново-Ленино', 'Солнечный'];
+const cityLinks = [
+  { label: 'Иркутск', href: '/irkutsk' },
+  { label: 'Ангарск', href: '/angarsk' },
+  { label: 'Шелехов', href: '/shelekhov' },
+];
+
+const projectEntries = (await getCollection('projects', ({ data }) => !data.draft)).sort((a, b) => {
+  const dateDiff = Number(b.data.publishDate || 0) - Number(a.data.publishDate || 0);
+  return dateDiff || a.id.localeCompare(b.id);
+});
+const projectCards = projectEntries
+  .map((entry) => buildProjectCardData(entry))
+  .filter((project) => project.coverImage.startsWith('/images/projects/'));
+const featuredProjects = ['kuhni', 'shkafy', 'garderobnye']
+  .map((serviceId) => projectCards.find((project) => project.serviceId === serviceId))
+  .filter((project): project is (typeof projectCards)[number] => Boolean(project));
+const featuredVideo = buildProjectVideoCards(projectEntries)[0];
+
+const articles = await getCollection(
+  'articles',
+  ({ data }) => !data.draft && data.seoReady === true && !data.isArchived && !data.noindex
+);
+const latestArticles = articles
+  .sort((a, b) => Number(b.data.publishDate) - Number(a.data.publishDate))
+  .slice(0, 3)
+  .map((article) => ({
+    title: article.data.title,
+    description: article.data.description,
+    category: article.data.category || 'Материалы',
+    href: '/articles/' + (article.data.slug || article.id.replace(/\.mdx?$/, '')),
+  }));
+
+const reviewLinks = footerData.links.find((section) => section.title.toLowerCase().includes('отзыв'))?.links ?? [];
+
+const heroPreload = import.meta.env.DEV
+  ? null
+  : await getImage({
+      src: heroProjectImage,
+      widths: [480, 768, 960],
+      sizes: '(min-width: 70rem) 46vw, 100vw',
+      format: 'webp',
+      quality: 74,
+    });
+---
+
+<PageLayout metadata={metadata} pageType="home">
+  {
+    heroPreload && (
+      <link
+        slot="head"
+        rel="preload"
+        as="image"
+        href={heroPreload.src}
+        imagesrcset={heroPreload.srcSet?.attribute}
+        imagesizes={heroPreload.attributes?.sizes}
+        type="image/webp"
+      />
+    )
+  }
+
+  <div class="home-page">
+    <section class="home-hero mbl-mode-brand" aria-labelledby="home-title">
+      <div class="home-brand-atmosphere" aria-hidden="true"></div>
+      <div class="mbl-container home-hero-grid">
+        <div class="home-hero-copy">
+          <p class="mbl-kicker home-hero-enter home-hero-enter-1">Мебель на заказ · Иркутск</p>
+          <h1 id="home-title" class="mbl-display home-hero-enter home-hero-enter-2">
+            Мебель, после которой не хочется ничего <em>переделывать</em>
+          </h1>
+          <p class="home-hero-lead home-hero-enter home-hero-enter-3">
+            Проектируем кухни, шкафы и гардеробные под конкретное пространство — от первого замера до монтажа.
+          </p>
+          <div class="home-hero-actions home-hero-enter home-hero-enter-4">
+            <a
+              href="#calculator"
+              class="mbl-button mbl-button-primary"
+              data-cta="home_hero_calculator"
+              data-cta-type="primary"
+              data-cta-placement="hero"
+            >
+              Рассчитать проект <span aria-hidden="true">→</span>
+            </a>
+            <a
+              href="#projects"
+              class="mbl-button mbl-button-secondary"
+              data-cta="home_hero_projects"
+              data-cta-type="secondary"
+              data-cta-placement="hero"
+            >
+              Смотреть проекты
+            </a>
+          </div>
+          <div class="home-hero-proof home-hero-enter home-hero-enter-4" aria-label="Ключевые условия">
+            <span>Собственное производство</span>
+            <span>Смета до старта</span>
+            <span>Гарантия 2 года</span>
+          </div>
+          <a href="#contact" class="home-hero-direct">Или сразу обсудить задачу</a>
+        </div>
+
+        <a
+          class="home-hero-scene home-hero-enter home-hero-enter-3 mbl-media-cover mbl-media-zoom"
+          href="/projects/kuhnya-piskunova"
+        >
+          <Image
+            src={heroProjectImage}
+            alt="Угловая кухня МБЛ на улице Пискунова в Иркутске"
+            width={900}
+            height={1200}
+            widths={[480, 768, 960]}
+            sizes="(min-width: 70rem) 46vw, 100vw"
+            layout="cover"
+            loading="eager"
+            decoding="async"
+            fetchpriority="high"
+            quality={74}
+          />
+          <span class="home-hero-scrim" aria-hidden="true"></span>
+          <span class="home-narrative" aria-label="От временных решений к мебели надолго">
+            <span class="home-narrative-phrase phrase-1">пока сойдёт</span>
+            <span class="home-narrative-phrase phrase-2">потом переделаем</span>
+            <span class="home-narrative-phrase phrase-3">ну вроде нормально</span>
+            <strong class="home-narrative-result">Сделано под вашу жизнь. Надолго.</strong>
+          </span>
+          <span class="home-hero-caption">
+            <span>Реализованный проект</span>
+            <strong>Кухня на Пискунова · 10 м² · 19 дней</strong>
+          </span>
+        </a>
+      </div>
+    </section>
+
+    <section class="home-story mbl-mode-brand" aria-labelledby="story-title">
+      <div class="mbl-container home-story-grid">
+        <p class="mbl-kicker mbl-reveal" data-mbl-reveal>Не на один сезон</p>
+        <div class="home-story-copy mbl-reveal" data-mbl-reveal style="--mbl-reveal-delay: 70ms">
+          <h2 id="story-title" class="mbl-title">
+            Хорошая мебель не просит привыкнуть к компромиссам
+          </h2>
+          <p class="mbl-copy">
+            Она учитывает проходы, технику, привычки и вещи ещё на этапе проекта. Поэтому спустя год не возникает
+            желания перенести полку, заменить фасад или заново собирать хранение.
+          </p>
+        </div>
+        <blockquote class="home-story-quote mbl-reveal" data-mbl-reveal style="--mbl-reveal-delay: 140ms">
+          <span>Не просто заполнить стену.</span>
+          <strong>Собрать пространство, в котором всё на своём месте.</strong>
+        </blockquote>
+      </div>
+    </section>
+
+    <section class="home-categories mbl-section mbl-mode-editorial" aria-labelledby="categories-title">
+      <div class="mbl-container">
+        <header class="home-section-head mbl-reveal" data-mbl-reveal>
+          <p class="mbl-kicker">Направления</p>
+          <h2 id="categories-title" class="mbl-title">Мебель начинается не с каталога, а с комнаты</h2>
+          <p class="mbl-copy">Три основных направления, в каждом — индивидуальная геометрия и комплектация.</p>
+        </header>
+        <div class="home-category-grid">
+          {
+            categories.map((category, index) => (
+              <a
+                href={category.href}
+                class:list={[
+                  'home-category mbl-reveal mbl-media-cover mbl-media-zoom',
+                  { 'home-category-featured': index === 0 },
+                ]}
+                data-mbl-reveal
+                style={'--mbl-reveal-delay: ' + index * 70 + 'ms'}
+                data-cta={'home_category_' + (index + 1)}
+                data-cta-type="secondary"
+                data-cta-placement="section"
+              >
+                <Image
+                  src={category.image}
+                  alt={category.alt}
+                  width={1280}
+                  height={960}
+                  widths={[480, 768, 1280]}
+                  sizes={index === 0 ? '(min-width: 64rem) 58vw, 100vw' : '(min-width: 64rem) 38vw, 100vw'}
+                  layout="cover"
+                  loading="lazy"
+                />
+                <span class="home-category-scrim" aria-hidden="true"></span>
+                <span class="home-category-index">{category.number}</span>
+                <span class="home-category-copy">
+                  <strong>{category.title}</strong>
+                  <span>{category.description}</span>
+                  <span class="home-category-link">Смотреть направление →</span>
+                </span>
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <HomeQuiz />
+
+    <section id="projects" class="home-projects mbl-section mbl-mode-brand" aria-labelledby="projects-title">
+      <div class="mbl-container">
+        <header class="home-projects-head mbl-reveal" data-mbl-reveal>
+          <div>
+            <p class="mbl-kicker">Реальные кейсы</p>
+            <h2 id="projects-title" class="mbl-title">Проекты объясняют нас лучше обещаний</h2>
+          </div>
+          <div class="home-projects-intro">
+            <p>Задача, материалы, срок и стоимость — внутри каждого кейса, без безымянного каталога.</p>
+            <a href="/projects" class="mbl-arrow-link">Все проекты</a>
+          </div>
+        </header>
+
+        <div class="home-project-grid">
+          {
+            featuredProjects.map((project, index) => (
+              <article
+                class:list={[
+                  'home-project-card mbl-reveal mbl-media-zoom',
+                  { 'home-project-card-featured': index === 0 },
+                ]}
+                data-mbl-reveal
+                style={'--mbl-reveal-delay: ' + index * 70 + 'ms'}
+              >
+                <a
+                  href={project.href}
+                  class="home-project-image mbl-media-cover"
+                  aria-label={'Смотреть проект: ' + project.title}
+                >
+                  <Image
+                    src={project.coverImage}
+                    alt={project.title}
+                    width={1280}
+                    height={960}
+                    widths={[480, 768, 1280]}
+                    sizes={index === 0 ? '(min-width: 64rem) 62vw, 100vw' : '(min-width: 64rem) 33vw, 100vw'}
+                    layout="cover"
+                    loading="lazy"
+                  />
+                </a>
+                <div class="home-project-body">
+                  <p class="home-project-kicker">{project.serviceLabel} · {project.cityLabel}</p>
+                  <h3><a href={project.href}>{project.title}</a></h3>
+                  <p>{project.proofHighlight?.value || project.description}</p>
+                  <dl class="home-project-facts">
+                    {project.areaLabel && <div><dt>Площадь</dt><dd>{project.areaLabel}</dd></div>}
+                    {project.durationLabel && <div><dt>Срок</dt><dd>{project.durationLabel}</dd></div>}
+                    {project.priceLabel && <div><dt>Стоимость</dt><dd>{project.priceLabel}</dd></div>}
+                  </dl>
+                  <a href={project.href} class="mbl-arrow-link">Разобрать кейс</a>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+
+        {
+          featuredVideo && (
+            <a href={featuredVideo.href} class="home-video-link mbl-reveal" data-mbl-reveal>
+              <span>Видео с объекта</span>
+              <strong>{featuredVideo.title}</strong>
+              <span aria-hidden="true">Смотреть →</span>
+            </a>
+          )
+        }
+      </div>
+    </section>
+
+    <section class="home-trust mbl-section mbl-mode-editorial" aria-labelledby="trust-title">
+      <div class="mbl-container">
+        <header class="home-trust-head mbl-reveal" data-mbl-reveal>
+          <p class="mbl-kicker">Основания доверять</p>
+          <h2 id="trust-title" class="mbl-title">Спокойствие строится на конкретике</h2>
+        </header>
+        <dl class="home-trust-grid">
+          {
+            trustFacts.map((fact, index) => (
+              <div class="home-trust-fact mbl-reveal" data-mbl-reveal style={'--mbl-reveal-delay: ' + index * 55 + 'ms'}>
+                <dt><strong>{fact.value}</strong>{fact.unit && <span>{fact.unit}</span>}</dt>
+                <dd>{fact.label}</dd>
+              </div>
+            ))
+          }
+        </dl>
+        <div class="home-geography mbl-reveal" data-mbl-reveal>
+          <div>
+            <p class="home-geography-label">Работаем по городу и рядом</p>
+            <div class="home-city-links">
+              {cityLinks.map((city) => <a href={city.href}>{city.label}</a>)}
+            </div>
+          </div>
+          <p>{districts.join(' · ')}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-process mbl-section mbl-mode-commercial" aria-labelledby="process-title">
+      <div class="mbl-container home-process-layout">
+        <header class="home-process-head mbl-reveal" data-mbl-reveal>
+          <p class="mbl-kicker">Процесс</p>
+          <h2 id="process-title" class="mbl-title">От разговора до готовой мебели — четыре понятных этапа</h2>
+          <p class="mbl-copy">Решения, стоимость и сроки становятся понятными до запуска производства.</p>
+        </header>
+        <ol class="home-process-list">
+          {
+            workStages.map((stage, index) => (
+              <li class="mbl-reveal" data-mbl-reveal style={'--mbl-reveal-delay: ' + index * 50 + 'ms'}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <div>
+                  <h3>{stage.title}</h3>
+                  <p>{stage.description}</p>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <section class="home-materials mbl-section mbl-mode-brand" aria-labelledby="materials-title">
+      <div class="mbl-container">
+        <header class="home-materials-head mbl-reveal" data-mbl-reveal>
+          <p class="mbl-kicker">Материалы и детали</p>
+          <h2 id="materials-title" class="mbl-title">Красота держится на решениях, которых почти не видно</h2>
+        </header>
+        <div class="home-material-grid">
+          {
+            materialStories.map((story, index) => (
+              <article
+                class="home-material-card mbl-reveal mbl-media-zoom"
+                data-mbl-reveal
+                style={'--mbl-reveal-delay: ' + index * 70 + 'ms'}
+              >
+                <div class="home-material-image mbl-media-cover">
+                  <Image
+                    src={story.image}
+                    alt={story.alt}
+                    width={960}
+                    height={1200}
+                    widths={[480, 768, 960]}
+                    sizes="(min-width: 64rem) 33vw, 100vw"
+                    layout="cover"
+                    loading="lazy"
+                  />
+                </div>
+                <div class="home-material-copy">
+                  <p>{story.kicker}</p>
+                  <h3>{story.title}</h3>
+                  <span>{story.description}</span>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="home-reviews mbl-section mbl-mode-editorial" aria-labelledby="reviews-title">
+      <div class="mbl-container home-reviews-layout">
+        <header class="home-reviews-head mbl-reveal" data-mbl-reveal>
+          <p class="mbl-kicker">Отзывы</p>
+          <h2 id="reviews-title" class="mbl-title">Лучше читать там, где отзыв нельзя переписать на сайте</h2>
+          <p class="mbl-copy">Откройте независимую площадку и посмотрите впечатления клиентов о работе МБЛ.</p>
+        </header>
+        <div class="home-review-links">
+          {
+            reviewLinks.map((link, index) => (
+              <a
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="home-review-link mbl-reveal"
+                data-mbl-reveal
+                style={'--mbl-reveal-delay: ' + index * 50 + 'ms'}
+              >
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <strong>{link.text}</strong>
+                <span aria-hidden="true">↗</span>
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="home-articles mbl-section mbl-mode-commercial" aria-labelledby="articles-title">
+      <div class="mbl-container">
+        <header class="home-articles-head mbl-reveal" data-mbl-reveal>
+          <div>
+            <p class="mbl-kicker">Экспертиза</p>
+            <h2 id="articles-title" class="mbl-title">Разобраться до заказа</h2>
+          </div>
+          <a href="/articles" class="mbl-arrow-link">Все статьи</a>
+        </header>
+        <div class="home-article-grid">
+          {
+            latestArticles.map((article, index) => (
+              <article class="home-article-card mbl-reveal" data-mbl-reveal style={'--mbl-reveal-delay: ' + index * 60 + 'ms'}>
+                <div>
+                  <p>{article.category}</p>
+                  <h3><a href={article.href}>{article.title}</a></h3>
+                  <span>{article.description}</span>
+                  <a href={article.href} class="mbl-arrow-link">Читать</a>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="home-faq mbl-section mbl-mode-editorial" aria-labelledby="faq-title">
+      <div class="mbl-container home-faq-layout">
+        <header class="home-faq-head mbl-reveal" data-mbl-reveal>
+          <p class="mbl-kicker">FAQ</p>
+          <h2 id="faq-title" class="mbl-title">Что обычно важно до первого разговора</h2>
+          <p class="mbl-copy">Коротко о стоимости, замере, сроках и гарантии.</p>
+        </header>
+        <div class="home-faq-list">
+          {
+            faqItems.map((item, index) => (
+              <details class="home-faq-item mbl-reveal" data-mbl-reveal style={'--mbl-reveal-delay: ' + index * 35 + 'ms'}>
+                <summary>
+                  <span class="home-faq-index">{String(index + 1).padStart(2, '0')}</span>
+                  <span class="home-faq-question">{item.q}</span>
+                </summary>
+                <p>{item.a}</p>
+              </details>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" class="home-final mbl-section mbl-mode-brand" aria-labelledby="contact-title">
+      <div class="home-final-light" aria-hidden="true"></div>
+      <div class="mbl-container home-final-layout">
+        <div class="home-final-copy mbl-reveal" data-mbl-reveal>
+          <p class="mbl-kicker">Начать проект</p>
+          <h2 id="contact-title" class="mbl-title">Первая встреча — уже часть хорошего результата</h2>
+          <p class="mbl-copy">
+            Расскажите, для какого пространства нужна мебель. Уточним задачу, согласуем замер и подготовим следующий
+            шаг без давления и лишних обещаний.
+          </p>
+          <a
+            href={phoneHref}
+            class="home-final-phone"
+            data-cta="home_final_phone"
+            data-cta-type="phone"
+            data-cta-placement="section"
+          >
+            {businessInfo.phone}
+          </a>
+          <ul>
+            <li>Бесплатный замер по Иркутску, Ангарску и Шелехову</li>
+            <li>Смета и сроки фиксируются до производства</li>
+            <li>Монтаж и гарантия по договору</li>
+          </ul>
+        </div>
+        <div class="home-final-form mbl-reveal" data-mbl-reveal style="--mbl-reveal-delay: 90ms">
+          <ContactForm
+            formContext="home-final"
+            title="Расскажите о задаче"
+            subtitle="Достаточно имени и телефона. Комментарий можно оставить в двух словах."
+            cta="Обсудить проект"
+            ctaNote="Свяжемся, чтобы задать несколько вопросов и договориться о следующем шаге."
+            leadContext={{ city: 'irkutsk', pageType: 'homepage', pageSlug: '/' }}
+          />
+        </div>
+      </div>
+    </section>
+  </div>
+</PageLayout>

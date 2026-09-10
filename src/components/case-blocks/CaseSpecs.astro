@@ -1,0 +1,32 @@
+---
+import ProjectSpecs from '~/components/projects/ProjectSpecs.astro';
+
+type Props = {
+  city: string;
+  service: string;
+  area?: number;
+  duration?: number;
+  price?: number;
+  estimatedPrice?: number;
+  priceIsEstimated?: boolean;
+  priceNote?: string;
+  materials?: { facade?: string; tabletop?: string; hardware?: string };
+};
+
+const { city, service, area, duration, price, estimatedPrice, priceIsEstimated, priceNote, materials } =
+  Astro.props as Props;
+---
+
+<section class="section project-section">
+  <ProjectSpecs
+    city={city}
+    service={service}
+    area={area}
+    duration={duration}
+    price={price}
+    estimatedPrice={estimatedPrice}
+    priceIsEstimated={priceIsEstimated}
+    priceNote={priceNote}
+    materials={materials}
+  />
+</section>

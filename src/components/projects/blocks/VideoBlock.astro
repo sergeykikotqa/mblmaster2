@@ -1,0 +1,60 @@
+---
+import type { ProjectBlockProps } from './types';
+import Image from '~/components/common/Image.astro';
+import { formatProjectVideoDate, resolveProjectVideoPlatform } from '~/lib/projects/project-video';
+
+const { viewModel } = Astro.props as ProjectBlockProps;
+const { video, data } = viewModel;
+const videoData = video.data;
+const videoPoster = video.poster;
+const shouldRender = Boolean(videoData?.embedUrl);
+const videoPlatformLabel = resolveProjectVideoPlatform(videoData?.contentUrl, videoData?.embedUrl);
+const videoPublishedLabel = formatProjectVideoDate(videoData?.uploadDate);
+---
+
+{
+  shouldRender && (
+    <section class="section project-section project-video project-video--main">
+      <p class="project-section-kicker">Видео</p>
+      <div class="project-video-head">
+        <div class="project-video-copy">
+          <h2>Видеообзор проекта</h2>
+          <p class="project-video-description">
+            {videoData?.description ||
+              'Показываем проект вживую: материалы, компоновку и итоговый результат после монтажа.'}
+          </p>
+        </div>
+        <div class="project-video-meta" aria-label="Данные о видеообзоре">
+          <span class="project-video-chip project-video-chip-solid">{videoPlatformLabel}</span>
+          {videoPublishedLabel && <span class="project-video-chip">{videoPublishedLabel}</span>}
+          {videoData?.contentUrl && (
+            <a href={videoData.contentUrl} target="_blank" rel="noopener noreferrer" class="project-video-link">
+              Открыть на площадке
+            </a>
+          )}
+        </div>
+      </div>
+      <div class="project-video-frame" data-video-embed data-embed-url={videoData?.embedUrl}>
+        {videoPoster ? (
+          <Image
+            src={videoPoster}
+            alt={`Видео: ${data.title}`}
+            layout="cover"
+            loading="lazy"
+            decoding="async"
+            sizes="(max-width: 768px) 100vw, 960px"
+            widths={[480, 768, 960, 1200]}
+          />
+        ) : (
+          <div class="project-video-fallback">Смотреть видео</div>
+        )}
+        <button type="button" class="project-video-play" aria-label="Запустить видео">
+          ▶
+        </button>
+      </div>
+      <p class="project-video-note">
+        Видео открывается прямо на странице, а ниже остаются все детали проекта и стоимость.
+      </p>
+    </section>
+  )
+}

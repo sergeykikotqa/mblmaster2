@@ -1,0 +1,139 @@
+---
+import globalStylesUrl from '~/assets/styles/tailwind.css?url';
+import golosCyrillicUrl from '@fontsource-variable/golos-text/files/golos-text-cyrillic-wght-normal.woff2?url';
+import '~/assets/styles/tailwind.css';
+import '~/assets/styles/design-system.css';
+import '~/assets/styles/site-shell.css';
+
+// Fixed language for local SEO
+
+import CommonMeta from '~/components/common/CommonMeta.astro';
+import Favicons from '~/components/Favicons.astro';
+import CustomStyles from '~/components/CustomStyles.astro';
+import ApplyColorMode from '~/components/common/ApplyColorMode.astro';
+import Metadata from '~/components/common/Metadata.astro';
+import SiteVerification from '~/components/common/SiteVerification.astro';
+import Analytics from '~/components/common/Analytics.astro';
+import AnalyticsConsentBanner from '~/components/common/AnalyticsConsentBanner.astro';
+import YandexMetrika from '~/components/common/YandexMetrika.astro';
+import BasicScripts from '~/components/common/BasicScripts.astro';
+import WebVitals from '~/components/common/WebVitals.astro';
+import LocalBusinessJsonLd from '~/components/seo/LocalBusinessJsonLd.astro';
+import BreadcrumbJsonLd from '~/components/seo/BreadcrumbJsonLd.astro';
+
+import Header from '~/components/widgets/Header.astro';
+import FloatingCallButton from '~/components/FloatingCallButton.astro';
+import MoneyPageStickyCta from '~/components/MoneyPageStickyCta.astro';
+import { headerData } from '~/navigation';
+import { getIndexabilityPolicy } from '~/config/indexability-policy';
+import { getBusinessInfo } from '~/config/business-info';
+
+// No client router — keep pages server-rendered for SEO
+
+import type { MetaData as MetaDataType } from '~/types';
+
+export interface Props {
+  metadata?: MetaDataType;
+  title?: string;
+  description?: string;
+  keywords?: string[] | string;
+  localBusinessOfferCatalog?: Record<string, unknown>;
+  pageType?: string;
+}
+
+const { metadata = {}, title, description, keywords, localBusinessOfferCatalog, pageType } = Astro.props;
+const routePolicy = getIndexabilityPolicy(Astro.url.pathname);
+const businessInfo = getBusinessInfo(Astro.site?.href);
+const resolvedMetadata: MetaDataType = {
+  ...metadata,
+  title: metadata.title ?? title,
+  description: metadata.description ?? description,
+  keywords: metadata.keywords ?? keywords,
+  canonical: routePolicy.canonicalPath,
+  robots: {
+    index: routePolicy.index,
+    follow: routePolicy.follow,
+  },
+};
+
+
+const isE2E = String(import.meta.env.PUBLIC_E2E || '') === '1';
+
+const leadTrackingConfig = {
+  enabled: isE2E ? true : String(import.meta.env.PUBLIC_ENABLE_LEAD_TRACKING ?? 'true') !== 'false',
+  yandexMetrikaId: import.meta.env.PUBLIC_YANDEX_METRIKA_ID || '',
+  ga4Id: import.meta.env.PUBLIC_GA4_ID || '',
+  trackEndpoint: '/api/track',
+  formAbandonMs: Number(import.meta.env.PUBLIC_LEAD_FORM_ABANDON_MS || 60000),
+  rumEnabled: String(import.meta.env.PUBLIC_ENABLE_RUM_WEB_VITALS ?? 'true') !== 'false',
+  rumLcpAlertThresholdMs: Number(import.meta.env.PUBLIC_RUM_LCP_ALERT_THRESHOLD_MS || 2500),
+  analyticsConsentRequired: !isE2E,
+  analyticsConsentCookieName: 'site_analytics_consent',
+};
+const analyticsConsentConfig = {
+  cookieName: 'site_analytics_consent',
+  maxAgeDays: 180,
+};
+const showAnalyticsConsent = !isE2E;
+
+const turnstileSiteKey = (import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || '').trim();
+const isMoneyServicePage = pageType === 'service-money';
+const isProjectPage = pageType === 'project';
+const showFloatingCallButton =
+  Astro.url.pathname !== '/' && Boolean(businessInfo.phoneHref) && !isMoneyServicePage && !isProjectPage;
+const showMoneyPageStickyCta = isMoneyServicePage && Boolean(businessInfo.phoneHref);
+---
+
+<!doctype html>
+<html lang="ru" dir="ltr" class="2xl:text-[20px]" data-e2e={isE2E ? 'true' : undefined}>
+  <head>
+    <link rel="preload" as="style" href={globalStylesUrl} />
+    <link rel="preload" as="font" href={golosCyrillicUrl} type="font/woff2" crossorigin />
+    <link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin />
+    <CommonMeta />
+    <Favicons />
+    <CustomStyles />
+    <ApplyColorMode />
+    <Metadata {...resolvedMetadata} />
+    <SiteVerification />
+    <slot name="head" />
+  </head>
+
+  <body
+    class:list={[
+      'antialiased text-default bg-page tracking-tight mbl-page',
+      pageType ? 'mbl-page-' + pageType : undefined,
+    ]}
+    data-page-type={pageType}
+  >
+    <Header isSticky links={headerData.links} actions={headerData.actions} pageType={pageType} />
+    {showMoneyPageStickyCta && <MoneyPageStickyCta />}
+    {showFloatingCallButton && <FloatingCallButton />}
+    <slot />
+    {
+      showAnalyticsConsent && (
+        <script
+          src="/scripts/analytics-consent-init.js"
+          defer
+          data-analytics-consent-init
+          data-cookie-name={analyticsConsentConfig.cookieName}
+          data-max-age-days={analyticsConsentConfig.maxAgeDays}
+        ></script>
+      )
+    }
+    <Analytics />
+    <YandexMetrika />
+    <LocalBusinessJsonLd offerCatalog={localBusinessOfferCatalog} />
+    <BreadcrumbJsonLd title={resolvedMetadata.title} />
+    {showAnalyticsConsent && <AnalyticsConsentBanner />}
+    <script
+      src="/scripts/lead-tracking-init.js"
+      defer
+      data-lead-tracking-init
+      data-lead-tracking-config={JSON.stringify(leadTrackingConfig)}
+      data-turnstile-site-key={turnstileSiteKey}
+    ></script>
+    <WebVitals />
+    <BasicScripts />
+  </body>
+</html>

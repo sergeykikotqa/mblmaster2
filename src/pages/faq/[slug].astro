@@ -1,0 +1,28 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import FAQLayout from '~/components/content/FAQLayout.astro';
+
+export async function getStaticPaths() {
+  const faqs = await getCollection('faq', ({ data }) => !data.draft);
+
+  return faqs.map((faqPage) => {
+    const slug = faqPage.id.replace(/\.mdx?$/, '');
+    return {
+      params: { slug },
+      props: { faqPage },
+    };
+  });
+}
+
+interface Props {
+  faqPage?: CollectionEntry<'faq'>;
+}
+
+const { faqPage } = Astro.props;
+
+if (!faqPage) {
+  return Astro.redirect('/faq/');
+}
+---
+
+<FAQLayout faqPage={faqPage} />

@@ -1,0 +1,64 @@
+---
+import { getCityLabels, getServiceLabels, type ServiceLabels } from '~/utils/seo';
+
+interface Props {
+  city: string;
+  service: string;
+  serviceLabels?: ServiceLabels;
+  customFaq?: Array<{ question: string; answer: string }>;
+}
+
+const { city, service, serviceLabels: serviceLabelsOverride, customFaq = [] } = Astro.props as Props;
+
+const cityLabels = getCityLabels(city);
+const serviceLabels = serviceLabelsOverride || getServiceLabels(service);
+
+const fallbackFaq = [
+  {
+    question: `Сколько стоит ${serviceLabels.noun} на заказ в ${cityLabels.inCase}?`,
+    answer: `Стоимость зависит от размеров, материалов и наполнения. После замера даем точную смету без скрытых позиций.`,
+  },
+  {
+    question: `Сколько времени занимает изготовление ${serviceLabels.genitive}?`,
+    answer: `Срок определяется сложностью проекта и загрузкой производства. Обычно ориентир фиксируется в договоре после согласования проекта.`,
+  },
+  {
+    question: `Можно ли изменить проект ${serviceLabels.genitive} перед запуском?`,
+    answer: `Да, корректировки вносятся на этапе согласования. Финальная версия фиксируется перед передачей в производство.`,
+  },
+];
+
+const faqItems = customFaq.length > 0 ? customFaq : fallbackFaq;
+---
+
+<section class="project-faq">
+  <h2>FAQ по проекту</h2>
+
+  <div class="project-faq-list">
+    {
+      faqItems.map((item) => (
+        <details class="project-faq-item ds-faq">
+          <summary>{item.question}</summary>
+          <p>{item.answer}</p>
+        </details>
+      ))
+    }
+  </div>
+</section>
+
+<style>
+  .project-faq {
+    margin-top: 0;
+  }
+
+  .project-faq h2 {
+    margin: 0 0 0.7rem;
+    color: #1f1a17;
+    font-size: 1.2rem;
+  }
+
+  .project-faq-list {
+    display: grid;
+    gap: 0.55rem;
+  }
+</style>

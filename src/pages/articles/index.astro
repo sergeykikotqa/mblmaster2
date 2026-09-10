@@ -1,0 +1,95 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '~/layouts/PageLayout.astro';
+import Breadcrumb from '~/components/Breadcrumb.astro';
+import Image from '~/components/common/Image.astro';
+
+const articles = await getCollection(
+  'articles',
+  ({ data }) => !data.draft && data.seoReady === true && !data.isArchived && !data.noindex
+);
+const resolveEntrySlug = (entry: (typeof articles)[number]) =>
+  entry.data.slug || entry.id.replace(/\.mdx?$/, '');
+const sorted = articles.sort((a, b) => {
+  const diff = b.data.publishDate.getTime() - a.data.publishDate.getTime();
+  if (diff !== 0) return diff;
+  return resolveEntrySlug(a).localeCompare(resolveEntrySlug(b));
+});
+
+const metadata = {
+  title: 'Все статьи о мебели на заказ',
+  description: 'Чтение всех статей о выборе кухни, шкафов и другой мебели на заказ в Иркутске',
+};
+
+const breadcrumbItems = [{ label: 'Статьи', href: '/articles' }];
+---
+
+<PageLayout metadata={metadata}>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    <header class="ds-section-head left mb-12">
+      <div class="ds-pill">СТАТЬИ</div>
+      <h1 class="text-4xl font-bold">Статьи о мебели на заказ</h1>
+      <p class="text-xl text-[#665f5a]">Полезные статьи о выборе, дизайне и уходе за мебелью в Иркутске</p>
+    </header>
+
+    {
+      sorted.length > 0 ? (
+        <div id="articles-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {sorted.map((article) => {
+            const slug = article.id.replace(/\.mdx?$/, '');
+            const tags = (article.data.tags ?? []).map((tag) => tag.toLowerCase()).join(',');
+            return (
+              <a
+                href={`/articles/${slug}`}
+                data-article-card
+                data-tags={tags}
+                class="group ui-btn-state overflow-hidden ds-card ds-card-interactive"
+              >
+                {article.data.image && (
+                  <Image
+                    src={article.data.image}
+                    alt={article.data.title}
+                    class="w-full h-40 object-cover group-hover:scale-105 transition"
+                    loading="lazy"
+                    widths={[320, 480, 640, 800]}
+                    sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
+                    width={800}
+                    height={469}
+                    layout="responsive"
+                  />
+                )}
+                <div class="p-6">
+                  {article.data.category && (
+                    <p class="mb-2 text-sm font-semibold text-[#7f5438]">{article.data.category}</p>
+                  )}
+                  <h2 class="mb-2 text-lg font-bold transition group-hover:text-[#7f5438]">{article.data.title}</h2>
+                  <p class="text-[#665f5a] text-sm mb-4 line-clamp-2">{article.data.description}</p>
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs text-[#7a6f68]">
+                      {new Date(article.data.publishDate).toLocaleDateString('ru-RU')}
+                    </span>
+                    {article.data.readingTime && (
+                      <span class="text-xs text-[#7a6f68]">{article.data.readingTime} мин</span>
+                    )}
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <div id="articles-empty" class="text-center py-12">
+          <p class="text-gray-600">Статьи проходят редакционную подготовку и скоро появятся в открытом разделе.</p>
+        </div>
+      )
+    }
+    <div id="articles-filter-empty" class="text-center py-12 hidden">
+      <p class="text-gray-600">По выбранному тегу статьи не найдены</p>
+    </div>
+  </div>
+</PageLayout>
+
+<script src="/scripts/articles-filter.js" defer></script>
+

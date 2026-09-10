@@ -1,0 +1,72 @@
+---
+import Image from '~/components/common/Image.astro';
+import { resolveProjectImage } from '~/lib/projects/project-adapters';
+import type { ProjectBlockProps } from './types';
+
+const { block, viewModel } = Astro.props as ProjectBlockProps;
+const { slug, beforeAfter, gallery } = viewModel;
+const imageBaseDir = viewModel.project.imageBaseDir;
+
+const resolvedItems =
+  Array.isArray((block as { items?: Array<{ before: string; after: string; caption?: string }> }).items) &&
+  (block as { items?: Array<{ before: string; after: string; caption?: string }> }).items?.length
+    ? (block as { items?: Array<{ before: string; after: string; caption?: string }> }).items
+        ?.map((item) => ({
+          beforeSrc: resolveProjectImage(slug, item.before, imageBaseDir),
+          afterSrc: resolveProjectImage(slug, item.after, imageBaseDir),
+          caption: String(item.caption || '').trim(),
+        }))
+        .filter((item) => item.beforeSrc && item.afterSrc)
+    : beforeAfter.items;
+const resolvedItemsList = Array.isArray(resolvedItems) ? resolvedItems : [];
+
+const shouldRender = resolvedItemsList.length > 0;
+---
+
+{
+  shouldRender && (
+    <section id="before-after" class="section project-section project-compare">
+      <p class="project-section-kicker">До и после</p>
+      <h2>До и после</h2>
+      <div class="project-compare-grid">
+        {resolvedItemsList.map((item) => (
+          <div class="project-compare-item" data-compare style="--compare: 50%;">
+            <div class="project-compare-media">
+              <div class="project-compare-layer before">
+                <Image
+                  src={item.beforeSrc}
+                  alt={`${gallery.alt} — до`}
+                  width={1200}
+                  height={800}
+                  layout="cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div class="project-compare-layer after">
+                <Image
+                  src={item.afterSrc}
+                  alt={`${gallery.alt} — после`}
+                  width={1200}
+                  height={800}
+                  layout="cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value="50"
+              class="project-compare-range"
+              aria-label="Сравнить фото до и после"
+            />
+            {item.caption && <p class="project-compare-caption">{item.caption}</p>}
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}

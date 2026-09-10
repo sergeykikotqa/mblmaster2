@@ -1,0 +1,42 @@
+---
+import Image from '~/components/common/Image.astro';
+import type { ProjectBlockProps } from './types';
+import ProcessSteps from './atoms/ProcessSteps.astro';
+
+const { block, viewModel } = Astro.props as ProjectBlockProps;
+const { process } = viewModel;
+
+const steps =
+  Array.isArray((block as { steps?: typeof process.steps }).steps) &&
+  (block as { steps?: typeof process.steps }).steps?.length
+    ? (block as { steps?: typeof process.steps }).steps
+    : process.steps;
+const resolvedSteps = Array.isArray(steps) ? steps : [];
+
+const processImage = process.image;
+const shouldRender = resolvedSteps.length > 0;
+---
+
+{
+  shouldRender && (
+    <section id="process" class="section project-section project-process project-process--main">
+      <p class="project-section-kicker">Процесс работы</p>
+      <div class={`project-process-card${processImage ? ' has-media' : ' no-media'}`}>
+        <ProcessSteps steps={resolvedSteps} />
+        {processImage && (
+          <div class="project-process-media">
+            <Image
+              src={processImage}
+              alt="Процесс работы"
+              width={900}
+              height={1100}
+              layout="cover"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}

@@ -1,0 +1,9 @@
+---
+import CaseRelated from '~/components/case-blocks/CaseRelated.astro';
+import type { ProjectBlockProps } from './types';
+
+const { viewModel } = Astro.props as ProjectBlockProps;
+const { relatedProjects } = viewModel;
+---
+
+<CaseRelated relatedProjects={relatedProjects} />

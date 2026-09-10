@@ -1,0 +1,16 @@
+---
+import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
+import ProjectRenderer from '~/components/projects/ProjectRenderer.astro';
+import type { ProjectViewModel } from '~/lib/projects/project-view-model';
+import type { ProjectCardData } from '~/types/project';
+
+interface Props {
+  viewModel: ProjectViewModel;
+  Content: AstroComponentFactory;
+  modalData?: ProjectCardData;
+}
+
+const props = Astro.props as Props;
+---
+
+<ProjectRenderer {...props} />

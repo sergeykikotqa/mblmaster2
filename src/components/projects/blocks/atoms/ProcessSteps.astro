@@ -1,0 +1,44 @@
+---
+type ProjectProcessStep = { title: string; description: string; meta?: string };
+
+interface Props {
+  steps: ProjectProcessStep[];
+  variant?: 'main' | 'rail';
+}
+
+const { steps, variant = 'main' } = Astro.props as Props;
+---
+
+{
+  variant === 'rail' ? (
+    <ol class="project-rail-process-list">
+      {steps.map((step, index) => (
+        <li>
+          <span class="project-rail-process-index">{index + 1}</span>
+          <div>
+            <h4>
+              {step.title}
+              {step.meta && <span class="project-process-meta">{step.meta}</span>}
+            </h4>
+            <p>{step.description}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  ) : (
+    <ol class="project-process-list">
+      {steps.map((step, index) => (
+        <li>
+          <span class="project-process-index">{index + 1}</span>
+          <div>
+            <h3>
+              {step.title}
+              {step.meta && <span class="project-process-meta">{step.meta}</span>}
+            </h3>
+            <p>{step.description}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  )
+}

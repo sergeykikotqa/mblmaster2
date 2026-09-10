@@ -1,0 +1,61 @@
+---
+import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
+import ItemGrid from '~/components/ui/ItemGrid.astro';
+import Headline from '~/components/ui/Headline.astro';
+import type { Features as Props } from '~/types';
+
+const {
+  title,
+  subtitle,
+  tagline,
+  items = [],
+  columns = 2,
+
+  defaultIcon,
+
+  id,
+  isDark = false,
+  classes = {},
+} = Astro.props;
+
+const hasTitleSlot = Astro.slots.has('title');
+const hasSubtitleSlot = Astro.slots.has('subtitle');
+const hasTaglineSlot = Astro.slots.has('tagline');
+const hasBgSlot = Astro.slots.has('bg');
+---
+
+<WidgetWrapper id={id} isDark={isDark} containerClass={`max-w-5xl ${classes?.container ?? ''}`}>
+  {hasBgSlot && (
+    <Fragment slot="bg">
+      <slot name="bg" />
+    </Fragment>
+  )}
+  <Headline title={title} subtitle={subtitle} tagline={tagline} classes={classes?.headline as Record<string, string>}>
+    {hasTitleSlot && (
+      <Fragment slot="title">
+        <slot name="title" />
+      </Fragment>
+    )}
+    {hasSubtitleSlot && (
+      <Fragment slot="subtitle">
+        <slot name="subtitle" />
+      </Fragment>
+    )}
+    {hasTaglineSlot && (
+      <Fragment slot="tagline">
+        <slot name="tagline" />
+      </Fragment>
+    )}
+  </Headline>
+  <ItemGrid
+    items={items}
+    columns={columns}
+    defaultIcon={defaultIcon}
+    classes={{
+      container: '',
+      title: 'md:text-[1.3rem]',
+      icon: 'text-white bg-primary rounded-full w-10 h-10 p-2 md:w-12 md:h-12 md:p-3 mr-4 rtl:ml-4 rtl:mr-0',
+      ...((classes?.items as Record<string, never>) ?? {}),
+    }}
+  />
+</WidgetWrapper>

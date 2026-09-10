@@ -1,0 +1,5 @@
+---
+const metrikaId = Number(import.meta.env.PUBLIC_YANDEX_METRIKA_ID || 0);
+---
+
+{metrikaId ? <script src="/scripts/metrika.js" defer data-metrika-id={metrikaId} /> : null}

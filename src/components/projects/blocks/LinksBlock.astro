@@ -1,0 +1,28 @@
+---
+import type { ProjectBlockProps } from './types';
+import LinksSection from './atoms/LinksSection.astro';
+
+const { block, viewModel } = Astro.props as ProjectBlockProps;
+const { internalLinks } = viewModel;
+
+const links =
+  Array.isArray((block as { links?: Array<{ text: string; href: string }> }).links) &&
+  (block as { links?: Array<{ text: string; href: string }> }).links?.length
+    ? (block as { links?: Array<{ text: string; href: string }> }).links
+    : internalLinks;
+const resolvedLinks = Array.isArray(links) ? links : [];
+
+const shouldRender = resolvedLinks.length > 0;
+---
+
+{
+  shouldRender && (
+    <LinksSection
+      id="links"
+      links={resolvedLinks}
+      kicker="Материалы по теме"
+      title="Полезные материалы по теме"
+      actionLabel="Перейти"
+    />
+  )
+}

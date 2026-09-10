@@ -1,0 +1,30 @@
+---
+import { resolveProjectBlockComponent } from './block-registry';
+import { recordUnsupportedProjectBlock } from '~/lib/projects/project-block-diagnostics';
+
+const { block, index, typeIndex = 0, viewModel, Content } = Astro.props;
+const type = typeof block?.type === 'string' ? block.type : 'unsupported';
+const Block = resolveProjectBlockComponent(type);
+const isDev = import.meta.env.DEV;
+const slug = viewModel.slug;
+
+if (!Block && isDev) {
+  console.warn(`[blocks] Unsupported block type "${type}" in project "${slug}".`);
+  recordUnsupportedProjectBlock({ slug, type, index, block });
+}
+
+const shouldRenderUnsupported = Boolean(isDev && !Block);
+---
+
+{Block ? (
+  <Block block={block} index={index} typeIndex={typeIndex} viewModel={viewModel} Content={Content} />
+) : shouldRenderUnsupported ? (
+  <section class="section project-section project-block-unsupported">
+    <p class="project-section-kicker">Неподдерживаемый блок</p>
+    <div class="card card-soft">
+      <p>
+        Тип блока <strong>{type}</strong> не зарегистрирован. Проверьте `src/components/projects/block-registry.ts`.
+      </p>
+    </div>
+  </section>
+) : null}

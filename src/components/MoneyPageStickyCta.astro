@@ -1,0 +1,218 @@
+---
+import { getBusinessInfo } from '~/config/business-info';
+
+const businessInfo = getBusinessInfo();
+const phoneHref = `tel:${businessInfo.phoneHref}`;
+---
+
+<div id="money-page-sticky-cta" class="money-sticky" data-visible="false" hidden>
+  <div class="money-sticky__inner">
+    <a
+      href="#contact"
+      class="money-sticky__primary ui-btn-state"
+      data-cta="service_sticky_primary"
+      data-cta-type="primary"
+      data-cta-placement="sticky"
+    >
+      Рассчитать стоимость
+    </a>
+    <a
+      href={phoneHref}
+      class="money-sticky__secondary ui-btn-state"
+      data-cta="service_sticky_call"
+      data-cta-type="phone"
+      data-cta-placement="sticky"
+      aria-label={`Позвонить ${businessInfo.phone}`}
+    >
+      Позвонить
+    </a>
+  </div>
+</div>
+
+<script is:inline>
+  const initMoneyPageStickyCta = () => {
+    const sticky = document.getElementById('money-page-sticky-cta');
+    if (!sticky) return;
+
+    const mobileQuery = window.matchMedia('(max-width: 1023px)');
+    const header = document.getElementById('header');
+    const mobilePanel = document.querySelector('#header [data-aw-mobile-panel]');
+    const hero = document.querySelector('.hm');
+    const contact = document.getElementById('contact');
+    const footer = document.querySelector('footer');
+
+    let heroVisible = Boolean(hero);
+    let contactVisible = false;
+    let footerVisible = false;
+    let menuOpen = false;
+    let contactFocused = false;
+
+    const setVisible = (visible) => {
+      sticky.hidden = !visible;
+      sticky.dataset.visible = visible ? 'true' : 'false';
+    };
+
+    const syncMenuState = () => {
+      menuOpen =
+        Boolean(header?.classList.contains('menu-open')) || mobilePanel?.getAttribute('aria-hidden') === 'false';
+      updateVisibility();
+    };
+
+    const updateVisibility = () => {
+      const shouldShow =
+        mobileQuery.matches && !heroVisible && !contactVisible && !footerVisible && !menuOpen && !contactFocused;
+      setVisible(shouldShow);
+    };
+
+    const syncFocusState = () => {
+      const activeElement = document.activeElement;
+      contactFocused = Boolean(contact && activeElement instanceof Element && contact.contains(activeElement));
+      updateVisibility();
+    };
+
+    const observeVisibility = (element, assignState) => {
+      if (!element) return null;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          assignState(entries.some((entry) => entry.isIntersecting));
+          updateVisibility();
+        },
+        { threshold: 0.05 }
+      );
+      observer.observe(element);
+      return observer;
+    };
+
+    const mutationObserver = new MutationObserver(syncMenuState);
+    if (header) {
+      mutationObserver.observe(header, { attributes: true, attributeFilter: ['class'] });
+    }
+    if (mobilePanel) {
+      mutationObserver.observe(mobilePanel, { attributes: true, attributeFilter: ['aria-hidden', 'class'] });
+    }
+
+    observeVisibility(hero, (value) => {
+      heroVisible = value;
+    });
+    observeVisibility(contact, (value) => {
+      contactVisible = value;
+    });
+    observeVisibility(footer, (value) => {
+      footerVisible = value;
+    });
+
+    const handleViewportChange = () => updateVisibility();
+    mobileQuery.addEventListener('change', handleViewportChange);
+    window.addEventListener('resize', handleViewportChange, { passive: true });
+    document.addEventListener('focusin', syncFocusState, true);
+    document.addEventListener(
+      'focusout',
+      () => {
+        requestAnimationFrame(syncFocusState);
+      },
+      true
+    );
+
+    syncMenuState();
+    syncFocusState();
+    updateVisibility();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMoneyPageStickyCta, { once: true });
+  } else {
+    initMoneyPageStickyCta();
+  }
+</script>
+
+<style is:inline>
+  .money-sticky {
+    position: fixed;
+    inset: auto 0 max(0.9rem, env(safe-area-inset-bottom)) 0;
+    z-index: 45;
+    display: none;
+    padding: 0 0.75rem;
+  }
+
+  .money-sticky__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.55rem;
+    align-items: stretch;
+    max-width: 32rem;
+    margin: 0 auto;
+    padding: 0.55rem;
+    border: 1px solid rgb(127 84 56 / 18%);
+    border-radius: 999px;
+    background: rgb(255 250 246 / 96%);
+    box-shadow: 0 14px 28px rgb(42 24 12 / 16%);
+    backdrop-filter: blur(10px);
+  }
+
+  .money-sticky__primary,
+  .money-sticky__secondary {
+    min-height: 2.9rem;
+    justify-content: center;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 0.72rem 0.95rem;
+  }
+
+  .money-sticky__primary {
+    background: #7f5438;
+    color: #fff;
+    border: 1px solid #7f5438;
+  }
+
+  .money-sticky__primary:hover {
+    background: #6e472f;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .money-sticky__secondary {
+    background: #fff;
+    color: #7f5438;
+    border: 1px solid #d5b9a5;
+    white-space: nowrap;
+  }
+
+  .money-sticky__secondary:hover {
+    color: #5f3e29;
+    border-color: #c99d80;
+    text-decoration: none;
+  }
+
+  @media (max-width: 1023px) {
+    .money-sticky[data-visible='true'] {
+      display: block;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .money-sticky {
+      padding-inline: 0.6rem;
+    }
+
+    .money-sticky__inner {
+      grid-template-columns: minmax(0, 1fr) auto;
+      padding: 0.45rem;
+      gap: 0.45rem;
+    }
+
+    .money-sticky__primary,
+    .money-sticky__secondary {
+      min-height: 2.7rem;
+      font-size: 0.78rem;
+      padding: 0.68rem 0.82rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .money-sticky {
+      display: none !important;
+    }
+  }
+</style>

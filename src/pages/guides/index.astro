@@ -1,0 +1,82 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '~/layouts/PageLayout.astro';
+import Breadcrumb from '~/components/Breadcrumb.astro';
+import Image from '~/components/common/Image.astro';
+
+const guides = await getCollection('guides', ({ data }) => !data.draft);
+const resolveEntrySlug = (entry: (typeof guides)[number]) =>
+  entry.data.slug || entry.id.replace(/\.mdx?$/, '');
+const sorted = guides.sort((a, b) => {
+  const diff = b.data.publishDate.getTime() - a.data.publishDate.getTime();
+  if (diff !== 0) return diff;
+  return resolveEntrySlug(a).localeCompare(resolveEntrySlug(b));
+});
+
+const metadata = {
+  title: 'Гайды и инструкции по мебели',
+  description: 'Пошаговые гайды по выбору, установке и уходу за мебелью на заказ',
+};
+
+const breadcrumbItems = [{ label: 'Гайды', href: '/guides' }];
+---
+
+<PageLayout metadata={metadata}>
+  <Breadcrumb items={breadcrumbItems} />
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    <header class="ds-section-head left mb-12">
+      <div class="ds-pill">ГАЙДЫ</div>
+      <h1 class="text-4xl font-bold">Гайды и инструкции</h1>
+      <p class="text-xl text-[#665f5a]">Пошаговые гайды по выбору, дизайну и установке мебели на заказ</p>
+    </header>
+
+    {
+      sorted.length > 0 ? (
+        <div class="space-y-6 mb-12">
+          {sorted.map((guide) => {
+            const slug = guide.id.replace(/\.mdx?$/, '');
+            return (
+              <a
+                href={`/guides/${slug}`}
+                class="guide-item group ui-btn-state block ds-card ds-card-interactive border-l-4 border-l-[#8b5a3c] p-6"
+              >
+                <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                  <div class="min-w-0 flex-1">
+                    {guide.data.category && (
+                      <p class="mb-2 text-sm font-semibold text-[#7f5438]">{guide.data.category}</p>
+                    )}
+                    <h2 class="mb-2 text-2xl font-bold transition group-hover:text-[#7f5438]">{guide.data.title}</h2>
+                    <p class="text-[#665f5a] mb-4">{guide.data.description}</p>
+                    <div class="flex items-center gap-6 text-sm text-[#7a6f68]">
+                      <span>📅 {new Date(guide.data.publishDate).toLocaleDateString('ru-RU')}</span>
+                      {guide.data.readingTime && <span>⏱️ {guide.data.readingTime} мин</span>}
+                      {guide.data.steps && <span>📋 {guide.data.steps.length} шагов</span>}
+                    </div>
+                  </div>
+                  {guide.data.image && (
+                    <Image
+                      src={guide.data.image}
+                      alt={guide.data.title}
+                      class="w-full max-w-full rounded object-cover transition group-hover:scale-105 sm:w-40 sm:flex-shrink-0"
+                      loading="lazy"
+                      sizes="(max-width: 639px) 100vw, 160px"
+                      width={400}
+                      height={320}
+                      layout="responsive"
+                    />
+                  )}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="text-center py-12">
+          <p class="text-gray-600">Гайды еще не добавлены</p>
+        </div>
+      )
+    }
+  </div>
+</PageLayout>
+

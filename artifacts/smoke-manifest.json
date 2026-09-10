@@ -1,0 +1,53 @@
+{
+  "seo": {
+    "routes": [
+      "/",
+      "/articles/cveta-kuhni-trendy",
+      "/kuhni"
+    ],
+    "reasons": []
+  },
+  "lighthouse": {
+    "routes": [
+      "/",
+      "/articles/cveta-kuhni-trendy",
+      "/contacts",
+      "/kuhni",
+      "/projects/kuhnya-bogdana"
+    ],
+    "reasons": [
+      {
+        "file": "src/components/ContactForm.astro",
+        "route": "/contacts",
+        "reason": "component-change"
+      }
+    ]
+  },
+  "meta": {
+    "generatedAt": "2026-03-24T08:10:52.023Z",
+    "diffBase": "origin/main",
+    "changedFiles": [
+      "artifacts/lighthouse-summary.json",
+      "artifacts/pre-launch-audit/latest/auto-results.json",
+      "artifacts/pre-launch-audit/latest/summary.md",
+      "artifacts/smoke-manifest.json",
+      "docs/QUALITY_GATES.md",
+      "docs/pre-launch-audit-2026-03-23.md",
+      "docs/pre-launch-audit-playbook.md",
+      "docs/pre-launch-audit-template.md",
+      "public/scripts/contact-form-client.js",
+      "public/scripts/lead-tracking-client.js",
+      "scripts/audit-pre-launch.mjs",
+      "scripts/check-metrics-smoke.mjs",
+      "scripts/check-production-runtime.mjs",
+      "src/components/ContactForm.astro",
+      "src/pages/api/track.ts",
+      "src/server/metrics/funnel.ts",
+      "tests/e2e/contact-form.spec.ts",
+      "tests/e2e/tracking-funnel.spec.ts",
+      "tests/funnel-metrics.test.ts"
+    ],
+    "hasGlobalChange": false,
+    "maxLighthouseRoutes": 8
+  }
+}
