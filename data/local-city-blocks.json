@@ -130,8 +130,8 @@
           "year": 2025,
           "area": 10,
           "summary": "Сделали раздельные зоны хранения для готовки и бытовой техники, добавили тихие направляющие и удобный доступ к верхним секциям.",
-          "image": "/images/figma/portfolio-classic-white.png",
-          "photos": ["/images/figma/portfolio-detail-drawer.png", "/images/figma/portfolio-modern-wide.png"],
+          "image": "/images/projects/kuhnya-baykalskiy-trakt/01.jpg",
+          "photos": ["/images/projects/kuhnya-baykalskiy-trakt/02.jpg", "/images/projects/kuhnya-baykalskiy-trakt/01.jpg"],
           "alt": "Кухня на заказ в Ангарске, 18 микрорайон"
         },
         {
@@ -142,8 +142,8 @@
           "year": 2024,
           "area": 9,
           "summary": "Оптимизировали рабочую линию и вынесли пенал под духовку отдельно, чтобы освободить центральную зону столешницы.",
-          "image": "/images/figma/portfolio-classic-cream.png",
-          "photos": ["/images/figma/portfolio-modern-wide.png", "/images/figma/portfolio-detail-wood.png"],
+          "image": "/images/projects/kuhnya-bogdana/01.jpg",
+          "photos": ["/images/projects/kuhnya-bogdana/02.jpg", "/images/projects/kuhnya-bogdana/01.jpg"],
           "alt": "Кухня на заказ в Ангарске, квартал 95"
         }
       ],
@@ -189,8 +189,8 @@
           "year": 2025,
           "area": 8,
           "summary": "Организовали хранение в вертикали и сохранили рабочую поверхность для ежедневной готовки семьи из четырех человек.",
-          "image": "/images/figma/portfolio-modern-wide.png",
-          "photos": ["/images/figma/portfolio-detail-wood.png", "/images/figma/portfolio-modern-light.jpg"],
+          "image": "/images/projects/kuhnya-piskunova/01.jpg",
+          "photos": ["/images/projects/kuhnya-piskunova/02.jpg", "/images/projects/kuhnya-piskunova/03.jpg"],
           "alt": "Кухня на заказ в Шелехове, 4 квартал"
         },
         {
@@ -201,8 +201,8 @@
           "year": 2024,
           "area": 7,
           "summary": "Вписали гарнитур в нишу без зазоров, добавили выдвижные системы и отдельную секцию под бытовую технику.",
-          "image": "/images/figma/portfolio-detail-drawer.png",
-          "photos": ["/images/figma/portfolio-modern-light.jpg", "/images/figma/portfolio-modern-wide.png"],
+          "image": "/images/projects/kuhnya-trilissera/01.jpg",
+          "photos": ["/images/projects/kuhnya-trilissera/02.jpg", "/images/projects/kuhnya-trilissera/03.jpg"],
           "alt": "Кухня на заказ в Шелехове, улица Орловских Комсомольцев"
         }
       ],
@@ -250,8 +250,8 @@
           "year": 2025,
           "area": 4,
           "summary": "Собрали трехдверную систему с зеркальной вставкой и секциями под верхнюю одежду и бытовой инвентарь.",
-          "image": "/images/figma/portfolio-dark-modern.png",
-          "photos": ["/images/figma/portfolio-detail-wood.png", "/images/figma/portfolio-detail-drawer.png"],
+          "image": "/images/projects/shkaf-kupe-na-vsyu-stenu-irkutsk/01.jpg",
+          "photos": ["/images/projects/shkaf-kupe-na-vsyu-stenu-irkutsk/02.jpg", "/images/projects/shkaf-kupe-na-vsyu-stenu-irkutsk/03.jpg"],
           "alt": "Шкаф-купе на заказ в Иркутске, улица Декабрьских Событий"
         },
         {
@@ -262,8 +262,8 @@
           "year": 2024,
           "area": 12,
           "summary": "Сделали комбинированное наполнение с длинными штангами, полками и блоком выдвижных ящиков.",
-          "image": "/images/figma/portfolio-detail-wood.png",
-          "photos": ["/images/figma/portfolio-modern-light.jpg", "/images/figma/portfolio-dark-modern.png"],
+          "image": "/images/projects/shkaf-v-spalnyu-s-riflenymi-fasadami-irkutsk/01.jpg",
+          "photos": ["/images/projects/shkaf-v-spalnyu-s-riflenymi-fasadami-irkutsk/02.jpg", "/images/projects/shkaf-v-spalnyu-s-riflenymi-fasadami-irkutsk/01.jpg"],
           "alt": "Шкаф-купе на заказ в Иркутске, улица Карла Либкнехта"
         }
       ],
@@ -309,8 +309,8 @@
           "year": 2025,
           "area": 3,
           "summary": "Сделали облегченные фасады и компактное внутреннее наполнение, сохранив комфортный проход в прихожей.",
-          "image": "/images/figma/portfolio-modern-light.jpg",
-          "photos": ["/images/figma/portfolio-detail-drawer.png", "/images/figma/portfolio-dark-modern.png"],
+          "image": "/images/projects/shkaf-kupe-prihozhaya-irkutsk/01.jpg",
+          "photos": ["/images/projects/shkaf-kupe-prihozhaya-irkutsk/02.jpg", "/images/projects/shkaf-kupe-prihozhaya-irkutsk/03.jpg"],
           "alt": "Шкаф-купе на заказ в Ангарске, квартал 32"
         },
         {
@@ -321,8 +321,8 @@
           "year": 2024,
           "area": 11,
           "summary": "Установили систему с двумя секциями штанг и блоком ящиков для ежедневной одежды.",
-          "image": "/images/figma/portfolio-detail-drawer.png",
-          "photos": ["/images/figma/portfolio-dark-modern.png", "/images/figma/portfolio-modern-wide.png"],
+          "image": "/images/projects/shkaf-v-koridor-s-riflenymi-fasadami-irkutsk/01.jpg",
+          "photos": ["/images/projects/shkaf-v-koridor-s-riflenymi-fasadami-irkutsk/02.jpg", "/images/projects/shkaf-v-koridor-s-riflenymi-fasadami-irkutsk/03.jpg"],
           "alt": "Шкаф-купе на заказ в Ангарске, 7 микрорайон"
         }
       ],
@@ -368,8 +368,8 @@
           "year": 2025,
           "area": 5,
           "summary": "Добавили верхний ряд хранения и отдельные секции для обуви и спортивного инвентаря.",
-          "image": "/images/figma/portfolio-dark-modern.png",
-          "photos": ["/images/figma/portfolio-detail-drawer.png", "/images/figma/portfolio-modern-wide.png"],
+          "image": "/images/projects/shkaf-s-antresolyami-irkutsk/01.jpg",
+          "photos": ["/images/projects/shkaf-s-antresolyami-irkutsk/02.jpg", "/images/projects/shkaf-s-antresolyami-irkutsk/03.jpg"],
           "alt": "Шкаф-купе на заказ в Шелехове, Култукский тракт"
         },
         {
@@ -380,8 +380,8 @@
           "year": 2024,
           "area": 9,
           "summary": "Спроектировали корпус под нишу с точной посадкой и системой тихого хода дверей.",
-          "image": "/images/figma/portfolio-detail-wood.png",
-          "photos": ["/images/figma/portfolio-modern-wide.png", "/images/figma/portfolio-detail-drawer.png"],
+          "image": "/images/projects/shkaf-vo-vsyu-stenu-so-stellazhom-irkutsk/01.jpg",
+          "photos": ["/images/projects/shkaf-vo-vsyu-stenu-so-stellazhom-irkutsk/02.jpg", "/images/projects/shkaf-vo-vsyu-stenu-so-stellazhom-irkutsk/03.jpg"],
           "alt": "Шкаф-купе на заказ в Шелехове, 6 квартал"
         }
       ],
@@ -429,8 +429,8 @@
           "year": 2025,
           "area": 14,
           "summary": "Собрали систему хранения с разделением на мужскую и женскую зоны, добавили блок сезонного хранения.",
-          "image": "/images/figma/portfolio-detail-wood.png",
-          "photos": ["/images/figma/portfolio-modern-wide.png", "/images/figma/portfolio-detail-drawer.png"],
+          "image": "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg",
+          "photos": ["/images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg", "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg"],
           "alt": "Гардеробная на заказ в Иркутске, улица Советская",
           "projectSlug": "garderobnaya-sovetskaya"
         },
@@ -442,8 +442,8 @@
           "year": 2024,
           "area": 6,
           "summary": "Разместили выдвижные ящики, штанги и обувные полки в ограниченном пространстве без потери прохода.",
-          "image": "/images/figma/portfolio-modern-light.jpg",
-          "photos": ["/images/figma/portfolio-detail-drawer.png", "/images/figma/portfolio-modern-wide.png"],
+          "image": "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg",
+          "photos": ["/images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg", "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg"],
           "alt": "Гардеробная на заказ в Иркутске, улица Партизанская"
         }
       ],
@@ -489,8 +489,8 @@
           "year": 2025,
           "area": 7,
           "summary": "Организовали хранение одежды и обуви в одной системе, сохранили свободный проход и доступ к окну.",
-          "image": "/images/figma/portfolio-classic-cream.png",
-          "photos": ["/images/figma/portfolio-detail-wood.png", "/images/figma/portfolio-modern-wide.png"],
+          "image": "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg",
+          "photos": ["/images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg", "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg"],
           "alt": "Гардеробная на заказ в Ангарске, 29 микрорайон",
           "projectSlug": "garderobnaya-angarsk-29-mikrorayon"
         },
@@ -502,8 +502,8 @@
           "year": 2024,
           "area": 11,
           "summary": "Разделили модули по пользователям и добавили закрытые секции для сезонных вещей.",
-          "image": "/images/figma/portfolio-detail-drawer.png",
-          "photos": ["/images/figma/portfolio-modern-wide.png", "/images/figma/portfolio-detail-wood.png"],
+          "image": "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg",
+          "photos": ["/images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg", "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg"],
           "alt": "Гардеробная на заказ в Ангарске, квартал 120"
         }
       ],
@@ -549,8 +549,8 @@
           "year": 2025,
           "area": 5,
           "summary": "Сделали компактную конфигурацию с секциями под верхнюю одежду, обувь и хозяйственные вещи.",
-          "image": "/images/figma/portfolio-detail-wood.png",
-          "photos": ["/images/figma/portfolio-modern-light.jpg", "/images/figma/portfolio-detail-drawer.png"],
+          "image": "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg",
+          "photos": ["/images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg", "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg"],
           "alt": "Гардеробная на заказ в Шелехове, 2 квартал"
         },
         {
@@ -561,8 +561,8 @@
           "year": 2024,
           "area": 10,
           "summary": "Разделили систему хранения на индивидуальные блоки и добавили закрытые модули для сезонных коробов.",
-          "image": "/images/figma/portfolio-modern-wide.png",
-          "photos": ["/images/figma/portfolio-detail-drawer.png", "/images/figma/portfolio-detail-wood.png"],
+          "image": "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg",
+          "photos": ["/images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg", "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg"],
           "alt": "Гардеробная на заказ в Шелехове, 5 микрорайон",
           "projectSlug": "garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion"
         }

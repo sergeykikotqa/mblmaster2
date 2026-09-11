@@ -3,9 +3,7 @@ import type { CollectionEntry } from 'astro:content';
 import PageLayout from '~/layouts/PageLayout.astro';
 import Breadcrumb from '~/components/Breadcrumb.astro';
 import ContactForm from '~/components/ContactForm.astro';
-import Image from '~/components/common/Image.astro';
 import JsonLd from '~/components/seo/JsonLd.astro';
-import { toAbsoluteUrl } from '~/lib/url-builder';
 
 interface Props {
   guide: CollectionEntry<'guides'>;
@@ -27,11 +25,8 @@ const pubDate = new Date(data.publishDate).toLocaleDateString('ru-RU', {
 const metadata = {
   title: data.title,
   description: data.description,
-  image: data.image,
 };
 
-const siteUrl = Astro.site ? new URL(Astro.site).toString().replace(/\/$/, '') : '';
-const resolvedImage = data.image ? (siteUrl ? new URL(data.image, siteUrl).toString() : data.image) : undefined;
 const howToSchema =
   Array.isArray(data.steps) && data.steps.length > 0
     ? {
@@ -39,13 +34,11 @@ const howToSchema =
         '@type': 'HowTo',
         name: data.title,
         description: data.description,
-        image: resolvedImage ? [resolvedImage] : undefined,
         step: data.steps.map((step, index) => ({
           '@type': 'HowToStep',
           position: index + 1,
           name: step.title,
           text: step.description,
-          image: step.image ? toAbsoluteUrl(step.image, Astro.site) : undefined,
         })),
         mainEntityOfPage: {
           '@type': 'WebPage',
@@ -118,26 +111,6 @@ const breadcrumbItems = [
       </div>
     </section>
 
-    <!-- Featured Image -->
-    {
-      data.image && (
-        <section class="section section-sm">
-          <div class="section-content">
-            <Image
-              src={data.image}
-              alt={data.title}
-              class="w-full h-96 object-cover rounded-lg"
-              loading="lazy"
-              widths={[480, 768, 1024, 1280]}
-              sizes="(max-width: 767px) 100vw, 768px"
-              width={1280}
-              height={751}
-              layout="responsive"
-            />
-          </div>
-        </section>
-      )
-    }
   </article>
 
   {

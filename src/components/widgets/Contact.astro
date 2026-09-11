@@ -1,6 +1,5 @@
 ---
 import ContactForm from '~/components/ContactForm.astro';
-import Image from '~/components/common/Image.astro';
 import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
 import { getBusinessInfo } from '~/config/business-info';
 import { getCityById, getGeneratedPageBySlug } from '~/lib/geo-data';
@@ -144,7 +143,7 @@ const telegramHref = businessInfo.telegramUrl;
               rel="noopener noreferrer"
               class="contact-action telegram ds-action-secondary"
             >
-              <Image src="/images/figma/telegram-icon.png" alt="" width={20} height={20} layout="fixed" />
+              <span class="contact-telegram-mark" aria-hidden="true">↗</span>
               Telegram
             </a>
           )
@@ -170,13 +169,7 @@ const telegramHref = businessInfo.telegramUrl;
           data-cta-type="secondary"
           data-cta-placement="section"
         >
-          <Image
-            src="/images/figma/map-preview.png"
-            alt="Карта проезда к шоуруму"
-            width={650}
-            height={450}
-            layout="responsive"
-          />
+          <span class="contact-map-location" aria-hidden="true">Шоурум · Иркутск</span>
           <span class="contact-map-badge">Открыть в Яндекс Картах</span>
         </a>
         <div class="contact-map-meta">
@@ -295,6 +288,17 @@ const telegramHref = businessInfo.telegramUrl;
     width: 1rem;
     height: 1rem;
   }
+  .contact-telegram-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    line-height: 1;
+  }
   .contact-city-links {
     margin-top: 0.95rem;
     border: 1px solid #ece7e2;
@@ -342,12 +346,23 @@ const telegramHref = businessInfo.telegramUrl;
   .contact-map-preview {
     position: relative;
     display: block;
+    min-height: 9rem;
     text-decoration: none;
     color: inherit;
   }
-  .contact-map img {
-    width: 100%;
-    display: block;
+  .contact-map-location {
+    min-height: 9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background:
+      linear-gradient(135deg, rgba(127, 84, 56, 0.12), transparent),
+      repeating-linear-gradient(135deg, rgba(127, 84, 56, 0.12) 0 1px, transparent 1px 16px),
+      #f4ede7;
+    color: #4f453f;
+    font-size: 0.82rem;
+    font-weight: 700;
   }
   .contact-map-badge {
     position: absolute;

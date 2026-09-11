@@ -18,12 +18,12 @@ materials:
   tabletop: Не применяется
   hardware: Hettich
 images:
-  - /images/figma/portfolio-dark-modern.png
-  - /images/figma/portfolio-detail-drawer.png
+  - /images/projects/shkaf-kupe-na-vsyu-stenu-irkutsk/01.jpg
+  - /images/projects/shkaf-kupe-na-vsyu-stenu-irkutsk/02.jpg
 blocks:
   - type: hero
     title: Шкаф-купе на заказ в Ангарске (84-й квартал)
-    image: /images/figma/portfolio-dark-modern.png
+    image: /images/projects/shkaf-kupe-na-vsyu-stenu-irkutsk/01.jpg
   - type: materials
     items:
       - label: Фасады
@@ -37,8 +37,8 @@ blocks:
         icon: tabler:tool
   - type: gallery
     images:
-      - /images/figma/portfolio-dark-modern.png
-      - /images/figma/portfolio-detail-drawer.png
+      - /images/projects/shkaf-kupe-na-vsyu-stenu-irkutsk/01.jpg
+      - /images/projects/shkaf-kupe-na-vsyu-stenu-irkutsk/02.jpg
   - type: result
     title: Итог проекта
   - type: specs

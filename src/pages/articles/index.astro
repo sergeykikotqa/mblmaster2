@@ -2,7 +2,6 @@
 import { getCollection } from 'astro:content';
 import PageLayout from '~/layouts/PageLayout.astro';
 import Breadcrumb from '~/components/Breadcrumb.astro';
-import Image from '~/components/common/Image.astro';
 
 const articles = await getCollection(
   'articles',
@@ -47,19 +46,6 @@ const breadcrumbItems = [{ label: 'Статьи', href: '/articles' }];
                 data-tags={tags}
                 class="group ui-btn-state overflow-hidden ds-card ds-card-interactive"
               >
-                {article.data.image && (
-                  <Image
-                    src={article.data.image}
-                    alt={article.data.title}
-                    class="w-full h-40 object-cover group-hover:scale-105 transition"
-                    loading="lazy"
-                    widths={[320, 480, 640, 800]}
-                    sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
-                    width={800}
-                    height={469}
-                    layout="responsive"
-                  />
-                )}
                 <div class="p-6">
                   {article.data.category && (
                     <p class="mb-2 text-sm font-semibold text-[#7f5438]">{article.data.category}</p>

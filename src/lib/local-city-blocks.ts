@@ -26,7 +26,56 @@ const MIN_CASES_BY_CITY: Record<LocalCityId, number> = {
   shelekhov: 1,
 };
 
-const localCityBlocks = Object.freeze(localCityBlocksRaw as LocalCityBlocksByService);
+const REAL_CASE_IMAGES: Record<string, string[]> = {
+  'kuhni-na-zakaz': [
+    '/images/projects/kuhnya-baykalskaya/01.jpg',
+    '/images/projects/kuhnya-baykalskaya/02.jpg',
+  ],
+  'shkafy-kupe': [
+    '/images/projects/shkaf-v-spalnyu-s-riflenymi-fasadami-irkutsk/01.jpg',
+    '/images/projects/shkaf-v-spalnyu-s-riflenymi-fasadami-irkutsk/02.jpg',
+  ],
+  garderobnye: [
+    '/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg',
+    '/images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg',
+    '/images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg',
+  ],
+};
+
+const isLegacyCaseImage = (value: string): boolean => /(?:^|\/)images\/figma\//i.test(String(value || ''));
+
+const normalizeCaseImages = (serviceId: string, block: LocalCityBlock): LocalCityBlock => {
+  const realImages = REAL_CASE_IMAGES[serviceId];
+  if (!realImages?.length) return block;
+
+  return {
+    ...block,
+    cases: block.cases.map((item, caseIndex) => {
+      const hasLegacyImage = isLegacyCaseImage(item.image) || item.photos.some(isLegacyCaseImage);
+      if (!hasLegacyImage) return item;
+
+      const imageIndex = caseIndex % realImages.length;
+      const gallery = [1, 2].map((offset) => realImages[(imageIndex + offset) % realImages.length]);
+      return {
+        ...item,
+        image: realImages[imageIndex],
+        photos: gallery,
+      };
+    }),
+  };
+};
+
+const normalizeLocalCityBlocks = (value: LocalCityBlocksByService): LocalCityBlocksByService =>
+  Object.fromEntries(
+    Object.entries(value).map(([serviceId, blocks]) => [
+      serviceId,
+      Object.fromEntries(
+        Object.entries(blocks).map(([cityId, block]) => [cityId, normalizeCaseImages(serviceId, block)])
+      ),
+    ])
+  ) as LocalCityBlocksByService;
+
+const localCityBlocks = Object.freeze(normalizeLocalCityBlocks(localCityBlocksRaw as LocalCityBlocksByService));
 
 function assertExactKeys(
   value: Record<string, unknown>,

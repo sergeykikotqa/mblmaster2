@@ -105,7 +105,7 @@ export function resolveBusinessInfo(
   const siteUrl = String(options.siteUrl || '')
     .trim()
     .replace(/\/$/, '');
-  const fallbackImagePath = '/images/figma/map-preview.png';
+  const fallbackImagePath = '/images/projects/kuhnya-baykalskaya/01.jpg';
   const fallbackImage = siteUrl ? new URL(fallbackImagePath, siteUrl).toString() : fallbackImagePath;
   const imagePath = readEnv(env, 'PUBLIC_BUSINESS_IMAGE', fallbackImage);
   const sameAsRaw = splitList(readEnv(env, 'PUBLIC_BUSINESS_SAME_AS', ''), ',');

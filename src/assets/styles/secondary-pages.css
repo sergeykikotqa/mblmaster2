@@ -1,0 +1,724 @@
+/*
+ * Secondary-page bridge
+ *
+ * Public routes still use a number of legacy Astro/Tailwind class names. Keep
+ * those templates and their data contracts intact, but give them the same
+ * dark editorial surface, type scale and interaction language as the home
+ * page. New page work should use the mbl-* primitives directly.
+ */
+
+body.mbl-page-secondary {
+  background: var(--mbl-color-bg-primary);
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary main {
+  min-height: 1px;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 92% 0%, rgb(216 199 170 / 7%), transparent 34rem),
+    var(--mbl-color-bg-primary);
+}
+
+body.mbl-page-secondary main > :is(.max-w-7xl, .section-inner, .section, .project-page) {
+  position: relative;
+}
+
+/* Keep the public shell on the same dark/header treatment as the homepage. */
+body.mbl-page-secondary #header.mbl-site-header {
+  border-color: var(--mbl-color-border-subtle);
+  background: rgb(8 10 13 / 86%);
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary #header.mbl-site-header.scroll > div:first-child,
+body.mbl-page-secondary #header.mbl-site-header > div:first-child {
+  background: transparent;
+}
+
+body.mbl-page-secondary #header.mbl-site-header :is(.header-brand, .header-link) {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary #header.mbl-site-header .header-brand-meta,
+body.mbl-page-secondary #header.mbl-site-header :is(.header-mobile-sub-link, .header-mobile-meta) {
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary #header.mbl-site-header .header-mark {
+  border-color: var(--mbl-color-border-strong);
+  background: var(--mbl-color-accent);
+  color: #17191a;
+}
+
+body.mbl-page-secondary #header.mbl-site-header .header-link:hover,
+body.mbl-page-secondary #header.mbl-site-header .header-link.active-link {
+  background: rgb(255 255 255 / 8%);
+  color: #fff;
+}
+
+body.mbl-page-secondary #header.mbl-site-header :is(.header-phone, .header-search-trigger, .header-mobile-call) {
+  border-color: var(--mbl-color-border-strong);
+  background: transparent;
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary #header.mbl-site-header :is(.header-phone, .header-search-trigger, .header-mobile-call):hover,
+body.mbl-page-secondary #header.mbl-site-header :is(.header-menu-toggle) {
+  border-color: rgb(255 255 255 / 30%);
+  background: rgb(255 255 255 / 8%);
+  color: #fff;
+}
+
+body.mbl-page-secondary #header.mbl-site-header .header-cta-primary {
+  border-color: var(--mbl-color-accent);
+  background: var(--mbl-color-accent);
+  color: #17191a;
+}
+
+body.mbl-page-secondary #header.mbl-site-header.menu-open {
+  background: rgb(8 10 13 / 98%);
+}
+
+body.mbl-page-secondary #header.mbl-site-header .header-mobile-panel {
+  border-color: var(--mbl-color-border-subtle);
+}
+
+body.mbl-page-secondary #header.mbl-site-header .header-mobile-link {
+  border-color: var(--mbl-color-border-subtle);
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary #header.mbl-site-header .header-search input {
+  border-color: var(--mbl-color-border-strong);
+  background: rgb(255 255 255 / 6%);
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .mbl-site-footer {
+  margin-top: 0;
+}
+
+/* Breadcrumbs are a small editorial signpost, not a legacy cream card. */
+body.mbl-page-secondary nav[aria-label='Breadcrumb'] {
+  width: min(100%, var(--mbl-container-wide));
+  margin-inline: auto;
+  padding: 1rem var(--mbl-gutter) 0;
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary nav[aria-label='Breadcrumb'] ol {
+  border: 1px solid var(--mbl-color-border-subtle);
+  border-radius: var(--mbl-radius-sm);
+  background: rgb(255 255 255 / 4%);
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary nav[aria-label='Breadcrumb'] a {
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary nav[aria-label='Breadcrumb'] [aria-current='page'] {
+  color: var(--mbl-color-text-primary);
+}
+
+/* Legacy section primitives map to the shared design-system roles. */
+body.mbl-page-secondary :is(.ds-section-head, .money-head, .city-head, .contacts-head) {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary :is(.ds-section-head h1, .ds-section-head h2, .money-head h2, .city-head h2, .contacts-head h2) {
+  color: var(--mbl-color-text-primary) !important;
+  font-family: var(--aw-font-heading);
+  letter-spacing: -0.055em;
+}
+
+body.mbl-page-secondary :is(.ds-section-head p, .money-head p, .city-head p, .contacts-head p) {
+  color: var(--mbl-color-text-secondary) !important;
+}
+
+body.mbl-page-secondary .ds-pill {
+  border-color: var(--mbl-color-border-strong);
+  background: rgb(216 199 170 / 10%);
+  color: var(--mbl-color-accent);
+  font-family: var(--mbl-font-meta);
+  letter-spacing: 0.12em;
+}
+
+body.mbl-page-secondary :is(.ds-card, .ds-card-soft, .ds-link-card, .ds-faq) {
+  border-color: var(--mbl-color-border-subtle);
+  background:
+    radial-gradient(circle at 100% 0%, rgb(216 199 170 / 7%), transparent 18rem),
+    linear-gradient(145deg, rgb(255 255 255 / 7%), rgb(255 255 255 / 3%));
+  color: var(--mbl-color-text-primary);
+  box-shadow: var(--mbl-shadow-soft);
+}
+
+body.mbl-page-secondary :is(.ds-card-interactive, .ds-link-card):hover {
+  border-color: var(--mbl-color-border-strong);
+  background:
+    radial-gradient(circle at 100% 0%, rgb(216 199 170 / 11%), transparent 18rem),
+    linear-gradient(145deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 4%));
+}
+
+body.mbl-page-secondary .ds-link-card span,
+body.mbl-page-secondary :is(.ds-tag, .ds-action-secondary, .ds-list-dot li::before) {
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary .ds-link-card small,
+body.mbl-page-secondary .ds-list-dot,
+body.mbl-page-secondary .ds-faq p,
+body.mbl-page-secondary :is(.text-gray-600, .text-slate-500, .text-slate-600, .text-slate-700) {
+  color: var(--mbl-color-text-secondary) !important;
+}
+
+body.mbl-page-secondary .ds-tag {
+  border-color: var(--mbl-color-border-strong);
+  background: rgb(255 255 255 / 5%);
+}
+
+body.mbl-page-secondary .ds-faq[open] {
+  border-color: var(--mbl-color-accent-strong);
+  background: rgb(255 255 255 / 7%);
+}
+
+body.mbl-page-secondary .ds-faq summary,
+body.mbl-page-secondary .ds-faq summary::after {
+  color: var(--mbl-color-text-primary);
+  border-color: var(--mbl-color-border-strong);
+}
+
+body.mbl-page-secondary :is(.ds-action-primary, .filters-apply, .projects-filters-toggle) {
+  border-color: var(--mbl-color-accent);
+  background: var(--mbl-color-accent);
+  color: #17191a;
+}
+
+body.mbl-page-secondary :is(.ds-action-primary, .filters-apply, .projects-filters-toggle):hover {
+  background: #f0e7da;
+  color: #111315;
+}
+
+body.mbl-page-secondary .ds-action-secondary {
+  border-color: var(--mbl-color-border-strong);
+  background: rgb(255 255 255 / 5%);
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .ds-action-secondary:hover {
+  border-color: rgb(255 255 255 / 30%);
+  background: rgb(255 255 255 / 10%);
+  color: #fff;
+}
+
+/* HeroModern becomes the brand hero used by services, cities, contacts and about. */
+body.mbl-page-secondary .hm {
+  padding: clamp(2rem, 4vw, 3.5rem) 0 clamp(3rem, 7vw, 6rem);
+  background:
+    radial-gradient(circle at 88% 8%, rgb(216 199 170 / 9%), transparent 28rem),
+    linear-gradient(180deg, #080a0d 0%, #0d1115 100%);
+}
+
+body.mbl-page-secondary .hm-layout {
+  border-color: var(--mbl-color-border-strong);
+  border-radius: var(--mbl-radius-xl);
+  background: var(--mbl-color-bg-elevated);
+  box-shadow: var(--mbl-shadow-card);
+}
+
+body.mbl-page-secondary .hm-media {
+  min-height: clamp(30rem, 62vh, 45rem);
+}
+
+body.mbl-page-secondary .hm-media-slot img {
+  filter: saturate(0.84) contrast(1.03);
+}
+
+body.mbl-page-secondary .hm-copy {
+  bottom: 1.5rem;
+}
+
+body.mbl-page-secondary .hm-copy-card {
+  width: auto;
+  padding: 0.7rem 0.9rem;
+  border-color: rgb(255 255 255 / 15%);
+  border-radius: 999px;
+  background: rgb(8 10 13 / 62%);
+  box-shadow: none;
+}
+
+body.mbl-page-secondary .hm-copy .hm-title,
+body.mbl-page-secondary .hm-copy .hm-subtitle {
+  display: none;
+}
+
+body.mbl-page-secondary .hm-kicker {
+  color: var(--mbl-color-accent);
+  font-family: var(--mbl-font-meta);
+  font-size: var(--mbl-type-kicker);
+  letter-spacing: 0.16em;
+}
+
+body.mbl-page-secondary .hm-offer {
+  padding: clamp(2rem, 4vw, 3.5rem);
+  color: var(--mbl-color-text-primary);
+  background:
+    radial-gradient(circle at 100% 0%, rgb(216 199 170 / 12%), transparent 23rem),
+    linear-gradient(145deg, #171b20, #0d1014 86%);
+}
+
+body.mbl-page-secondary .hm-offer::before {
+  background: linear-gradient(180deg, rgb(255 255 255 / 4%), transparent 45%);
+}
+
+body.mbl-page-secondary .hm-offer-kicker,
+body.mbl-page-secondary .hm-list li::before {
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary .hm-offer h1 {
+  color: var(--mbl-color-text-primary);
+  font-size: clamp(2.25rem, 4.1vw, 4.45rem);
+  letter-spacing: -0.07em;
+}
+
+body.mbl-page-secondary .hm-offer p,
+body.mbl-page-secondary .hm-list li,
+body.mbl-page-secondary .hm-soft-note {
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary .hm-btn {
+  border-radius: 999px;
+}
+
+body.mbl-page-secondary .hm-btn.main {
+  border-color: var(--mbl-color-accent);
+  background: linear-gradient(135deg, #eadfcf, var(--mbl-color-accent));
+  color: #17191a;
+  box-shadow: 0 16px 34px rgb(216 199 170 / 16%);
+}
+
+body.mbl-page-secondary .hm-btn.sub {
+  border-color: var(--mbl-color-border-strong);
+  background: rgb(255 255 255 / 5%);
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .hm-btn.sub:hover {
+  background: rgb(255 255 255 / 11%);
+  color: #fff;
+}
+
+body.mbl-page-secondary .hm-stats > div,
+body.mbl-page-secondary .hm-mobile-proof {
+  border-color: var(--mbl-color-border-subtle);
+  background: rgb(255 255 255 / 5%);
+  box-shadow: none;
+}
+
+body.mbl-page-secondary .hm-stats strong,
+body.mbl-page-secondary .hm-stats span,
+body.mbl-page-secondary .hm-mobile-proof {
+  color: var(--mbl-color-text-primary);
+}
+
+/* Shared lead/contact surfaces. Backend, consent and Turnstile contracts remain untouched. */
+body.mbl-page-secondary :is(.contact-wrap, .contacts-card, .map-card) {
+  border-color: var(--mbl-color-border-subtle);
+  background:
+    radial-gradient(circle at 0% 0%, rgb(216 199 170 / 8%), transparent 22rem),
+    linear-gradient(145deg, #11151a, #0c0f13 86%);
+  color: var(--mbl-color-text-primary);
+  box-shadow: var(--mbl-shadow-card);
+}
+
+body.mbl-page-secondary :is(.contact-info, .contact-form, .contacts-card, .map-card) h2,
+body.mbl-page-secondary :is(.contact-steps strong, .contacts-card strong) {
+  color: var(--mbl-color-text-primary) !important;
+}
+
+body.mbl-page-secondary [data-yandex-map] {
+  border-color: var(--mbl-color-border-subtle) !important;
+  background: #11151a !important;
+}
+
+body.mbl-page-secondary [data-yandex-map] .map-placeholder {
+  background:
+    linear-gradient(135deg, rgb(216 199 170 / 16%), transparent),
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 7%) 0 1px, transparent 1px 16px),
+    #11151a !important;
+}
+
+body.mbl-page-secondary [data-yandex-map] .map-placeholder :is(p, a) {
+  color: var(--mbl-color-text-primary) !important;
+}
+
+body.mbl-page-secondary [data-yandex-map] .map-placeholder a {
+  border-color: var(--mbl-color-border-strong) !important;
+  background: rgb(255 255 255 / 5%) !important;
+}
+
+body.mbl-page-secondary :is(.contact-subtitle, .contact-steps p, .contact-city-links p, .contact-map-address, .contact-map-hours, .contacts-card > p, .contacts-meta p) {
+  color: var(--mbl-color-text-secondary) !important;
+}
+
+body.mbl-page-secondary .contact-kicker,
+body.mbl-page-secondary .contacts-pill {
+  color: var(--mbl-color-accent);
+  font-family: var(--mbl-font-meta);
+}
+
+body.mbl-page-secondary :is(.contact-city-links, .contact-map, .contact-map-meta, .contacts-meta li) {
+  border-color: var(--mbl-color-border-subtle);
+  background: rgb(255 255 255 / 4%);
+}
+
+body.mbl-page-secondary :is(.contact-city-links a, .contact-map-links a, .contacts-link-card) {
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary .contact-map-preview {
+  min-height: 9rem;
+  background:
+    linear-gradient(135deg, rgb(216 199 170 / 16%), transparent),
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 7%) 0 1px, transparent 1px 16px),
+    #11151a;
+}
+
+body.mbl-page-secondary .contact-map-preview img {
+  display: none;
+}
+
+body.mbl-page-secondary .contact-map-badge {
+  background: rgb(8 10 13 / 78%);
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .lead-contact-form {
+  border-color: var(--mbl-color-border-subtle);
+  background: rgb(255 255 255 / 4%);
+  color: var(--mbl-color-text-primary);
+  box-shadow: none;
+}
+
+body.mbl-page-secondary .lead-contact-form :is(h2, h3, label, .text-slate-900) {
+  color: var(--mbl-color-text-primary) !important;
+}
+
+body.mbl-page-secondary .lead-contact-form :is(p, .text-slate-600, .text-slate-500) {
+  color: var(--mbl-color-text-secondary) !important;
+}
+
+body.mbl-page-secondary .lead-contact-form :is(input:not([type='hidden']), textarea, select) {
+  border-color: var(--mbl-color-border-strong);
+  background: rgb(255 255 255 / 6%);
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .lead-contact-form :is(input:not([type='hidden']), textarea, select)::placeholder {
+  color: rgb(245 243 238 / 52%);
+}
+
+body.mbl-page-secondary .lead-contact-form [data-submit-btn] {
+  border-color: var(--mbl-color-accent);
+  background: var(--mbl-color-accent);
+  color: #17191a;
+}
+
+/* Lists, service facts, pricing and city blocks. */
+body.mbl-page-secondary :is(.facts-list, .price-grid, .city-services-grid, .projects-price-grid) > :is(li, article, div) {
+  border-color: var(--mbl-color-border-subtle);
+  background: linear-gradient(145deg, rgb(255 255 255 / 7%), rgb(255 255 255 / 3%));
+  color: var(--mbl-color-text-primary);
+  box-shadow: var(--mbl-shadow-soft);
+}
+
+body.mbl-page-secondary :is(.facts-list, .price-grid, .city-services-grid, .projects-price-grid) :is(h3, strong, .price-card-value, .city-service-meta span) {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary :is(.facts-list, .price-grid, .city-services-grid, .projects-price-grid) :is(p, span, small, .price-card-note, .price-card-summary, .city-service-card p) {
+  color: var(--mbl-color-text-secondary);
+}
+
+/* Project index/card family. */
+body.mbl-page-secondary .projects-filters-bar,
+body.mbl-page-secondary .projects-filters-panel-inner,
+body.mbl-page-secondary .projects-price {
+  border-color: var(--mbl-color-border-subtle);
+  background:
+    radial-gradient(circle at 100% 0%, rgb(216 199 170 / 8%), transparent 18rem),
+    linear-gradient(145deg, #11151a, #0c0f13 86%);
+  color: var(--mbl-color-text-primary);
+  box-shadow: var(--mbl-shadow-soft);
+}
+
+body.mbl-page-secondary :is(.projects-filters-head h2, .projects-price-head h2, .projects-card h2, .project-card-title) {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary :is(.projects-filters-head p, .projects-price-head p, .projects-filter-result, .projects-price-card span, .project-card-description, .project-card-meta) {
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary :is(.projects-filter-selected .filter-tag, .filter-chip, .projects-filters-close, .filters-clear) {
+  border-color: var(--mbl-color-border-strong);
+  background: rgb(255 255 255 / 5%);
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .projects-filters-panel-inner {
+  box-shadow: -24px 0 60px rgb(0 0 0 / 38%);
+}
+
+body.mbl-page-secondary .projects-filters-backdrop {
+  background: rgb(4 6 8 / 76%);
+}
+
+/* Editorial lists and article/guide detail. */
+body.mbl-page-secondary :is(.article-deferred-section, .prose, .section-content) {
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary :is(.prose h1, .prose h2, .prose h3, .section-content h1, .section-content h2, .section-content h3, .article-deferred-section h2) {
+  color: var(--mbl-color-text-primary) !important;
+}
+
+body.mbl-page-secondary :is(.prose a, .section-content a, .article-deferred-section a) {
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary :is(.article-deferred-section, .prose) :is(blockquote, pre, table, figure),
+body.mbl-page-secondary .card,
+body.mbl-page-secondary .card-soft {
+  border-color: var(--mbl-color-border-subtle);
+  background: rgb(255 255 255 / 4%);
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary :is(.section.bg-\[\#f7f1ec\], .bg-\[\#f7f1ec\], .bg-\[\#faf5f1\]) {
+  background: transparent !important;
+}
+
+body.mbl-page-secondary :is(.text-gray-900, .text-slate-900, .text-default) {
+  color: var(--mbl-color-text-primary) !important;
+}
+
+body.mbl-page-secondary :is([class*='text-[#665f5a]'], [class*='text-[#7a6f68]'], [class*='text-[#5b534d]']) {
+  color: var(--mbl-color-text-secondary) !important;
+}
+
+/* Project detail uses its own legacy variable graph; point it at the shared roles. */
+body.mbl-page-secondary .project-page {
+  --case-bg: var(--mbl-color-bg-primary);
+  --case-surface: var(--mbl-color-bg-elevated);
+  --case-accent: var(--mbl-color-accent);
+  --aw-color-primary: var(--mbl-color-accent);
+  --aw-color-secondary: var(--mbl-color-accent-strong);
+  --aw-color-surface: var(--mbl-color-bg-elevated);
+  --aw-color-surface-soft: rgb(255 255 255 / 4%);
+  --aw-color-border: var(--mbl-color-border-subtle);
+  --aw-color-border-strong: var(--mbl-color-border-strong);
+  background: var(--mbl-color-bg-primary);
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .project-page :is(.project-trust ul, .project-key-facts, .project-section-card, .project-rail-card, .project-related-card) {
+  border-color: var(--mbl-color-border-subtle);
+  background: linear-gradient(145deg, rgb(255 255 255 / 7%), rgb(255 255 255 / 3%));
+  color: var(--mbl-color-text-primary);
+  box-shadow: var(--mbl-shadow-soft);
+}
+
+body.mbl-page-secondary .project-page :is(.project-section > h2, .project-trust strong, .project-key-facts h2, .project-rail-card h2, .project-related-card h3) {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .project-page :is(.project-trust span, .project-description, .project-micro-geo, .project-rail-card p, .project-related-card p) {
+  color: var(--mbl-color-text-secondary);
+}
+
+/* Service and city templates still carry page-local cream styles. Keep the
+ * information architecture, but move every surface into the same dark system
+ * as the shared shell. These selectors intentionally sit behind the secondary
+ * scope so the homepage remains unchanged. */
+body.mbl-page-secondary :is(.price-block, .final-proof, .adv, .contacts-grid, .city-blocks-grid) {
+  background: transparent;
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary :is(.facts-list li, .geo-anchor-link, .money-checklist li, .price-card, .city-block, .city-block-stats div, .city-case-item, .city-review-item, .city-block-offer, .final-proof-list li) {
+  border-color: var(--mbl-color-border-subtle);
+  background: linear-gradient(145deg, rgb(255 255 255 / 7%), rgb(255 255 255 / 3%));
+  color: var(--mbl-color-text-secondary);
+  box-shadow: var(--mbl-shadow-soft);
+}
+
+body.mbl-page-secondary :is(.facts-list li, .money-intro p, .city-block-description, .city-block-note, .city-block-geo-mention, .city-case-item p, .city-review-item p, .final-proof-note, .price-note) {
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary :is(.geo-anchor-link, .price-card-link, .price-next, .city-case-link) {
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary :is(.price-card strong, .city-block-head h3, .city-block-subsection h4, .city-case-item strong, .city-review-item strong, .city-block-offer strong, .final-proof-list li) {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary :is(.price-card-value, .price-card-kicker, .city-block-kicker, .city-block-stats dt) {
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary :is(.price-card-meta, .price-card-location, .price-card-summary, .price-card-note, .city-block-stats dd, .city-case-location, .city-review-item span, .city-review-item small) {
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary .city-block-cta {
+  border-color: var(--mbl-color-border-strong);
+  color: var(--mbl-color-accent);
+  background: rgb(255 255 255 / 4%);
+}
+
+body.mbl-page-secondary .city-case-meta span,
+body.mbl-page-secondary .adv-index {
+  border: 1px solid var(--mbl-color-border-strong);
+  background: rgb(216 199 170 / 10%);
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary .city-block-offer {
+  background: linear-gradient(145deg, rgb(216 199 170 / 11%), rgb(255 255 255 / 4%));
+}
+
+body.mbl-page-secondary .city-case-item :is(.city-case-preview, .city-case-gallery img) {
+  border-color: var(--mbl-color-border-subtle);
+}
+
+body.mbl-page-secondary .adv {
+  background: linear-gradient(180deg, rgb(255 255 255 / 2%), transparent);
+}
+
+body.mbl-page-secondary .adv-card h3 {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .adv-card p {
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary :is(.contact-map-location, .contact-map-links a) {
+  border-color: var(--mbl-color-border-subtle);
+  background:
+    linear-gradient(135deg, rgb(216 199 170 / 13%), transparent),
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 7%) 0 1px, transparent 1px 16px),
+    #11151a;
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .contact-map-links a:hover {
+  border-color: var(--mbl-color-border-strong);
+  background: rgb(255 255 255 / 9%);
+}
+
+body.mbl-page-secondary :is(.section.bg-\[\#f7f1ec\], .section.bg-\[\#faf5f1\], .bg-\[\#f7f1ec\], .bg-\[\#faf5f1\]) {
+  background: transparent !important;
+}
+
+body.mbl-page-secondary :is(.trust-mini, .price-extra, .layout-card, .compact-list li, .example-list li) {
+  border-color: var(--mbl-color-border-subtle);
+  background: linear-gradient(145deg, rgb(255 255 255 / 7%), rgb(255 255 255 / 3%));
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary :is(.layout-card h3, .layout-card p, .compact-list li, .example-list li, .section-note) {
+  color: var(--mbl-color-text-secondary);
+}
+
+/* Project detail blocks share the same editorial surfaces as the home cards;
+ * photos stay untouched while old paper-white wrappers become dark panels. */
+body.mbl-page-secondary .project-page :is(.project-about-card, .project-about-highlight, .project-split, .project-process-card, .project-mid-cta-card, .project-gallery-cta-card, .project-result-card, .project-cost-card, .project-cost-cta, .project-deliverables-card, .project-final-cta-card, .project-summary-card) {
+  border-color: var(--mbl-color-border-subtle);
+  background: linear-gradient(145deg, rgb(255 255 255 / 7%), rgb(255 255 255 / 3%));
+  color: var(--mbl-color-text-primary);
+  box-shadow: var(--mbl-shadow-soft);
+}
+
+body.mbl-page-secondary .project-page :is(.project-split-media, .project-gallery-open) {
+  border-color: var(--mbl-color-border-subtle);
+  background: rgb(255 255 255 / 5%);
+}
+
+body.mbl-page-secondary .project-page :is(.project-about-card, .project-about-highlight, .project-split, .project-process-card, .project-mid-cta-card, .project-gallery-cta-card, .project-result-card, .project-cost-card, .project-cost-cta, .project-deliverables-card, .project-final-cta-card, .project-summary-card) :is(h2, h3, h4, p, li, dt, dd, strong, span) {
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary .project-page :is(.project-about-card, .project-about-highlight, .project-split, .project-process-card, .project-mid-cta-card, .project-gallery-cta-card, .project-result-card, .project-cost-card, .project-cost-cta, .project-deliverables-card, .project-final-cta-card, .project-summary-card) :is(h2, h3, h4, strong) {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .project-page :is(.project-split a, .project-mid-cta-card a, .project-gallery-cta-card a, .project-cost-cta a, .project-final-cta-card a) {
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary .project-page :is(.project-gallery-open, .project-cost-card a, .project-summary-card a) {
+  border-color: var(--mbl-color-border-strong);
+  background: rgb(8 10 13 / 78%);
+  color: var(--mbl-color-text-primary);
+}
+
+/* Legacy card templates keep Tailwind text utility colors on their headings.
+ * Reassert the shared contrast roles so article, guide and project indexes do
+ * not inherit near-black text on an editorial dark surface. */
+body.mbl-page-secondary :is(.ds-card, .project-card) :is(h2, h3, .project-title-link) {
+  color: var(--mbl-color-text-primary) !important;
+}
+
+body.mbl-page-secondary :is(.ds-card, .project-card) :is(.project-meta, .project-summary, .project-context, .project-card-description, .project-proof, .project-cta-note, .text-\[\#665f5a\], .text-\[\#7a6f68\], .text-gray-600, .text-slate-500, .text-slate-600) {
+  color: var(--mbl-color-text-secondary) !important;
+}
+
+body.mbl-page-secondary .project-card :is(.project-price, .project-cta-callout, .project-cta-secondary) {
+  color: var(--mbl-color-accent) !important;
+}
+
+body.mbl-page-secondary .project-card .project-cta-primary {
+  border-color: var(--mbl-color-accent);
+  background: rgb(216 199 170 / 18%);
+  color: var(--mbl-color-text-primary);
+}
+
+@media (max-width: 48rem) {
+  body.mbl-page-secondary .hm {
+    padding-top: 1.5rem;
+  }
+
+  body.mbl-page-secondary .hm-layout {
+    border-radius: var(--mbl-radius-lg);
+  }
+
+  body.mbl-page-secondary .hm-media {
+    min-height: 21rem;
+  }
+
+  body.mbl-page-secondary .hm-offer {
+    padding: 1.5rem 1.25rem 1.75rem;
+  }
+
+  body.mbl-page-secondary .hm-offer h1 {
+    font-size: clamp(2rem, 10vw, 3rem);
+  }
+
+  body.mbl-page-secondary nav[aria-label='Breadcrumb'] {
+    padding-inline: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mbl-page-secondary :is(.hm-slide, .hm-btn, .ds-card-interactive, .mbl-page-secondary *) {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -4,7 +4,6 @@ import PageLayout from '~/layouts/PageLayout.astro';
 import Breadcrumb from '~/components/Breadcrumb.astro';
 import ContactForm from '~/components/ContactForm.astro';
 import SEOText from '~/components/SEOText.astro';
-import Image from '~/components/common/Image.astro';
 import JsonLd from '~/components/seo/JsonLd.astro';
 import RelatedProjects from '~/components/projects/RelatedProjects.astro';
 import type { ProjectCardData } from '~/types/project';
@@ -89,17 +88,14 @@ const pubDate = new Date(data.publishDate).toLocaleDateString('ru-RU', {
 const metadata = {
   title: data.title,
   description: data.description,
-  image: data.image,
 };
 
-const resolvedImage = data.image ? (siteUrl ? new URL(data.image, siteUrl).toString() : data.image) : undefined;
 const articleJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
   '@id': `${Astro.url.href}#article`,
   headline: data.title,
   description: data.description,
-  image: resolvedImage ? [resolvedImage] : undefined,
   datePublished: data.publishDate.toISOString(),
   dateModified: (data.updateDate || data.publishDate).toISOString(),
   author: {
@@ -233,26 +229,6 @@ const breadcrumbItems = [
           )
         }
 
-        <!-- Featured Image -->
-        {
-          data.image && (
-            <Image
-              src={data.image}
-              alt={data.title}
-              class="w-full h-72 md:h-96 object-cover rounded-lg mb-8"
-              loading="eager"
-              decoding="sync"
-              fetchpriority="high"
-              widths={[400, 640, 960]}
-              sizes="(max-width: 767px) 100vw, 720px"
-              width={1280}
-              height={751}
-              quality={68}
-              format="webp"
-              layout="responsive"
-            />
-          )
-        }
       </div>
     </header>
 

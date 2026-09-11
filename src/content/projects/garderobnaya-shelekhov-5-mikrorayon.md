@@ -17,12 +17,12 @@ materials:
   tabletop: Не применяется
   hardware: Blum
 images:
-  - /images/figma/portfolio-modern-wide.png
-  - /images/figma/portfolio-detail-wood.png
+  - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
+  - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
 blocks:
   - type: hero
     title: Гардеробная на заказ в Шелехове (5-й микрорайон)
-    image: /images/figma/portfolio-modern-wide.png
+    image: /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
   - type: materials
     items:
       - label: Фасады
@@ -36,8 +36,8 @@ blocks:
         icon: tabler:tool
   - type: gallery
     images:
-      - /images/figma/portfolio-modern-wide.png
-      - /images/figma/portfolio-detail-wood.png
+      - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
+      - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
   - type: result
     title: Итог проекта
   - type: specs

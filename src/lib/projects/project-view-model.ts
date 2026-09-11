@@ -380,7 +380,7 @@ export async function buildProjectViewModel({
   })();
   const galleryImagesForBlocks = galleryImagesOverride ?? galleryImages;
   const splitImages = (galleryImagesOverride ?? allImages)
-    .map((image) => resolveProjectImage(slug, image, imageBaseDir))
+    .map((image, imageIndex) => resolveProjectImage(slug, image, imageBaseDir, imageIndex))
     .filter((image) => Boolean(String(image || '').trim()));
   const solutionSplitImage = splitImages.length > 1 ? splitImages[1] : '';
   const rawOgImage = resolvedHeroImage || heroImage;
@@ -710,7 +710,9 @@ export async function buildProjectViewModel({
     .slice(0, 5);
 
   const processImageCandidate = galleryImagesForBlocks[1] || galleryImagesForBlocks[0] || '';
-  const processImage = processImageCandidate ? resolveProjectImage(slug, processImageCandidate, imageBaseDir) : '';
+  const processImage = processImageCandidate
+    ? resolveProjectImage(slug, processImageCandidate, imageBaseDir, 1)
+    : '';
 
   const railProcessSteps = (() => {
     if (blockProcessItems && 'steps' in blockProcessItems && Array.isArray(blockProcessItems.steps)) {

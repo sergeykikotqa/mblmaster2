@@ -448,6 +448,12 @@ if (!service) {
 const currentServiceName = page.serviceName;
 
 const serviceConfig = SERVICE_VIEW[service.id] || SERVICE_VIEW['kuhni-na-zakaz'];
+const serviceHeroImage =
+  service.id === 'shkafy-kupe'
+    ? '/images/projects/shkaf-kupe-na-vsyu-stenu-irkutsk/01.jpg'
+    : service.id === 'garderobnye'
+      ? '/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg'
+      : '/images/projects/kuhnya-baykalskaya/01.jpg';
 const cities = getCities();
 const primaryCity = cities[0];
 const siteUrl = Astro.site ? new URL(Astro.site).toString().replace(/\/$/, '') : '';
@@ -784,7 +790,7 @@ const leadContext = {
     stats={heroStats}
     slides={[
       {
-        src: '/images/figma/hero-main.png',
+        src: serviceHeroImage,
         alt: serviceConfig.title,
         title: serviceConfig.title,
         subtitle: serviceConfig.subtitle,

@@ -73,4 +73,24 @@ describe('normalizeProjectContent', () => {
     expect(normalized.resolvedPriceValue).toBe(182000);
     expect(normalized.body).toContain('markdown body');
   });
+
+  it('resolves legacy donor images to the real project gallery', () => {
+    const entry = makeEntry({
+      slug: 'kuhnya-uglovaya-irkutsk-lermontova',
+      images: [
+        '/images/figma/portfolio-modern-light.jpg',
+        '/images/figma/portfolio-detail-wood.png',
+        '/images/figma/portfolio-detail-drawer.png',
+      ],
+    });
+
+    const normalized = normalizeProjectContent(entry);
+
+    expect(normalized.resolvedImages).toEqual([
+      '/images/projects/kuhnya-trilissera/01.jpg',
+      '/images/projects/kuhnya-trilissera/02.jpg',
+      '/images/projects/kuhnya-trilissera/03.jpg',
+    ]);
+    expect(normalized.resolvedImages.every((image) => !image.includes('/images/figma/'))).toBe(true);
+  });
 });

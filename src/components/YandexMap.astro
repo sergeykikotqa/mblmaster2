@@ -17,8 +17,6 @@ const resolvedYandexUrl =
 const resolvedGoogleUrl =
   googleUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lon}`)}`;
 const mapSrc = `https://yandex.ru/map-widget/v1/?ll=${lon}%2C${lat}&mode=search&pt=${lon},${lat},pm2rdm&text=${encodedQuery}&z=${zoom}`;
-const mapPreviewUrl = '/images/figma/map-preview.png';
-const placeholderStyle = `background-image: linear-gradient(rgba(247, 241, 236, 0.86), rgba(247, 241, 236, 0.86)), url('${mapPreviewUrl}');`;
 ---
 
 <div
@@ -28,8 +26,7 @@ const placeholderStyle = `background-image: linear-gradient(rgba(247, 241, 236, 
   data-map-src={mapSrc}
 >
   <div
-    class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-cover bg-center p-6 text-center"
-    style={placeholderStyle}
+    class="map-placeholder absolute inset-0 flex flex-col items-center justify-center gap-4 bg-cover bg-center p-6 text-center"
     data-map-placeholder
   >
     <p class="text-slate-800 font-semibold">Карта и маршрут до шоурума</p>

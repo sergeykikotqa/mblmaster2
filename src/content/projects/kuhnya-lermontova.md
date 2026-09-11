@@ -18,14 +18,14 @@ materials:
   tabletop: Egger
   hardware: Blum
 images:
-  - /images/figma/portfolio-modern-light.jpg
-  - /images/figma/portfolio-detail-wood.png
-  - /images/figma/portfolio-detail-drawer.png
-  - /images/figma/portfolio-modern-wide.png
+  - /images/projects/kuhnya-trilissera/01.jpg
+  - /images/projects/kuhnya-trilissera/02.jpg
+  - /images/projects/kuhnya-trilissera/03.jpg
+  - /images/projects/kuhnya-trilissera/04.jpg
 blocks:
   - type: hero
     title: Угловая кухня на заказ в Иркутске (ул. Лермонтова)
-    image: /images/figma/portfolio-modern-light.jpg
+    image: /images/projects/kuhnya-trilissera/01.jpg
   - type: task
     text: |-
       Нужна угловая кухня на заказ в Иркутске с аккуратной геометрией, удобной рабочей линией и встроенной техникой.
@@ -36,7 +36,7 @@ blocks:
       Выстроили компоновку с непрерывной рабочей линией и ровной фасадной плоскостью. Скрытое хранение и аккуратная
       геометрия делают кухню визуально лёгкой и удобной в повседневном использовании. Материалы: фасады МДФ эмаль,
       столешница Egger, фурнитура Blum.
-    image: /images/figma/portfolio-detail-wood.png
+    image: /images/projects/kuhnya-trilissera/02.jpg
     layout: imageLeft
     anchor: solution
     tocLabel: Решение
@@ -67,10 +67,10 @@ blocks:
         meta: ''
   - type: gallery
     images:
-      - /images/figma/portfolio-modern-light.jpg
-      - /images/figma/portfolio-detail-wood.png
-      - /images/figma/portfolio-detail-drawer.png
-      - /images/figma/portfolio-modern-wide.png
+      - /images/projects/kuhnya-trilissera/01.jpg
+      - /images/projects/kuhnya-trilissera/02.jpg
+      - /images/projects/kuhnya-trilissera/03.jpg
+      - /images/projects/kuhnya-trilissera/04.jpg
   - type: quote
     text: >-
       Кухню сделали точно по размерам, всё установили аккуратно, уложились в срок. Отдельно понравилось, что помогли с

@@ -13,12 +13,12 @@ interface Props {
 
 const { slug, imageBaseDir = '', images = [], alt, captions = {}, exclude = [] } = Astro.props as Props;
 
-const normalizeImage = (value: string) => resolveProjectImage(slug, value, imageBaseDir);
+const normalizeImage = (value: string, imageIndex?: number) => resolveProjectImage(slug, value, imageBaseDir, imageIndex);
 
 const normalizedImages = images
   .map((value) => String(value || '').trim())
   .filter(Boolean)
-  .map(normalizeImage);
+  .map((value, imageIndex) => normalizeImage(value, imageIndex));
 
 const normalizedExclude = exclude
   .map((value) => String(value || '').trim())

@@ -12,13 +12,13 @@ estimatedPrice: 136000
 estimatedPriceNote: Оценка по фото, площади 7 м² и аналогичным гардеробным в Ангарске. Точная смета зависит от конфигурации секций, материалов и наполнения.
 layout: гардеробная в спальне
 images:
-  - /images/figma/portfolio-classic-cream.png
-  - /images/figma/portfolio-detail-wood.png
-  - /images/figma/portfolio-modern-wide.png
+  - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
+  - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
+  - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg
 blocks:
   - type: hero
     title: Гардеробная на заказ в Ангарске (29-й микрорайон)
-    image: /images/figma/portfolio-classic-cream.png
+    image: /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
   - type: task
     text: |-
       Нужно было организовать гардеробную в спальне так, чтобы хранение одежды и обуви осталось
@@ -29,15 +29,15 @@ blocks:
       Собрали единую систему хранения с секциями под одежду, обувь и коробки, а компоновку выстроили
       так, чтобы сохранить свободный проход и удобный доступ к окну. За счёт этого гардеробная
       работает как полноценный storage-блок, но не перегружает спальню.
-    image: /images/figma/portfolio-detail-wood.png
+    image: /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
     layout: imageLeft
     anchor: solution
     tocLabel: Решение
   - type: gallery
     images:
-      - /images/figma/portfolio-classic-cream.png
-      - /images/figma/portfolio-detail-wood.png
-      - /images/figma/portfolio-modern-wide.png
+      - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
+      - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
+      - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg
   - type: quote
     text: >-
       Гардеробная получилась вместительной и аккуратной, особенно удобно, что сделали раздельные зоны хранения.

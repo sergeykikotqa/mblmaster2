@@ -12,13 +12,13 @@ estimatedPrice: 228000
 estimatedPriceNote: Оценка по фото, площади 14 м² и аналогичным гардеробным в Иркутске. Точная смета зависит от числа секций, материалов и наполнения.
 layout: отдельная комната
 images:
-  - /images/figma/portfolio-detail-wood.png
-  - /images/figma/portfolio-modern-wide.png
-  - /images/figma/portfolio-detail-drawer.png
+  - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
+  - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
+  - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg
 blocks:
   - type: hero
     title: Гардеробная на заказ в Иркутске (ул. Советская)
-    image: /images/figma/portfolio-detail-wood.png
+    image: /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
   - type: task
     text: |-
       Нужна была гардеробная в отдельной комнате, чтобы разделить повседневное и сезонное хранение
@@ -29,15 +29,15 @@ blocks:
       Развели систему хранения на мужскую и женскую зоны, добавили отдельный блок под сезонные вещи
       и сохранили удобный проход по центру. Основной акцент сделали на понятной логике размещения:
       длинная одежда, обувь, коробы и повседневные вещи получили свои секции без перегруза комнаты.
-    image: /images/figma/portfolio-modern-wide.png
+    image: /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
     layout: imageRight
     anchor: solution
     tocLabel: Решение
   - type: gallery
     images:
-      - /images/figma/portfolio-detail-wood.png
-      - /images/figma/portfolio-modern-wide.png
-      - /images/figma/portfolio-detail-drawer.png
+      - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
+      - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
+      - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg
   - type: quote
     text: >-
       После установки гардеробной освободили спальню от лишних шкафов, пользоваться системой очень удобно.

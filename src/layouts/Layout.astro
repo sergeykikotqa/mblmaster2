@@ -4,6 +4,7 @@ import golosCyrillicUrl from '@fontsource-variable/golos-text/files/golos-text-c
 import '~/assets/styles/tailwind.css';
 import '~/assets/styles/design-system.css';
 import '~/assets/styles/site-shell.css';
+import '~/assets/styles/secondary-pages.css';
 
 // Fixed language for local SEO
 
@@ -103,6 +104,7 @@ const showMoneyPageStickyCta = isMoneyServicePage && Boolean(businessInfo.phoneH
     class:list={[
       'antialiased text-default bg-page tracking-tight mbl-page',
       pageType ? 'mbl-page-' + pageType : undefined,
+      pageType !== 'home' ? 'mbl-page-secondary' : undefined,
     ]}
     data-page-type={pageType}
   >

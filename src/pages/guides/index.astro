@@ -2,7 +2,6 @@
 import { getCollection } from 'astro:content';
 import PageLayout from '~/layouts/PageLayout.astro';
 import Breadcrumb from '~/components/Breadcrumb.astro';
-import Image from '~/components/common/Image.astro';
 
 const guides = await getCollection('guides', ({ data }) => !data.draft);
 const resolveEntrySlug = (entry: (typeof guides)[number]) =>
@@ -54,18 +53,6 @@ const breadcrumbItems = [{ label: 'Гайды', href: '/guides' }];
                       {guide.data.steps && <span>📋 {guide.data.steps.length} шагов</span>}
                     </div>
                   </div>
-                  {guide.data.image && (
-                    <Image
-                      src={guide.data.image}
-                      alt={guide.data.title}
-                      class="w-full max-w-full rounded object-cover transition group-hover:scale-105 sm:w-40 sm:flex-shrink-0"
-                      loading="lazy"
-                      sizes="(max-width: 639px) 100vw, 160px"
-                      width={400}
-                      height={320}
-                      layout="responsive"
-                    />
-                  )}
                 </div>
               </a>
             );
