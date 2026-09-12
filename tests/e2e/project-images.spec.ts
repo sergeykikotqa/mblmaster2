@@ -140,7 +140,7 @@ for (const viewport of VIEWPORTS) {
       const lightbox = gallery.locator('[data-gallery-lightbox]');
       await expect(lightbox).toBeVisible();
       await expectLoadedImage(lightbox.locator('[data-gallery-lightbox-image]'));
-      await detailPage.keyboard.press('Escape');
+      await lightbox.locator('[data-gallery-close]').click();
       await expect(lightbox).toBeHidden();
 
       await openProjectModal(detailPage, detailPage.locator('[data-project-modal-trigger]:visible').first());

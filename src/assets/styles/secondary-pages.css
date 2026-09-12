@@ -536,8 +536,42 @@ body.mbl-page-secondary .project-page :is(.project-section > h2, .project-trust 
   color: var(--mbl-color-text-primary);
 }
 
+body.mbl-page-secondary .project-page .project-related-title h2 {
+  color: var(--mbl-color-text-primary);
+}
+
 body.mbl-page-secondary .project-page :is(.project-trust span, .project-description, .project-micro-geo, .project-rail-card p, .project-related-card p) {
   color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary .project-page .project-section-kicker {
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary .project-page :is(.project-fit-list, .project-rail-benefits li, .project-material-card h3) {
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary .project-page .project-related-link {
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary .project-page .project-material-card p {
+  color: var(--mbl-color-text-primary);
+}
+
+/* content-visibility creates a containing block for fixed descendants. Release
+ * only the active gallery chain so the lightbox stays viewport-sized and its
+ * controls remain pointer-accessible without changing steady-state rendering. */
+body.mbl-page-secondary .project-page :is(.project-container, .project-section):has(.project-gallery-lightbox.open) {
+  content-visibility: visible;
+}
+
+/* The sticky rail is a z-index: 2 sibling of the z-index: 1 main column.
+ * Lift the main column only while its lightbox is open so the rail cannot
+ * paint over the dialog controls. */
+body.mbl-page-secondary .project-page .project-main:has(.project-gallery-lightbox.open) {
+  z-index: 3;
 }
 
 /* Service and city templates still carry page-local cream styles. Keep the
