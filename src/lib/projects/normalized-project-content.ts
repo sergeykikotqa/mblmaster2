@@ -154,6 +154,16 @@ const normalizeProjectImages = (value: readonly string[] | null | undefined): st
         .filter(Boolean)
     : [];
 
+const inferProjectImageBaseDir = (images: readonly string[]): string => {
+  for (const image of images) {
+    const projectPathMatch = image.match(/^\/images\/projects\/(.+?)\/[^/]+$/i);
+    const projectPathBaseDir = normalizeProjectImageBaseDir(projectPathMatch?.[1]);
+    if (projectPathBaseDir) return projectPathBaseDir;
+  }
+
+  return '';
+};
+
 const normalizeImageCaptions = (value: ProjectEntry['data']['imageCaptions']): Record<string, string> => {
   if (!value || typeof value !== 'object') return {};
 
@@ -175,9 +185,13 @@ export function normalizeProjectContent(entry: ProjectEntry): NormalizedProjectC
   const boundary = readProjectBoundary(entry);
   const images = normalizeProjectImages(rawData.images);
   const hasLegacyImages = images.some((image) => isLegacyProjectImage(image));
+  const inferredImageBaseDir = hasLegacyImages
+    ? resolveLegacyProjectImageBaseDir(slug)
+    : inferProjectImageBaseDir(images);
   const imageBaseDir =
     normalizeProjectImageBaseDir(boundary.imageBaseDir) ||
-    (hasLegacyImages ? resolveLegacyProjectImageBaseDir(slug) : normalizeProjectImageBaseDir(slug));
+    inferredImageBaseDir ||
+    normalizeProjectImageBaseDir(slug);
   const data: NormalizedProjectData = {
     ...rawData,
     imageBaseDir,

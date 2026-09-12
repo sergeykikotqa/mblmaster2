@@ -57,6 +57,26 @@ describe('normalizeProjectContent', () => {
     expect(normalized.data.imageBaseDir).toBe('rabochaya-zona-pod-skatom-irkutsk');
   });
 
+  it('infers imageBaseDir from an explicit project asset path before using the slug fallback', () => {
+    const entry = makeEntry({
+      slug: 'project-route-slug',
+      imageBaseDir: undefined,
+      images: [
+        '/images/projects/real-mbl-gallery/01.jpg',
+        '/images/projects/real-mbl-gallery/02.jpg',
+      ],
+    });
+
+    const normalized = normalizeProjectContent(entry);
+
+    expect(normalized.imageBaseDir).toBe('real-mbl-gallery');
+    expect(normalized.data.imageBaseDir).toBe('real-mbl-gallery');
+    expect(normalized.resolvedImages).toEqual([
+      '/images/projects/real-mbl-gallery/01.jpg',
+      '/images/projects/real-mbl-gallery/02.jpg',
+    ]);
+  });
+
   it('normalizes price fallbacks and body for downstream builders', () => {
     const entry = makeEntry(
       {
