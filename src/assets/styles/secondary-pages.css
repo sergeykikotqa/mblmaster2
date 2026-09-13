@@ -478,6 +478,11 @@ body.mbl-page-secondary .projects-filters-backdrop {
 }
 
 /* Editorial lists and article/guide detail. */
+body.mbl-page-secondary .mbl-seo-text-surface {
+  border-color: var(--mbl-color-border-subtle);
+  background: var(--mbl-color-bg-elevated);
+}
+
 body.mbl-page-secondary :is(.article-deferred-section, .prose, .section-content) {
   color: var(--mbl-color-text-secondary);
 }
@@ -691,6 +696,10 @@ body.mbl-page-secondary .project-page :is(.project-about-card, .project-about-hi
 
 body.mbl-page-secondary .project-page :is(.project-about-card, .project-about-highlight, .project-split, .project-process-card, .project-mid-cta-card, .project-gallery-cta-card, .project-result-card, .project-cost-card, .project-cost-cta, .project-deliverables-card, .project-final-cta-card, .project-summary-card) :is(h2, h3, h4, strong) {
   color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .project-page .project-process-card .project-process-meta {
+  color: var(--mbl-color-text-inverse);
 }
 
 body.mbl-page-secondary .project-page :is(.project-split a, .project-mid-cta-card a, .project-gallery-cta-card a, .project-cost-cta a, .project-final-cta-card a) {

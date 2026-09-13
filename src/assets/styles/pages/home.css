@@ -264,7 +264,6 @@
 }
 
 .home-hero-enter {
-  opacity: 0;
   transform: translateY(1.25rem);
   animation: home-hero-rise 1.02s var(--mbl-ease-premium) forwards;
 }
@@ -275,7 +274,7 @@
 .home-hero-enter-4 { animation-delay: 760ms; }
 
 @keyframes home-hero-rise {
-  to { opacity: 1; transform: translateY(0); }
+  to { transform: translateY(0); }
 }
 
 @keyframes home-narrative-focus {

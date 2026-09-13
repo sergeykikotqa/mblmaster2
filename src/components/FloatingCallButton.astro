@@ -6,7 +6,7 @@ const businessInfo = getBusinessInfo();
 const phoneHref = `tel:${businessInfo.phoneHref}`;
 ---
 
-<div id="floating-call-button" class="group fixed bottom-6 right-6 z-40">
+<aside id="floating-call-button" class="group fixed bottom-6 right-6 z-40" aria-label="Быстрый звонок">
   <a
     href={phoneHref}
     data-cta-placement="floating"
@@ -34,7 +34,7 @@ const phoneHref = `tel:${businessInfo.phoneHref}`;
     <div>{businessInfo.phone}</div>
     <div class="text-xs text-[#d8bea9]">{businessInfo.openingHoursText}</div>
   </div>
-</div>
+</aside>
 
 <style is:inline>
   @media (min-width: 1024px) {

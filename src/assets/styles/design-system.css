@@ -430,17 +430,14 @@
   transform: translateX(0.25rem);
 }
 
+/* Entrance motion must not lower text contrast in intermediate frames. */
 html.mbl-motion-ready .mbl-reveal {
-  opacity: 0.72;
   transform: translateY(1.125rem);
-  transition:
-    opacity var(--mbl-duration-slow) var(--mbl-ease-premium),
-    transform var(--mbl-duration-slow) var(--mbl-ease-premium);
+  transition: transform var(--mbl-duration-slow) var(--mbl-ease-premium);
   transition-delay: var(--mbl-reveal-delay, 0ms);
 }
 
 html.mbl-motion-ready .mbl-reveal.is-visible {
-  opacity: 1;
   transform: translateY(0);
 }
 
