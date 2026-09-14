@@ -18,12 +18,10 @@ const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const retryBaseDelaySec = Number(process.env.PROD_RUNTIME_RETRY_BASE_DELAY_SEC || 1);
 const webhookTimeoutMs = Number(process.env.PROD_RUNTIME_WEBHOOK_TIMEOUT_MS || 1000);
 const simulatedTimeoutDelayMs = Number(process.env.PROD_RUNTIME_WEBHOOK_SIMULATED_TIMEOUT_DELAY_MS || 1800);
-const localMode =
-  String(process.env.PROD_RUNTIME_LOCAL_MODE || 'dev')
-    .trim()
-    .toLowerCase() === 'preview'
-    ? 'preview'
-    : 'dev';
+const requestedLocalMode = String(process.env.PROD_RUNTIME_LOCAL_MODE || 'dev')
+  .trim()
+  .toLowerCase();
+const localMode = ['node', 'preview'].includes(requestedLocalMode) ? requestedLocalMode : 'dev';
 
 const serverLogs = [];
 
@@ -233,10 +231,13 @@ async function startMockWebhookServer() {
 
 function startLocalServer(mockWebhookUrl, workerToken, adminToken) {
   const webhookSecret = `prod-runtime-webhook-secret-${Date.now().toString(36)}`;
-  const child = spawn(npmCommand, ['run', localMode, '--', '--host', host, '--port', String(port)], {
+  const npmArgs = localMode === 'node' ? ['start'] : ['run', localMode, '--', '--host', host, '--port', String(port)];
+  const child = spawn(npmCommand, npmArgs, {
     env: {
       ...process.env,
       ASTRO_TELEMETRY_DISABLED: '1',
+      HOST: host,
+      PORT: String(port),
       CONTACT_WEBHOOK_URL: mockWebhookUrl,
       CONTACT_WEBHOOK_SECRET: webhookSecret,
       CONTACT_ALERT_WEBHOOK_URL: mockWebhookUrl,
@@ -379,6 +380,18 @@ async function runWorkerUnauthorized() {
   return { status: response.status, body };
 }
 
+async function fetchAdminUnauthorized() {
+  const response = await fetchWithTimeout(`${baseUrl}/api/admin/health`, {
+    method: 'GET',
+    headers: {
+      Authorization: 'Bearer invalid-admin-token',
+    },
+  });
+
+  const body = await readJsonResponse(response, 'GET /api/admin/health (unauthorized)');
+  return { status: response.status, body };
+}
+
 async function postInvalidLead() {
   const response = await fetchWithTimeout(`${baseUrl}/api/contact`, {
     method: 'POST',
@@ -477,19 +490,20 @@ async function waitForWebhookLeadAttempts(mockWebhook, leadId, expectedAttempts)
 }
 
 function ensureProductionEnv() {
-  if (localMode === 'preview' && !fs.existsSync('dist')) {
-    throw new Error('dist directory is missing. Run `npm run build` before production runtime smoke check.');
+  const artifactExists = localMode === 'node' ? fs.existsSync('.output/server/entry.mjs') : fs.existsSync('dist');
+  if (['node', 'preview'].includes(localMode) && !artifactExists) {
+    throw new Error('Production artifact is missing. Run `npm run build` before production runtime smoke check.');
   }
 
   const missing = [];
-  for (const key of ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN']) {
+  for (const key of ['REDIS_URL']) {
     if (!String(process.env[key] || '').trim()) {
       missing.push(key);
     }
   }
 
   if (missing.length > 0) {
-    if (localMode === 'preview') {
+    if (['node', 'preview'].includes(localMode)) {
       throw new Error(`Missing required env for production runtime smoke check: ${missing.join(', ')}`);
     }
 
@@ -514,15 +528,18 @@ async function main() {
     await checkCanonicalRoute('/');
     await checkCanonicalRoute('/kuhni');
     await checkCanonicalRoute('/contacts');
-    if (localMode === 'preview') {
+    if (['node', 'preview'].includes(localMode)) {
       await checkTrailingSlashNormalization('/kuhni');
       await checkTrailingSlashNormalization('/contacts');
     }
-    await checkAdminShellHeaders('/admin');
-    await checkAdminShellHeaders('/admin/metrics');
+    // Standalone Node does not execute the legacy static _headers policy; Nginx owns it in the next checkpoint.
+    if (localMode !== 'node') {
+      await checkAdminShellHeaders('/admin');
+      await checkAdminShellHeaders('/admin/metrics');
+    }
     if (readyArticlePaths.length > 0) {
       await checkCanonicalRoute(readyArticlePaths[0]);
-      if (localMode === 'preview') {
+      if (['node', 'preview'].includes(localMode)) {
         await checkTrailingSlashNormalization(readyArticlePaths[0]);
       }
     }
@@ -557,6 +574,16 @@ async function main() {
     assert(
       unauthorizedWorker.body?.code === 'UNAUTHORIZED',
       `Unauthorized worker response must return code=UNAUTHORIZED, got ${String(unauthorizedWorker.body?.code || '')}`
+    );
+
+    const unauthorizedAdmin = await fetchAdminUnauthorized();
+    assert(
+      unauthorizedAdmin.status === 401,
+      `Unauthorized admin request must return 401, got ${unauthorizedAdmin.status}`
+    );
+    assert(
+      unauthorizedAdmin.body?.code === 'UNAUTHORIZED',
+      `Unauthorized admin response must return code=UNAUTHORIZED, got ${String(unauthorizedAdmin.body?.code || '')}`
     );
 
     const webhook500Lead = await postLead({

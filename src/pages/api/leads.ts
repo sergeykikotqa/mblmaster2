@@ -1,10 +1,9 @@
 import { createHash, randomUUID } from 'crypto';
 
 import { getLeadStore, hasRedisLeadStoreConfig, isRedisRuntimeError } from '~/server/leads/store';
-import { recordFallbackDeliveryMetric } from '~/server/leads/metrics-fallback';
 import type { ContactSuccessResponse, LeadRecord } from '~/server/leads/types';
 import { notifyBotProtectionDegraded, notifyLeadStoreDegraded } from '~/server/leads/alerts';
-import { deliverLeadWebhook, hasWebhookSecretConfig, isWebhookConfigured } from '~/server/leads/webhook';
+import { hasWebhookSecretConfig, isWebhookConfigured } from '~/server/leads/webhook';
 import { appendLeadBackup } from '~/server/leads/backup-log';
 import { recordFunnelMetric, resolveFunnelDimensions } from '~/server/metrics/funnel';
 import { parseBooleanEnv } from '~/server/utils/auth';
@@ -54,7 +53,6 @@ const DEFAULT_RATE_LIMIT_MAX = 5;
 const DEFAULT_RATE_LIMIT_WINDOW_SEC = 10 * 60;
 const DEFAULT_WORKER_TRIGGER_TIMEOUT_MS = 800;
 const DEFAULT_WORKER_TRIGGER_LIMIT = 3;
-const DEFAULT_DEGRADED_DIRECT_DELIVERY_ENABLED = true;
 const DEFAULT_TURNSTILE_TIMEOUT_MS = 4000;
 const DEFAULT_TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const DEFAULT_TURNSTILE_DEGRADED_ALERT_COOLDOWN_SEC = 900;
@@ -522,93 +520,6 @@ function resolveWorkerTriggerTimeoutMs(): number {
   return parsePositiveInt(process.env.CONTACT_WORKER_TRIGGER_TIMEOUT_MS, DEFAULT_WORKER_TRIGGER_TIMEOUT_MS, 100);
 }
 
-function isDegradedDirectDeliveryEnabled(): boolean {
-  return parseBooleanEnv(
-    process.env.CONTACT_DEGRADED_DIRECT_DELIVERY_ENABLED,
-    DEFAULT_DEGRADED_DIRECT_DELIVERY_ENABLED
-  );
-}
-
-function withDeliveryMetadata(
-  payload: Record<string, unknown>,
-  metadata: Record<string, unknown>
-): Record<string, unknown> {
-  const currentDelivery =
-    payload.delivery && typeof payload.delivery === 'object' && !Array.isArray(payload.delivery)
-      ? payload.delivery
-      : {};
-
-  return {
-    ...payload,
-    delivery: {
-      ...currentDelivery,
-      ...metadata,
-    },
-  };
-}
-
-async function tryDegradedDirectDelivery(
-  webhookPayload: Record<string, unknown>,
-  leadId: string,
-  queueError: unknown
-): Promise<boolean> {
-  if (!isDegradedDirectDeliveryEnabled() || !isWebhookConfigured()) {
-    return false;
-  }
-
-  const deliveryPayload = withDeliveryMetadata(webhookPayload, {
-    mode: 'degraded_direct',
-    attempt: 1,
-    retryCount: 0,
-    maxRetries: 1,
-    retryBaseDelaySec: 0,
-    workerProcessedAt: new Date().toISOString(),
-  });
-
-  const startedAtMs = Date.now();
-  const directDelivery = await deliverLeadWebhook(deliveryPayload);
-  const completedAtMs = Date.now();
-  const latencyMs = Math.max(0, completedAtMs - startedAtMs);
-  if (!directDelivery.ok) {
-    recordFallbackDeliveryMetric({
-      leadId,
-      status: 'failed',
-      timestampMs: completedAtMs,
-      attempt: 1,
-      retryCount: 0,
-      latencyMs,
-    });
-    console.error('[contact] degraded_direct_delivery_failed', {
-      leadId,
-      queueErrorCode: queueError instanceof Error ? queueError.message : 'UNKNOWN',
-      deliveryCode: directDelivery.code,
-      deliveryStatus: directDelivery.status,
-      latencyMs,
-    });
-    return false;
-  }
-
-  recordFallbackDeliveryMetric({
-    leadId,
-    status: 'success',
-    timestampMs: completedAtMs,
-    attempt: 1,
-    retryCount: 0,
-    latencyMs,
-  });
-  console.warn('[contact] degraded_direct_delivery_success', {
-    event: 'lead_delivery_attempt',
-    leadId,
-    status: 'success',
-    mode: 'degraded_direct',
-    attempt: 1,
-    retryCount: 0,
-    latency_ms: latencyMs,
-    queueErrorCode: queueError instanceof Error ? queueError.message : 'UNKNOWN',
-  });
-  return true;
-}
-
 function resolveWorkerTriggerUrl(request: Request): URL {
   const fallback = new URL('/api/workers/lead-delivery', request.url);
   const configured = (process.env.CONTACT_WORKER_URL || '').trim();
@@ -965,19 +876,10 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
       if (isRedisRuntimeError(queueError)) {
         await maybeNotifyLeadStoreDegradedAlert({
           code: queueError instanceof Error ? queueError.message : 'REDIS_UNKNOWN_RUNTIME_ERROR',
-          message: 'Lead queue runtime failure, using degraded delivery path',
+          message: 'Lead queue runtime failure; request was not accepted',
           operation: 'enqueue',
         });
-        const deliveredInDegradedMode = await tryDegradedDirectDelivery(webhookPayload, leadId, queueError);
-        if (deliveredInDegradedMode) {
-          await recordFormSubmittedMetricSafe(funnelDimensions);
-          return succeed(successResponse);
-        }
-        return fail(
-          503,
-          'LEAD_STORE_UNAVAILABLE',
-          'Lead queue is temporarily unavailable and direct delivery fallback failed'
-        );
+        return fail(503, 'LEAD_STORE_UNAVAILABLE', 'Lead queue is temporarily unavailable');
       }
       throw queueError;
     }

@@ -20,6 +20,8 @@ async function shutdown() {
   if (isStopping) return;
   isStopping = true;
   await runtime.server.stop();
+  const closeRedis = globalThis[Symbol.for('mbl.redis.close')];
+  if (typeof closeRedis === 'function') await closeRedis();
   if (process.connected) process.disconnect();
 }
 

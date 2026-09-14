@@ -1,3 +1,4 @@
+import { assertMemoryFallbackAllowed, hasRedisConfig, redisCommand } from '~/server/redis/client';
 import { getFunnelRollupFull, type FunnelRollup, type FunnelRollupEntry, type FunnelStoreSource } from './funnel';
 
 export type SnapshotScope = 'city' | 'service' | 'city_service' | 'page_type';
@@ -18,11 +19,7 @@ export type DailySnapshotRow = {
 };
 
 export type DailySnapshotAnomalyReason =
-  | 'cr_drop'
-  | 'zero_submitted'
-  | 'opened_spike'
-  | 'submitted_spike'
-  | 'opened_up_submitted_down';
+  'cr_drop' | 'zero_submitted' | 'opened_spike' | 'submitted_spike' | 'opened_up_submitted_down';
 
 export type DailySnapshotAnomaly = {
   scope: SnapshotScope;
@@ -70,11 +67,6 @@ type SnapshotAggregateRow = {
 };
 
 type SnapshotStorePayload = DailySnapshotResult;
-
-type UpstashResponse<T> = {
-  result?: T;
-  error?: string;
-};
 
 const DEFAULT_BASELINE_DAYS = 7;
 const DEFAULT_CR_DROP_THRESHOLD = 0.3;
@@ -161,42 +153,6 @@ function resolvePrefix(): string {
 
 function keyForSnapshot(day: string): string {
   return `${resolvePrefix()}:metrics:snapshot:day:${day}`;
-}
-
-function hasRedisConfig(): boolean {
-  const endpoint = (process.env.UPSTASH_REDIS_REST_URL || '').trim();
-  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
-  return Boolean(endpoint && token);
-}
-
-function getRedisConfig() {
-  return {
-    endpoint: (process.env.UPSTASH_REDIS_REST_URL || '').trim(),
-    token: (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim(),
-  };
-}
-
-async function redisCommand<T>(...args: Array<string | number>): Promise<T> {
-  const { endpoint, token } = getRedisConfig();
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(args),
-  });
-
-  if (!response.ok) {
-    throw new Error(`REDIS_HTTP_${response.status}`);
-  }
-
-  const payload = (await response.json()) as UpstashResponse<T>;
-  if (payload.error) {
-    throw new Error(`REDIS_COMMAND_ERROR:${payload.error}`);
-  }
-
-  return payload.result as T;
 }
 
 function toDayString(date: Date): string {
@@ -485,12 +441,14 @@ async function persistSnapshot(
       await redisCommand('SET', key, JSON.stringify(snapshot), 'EX', ttlSec);
       return { storageSource: 'redis' };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       console.warn('[metrics-snapshot] redis_write_failed_fallback_memory', {
         code: error instanceof Error ? error.message : 'UNKNOWN',
       });
     }
   }
 
+  assertMemoryFallbackAllowed();
   memorySnapshots.set(day, snapshot);
   return { storageSource: 'memory' };
 }
@@ -505,12 +463,14 @@ export async function getStoredDailyConversionSnapshot(day: string): Promise<Sna
         return JSON.parse(raw) as SnapshotStorePayload;
       }
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       console.warn('[metrics-snapshot] redis_read_failed_fallback_memory', {
         code: error instanceof Error ? error.message : 'UNKNOWN',
       });
     }
   }
 
+  assertMemoryFallbackAllowed();
   return memorySnapshots.get(normalizedDay) || null;
 }
 

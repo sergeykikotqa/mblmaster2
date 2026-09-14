@@ -3,6 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import os from 'node:os';
 import { setTimeout as delay } from 'node:timers/promises';
+import { createClient } from 'redis';
 
 const DEFAULT_PREFIX = 'lead';
 const DEFAULT_LEAD_RECORD_TTL_SEC = 60 * 60 * 24 * 30;
@@ -100,32 +101,34 @@ async function appendAudit(client, keys, entry) {
   }
 }
 
-class UpstashRedisClient {
-  constructor(endpoint, token) {
-    this.endpoint = endpoint;
-    this.token = token;
+class NativeRedisClient {
+  constructor(url) {
+    this.client = createClient({
+      url,
+      RESP: 2,
+      disableOfflineQueue: true,
+      socket: { connectTimeout: 1200, reconnectStrategy: false },
+    });
+    this.client.on('error', () => {});
+    this.connectPromise = undefined;
   }
 
   async command(...args) {
-    const response = await fetch(this.endpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(args),
-    });
-
-    if (!response.ok) {
-      throw new Error(`REDIS_HTTP_${response.status}`);
+    try {
+      if (!this.client.isReady) {
+        this.connectPromise ||= this.client.connect();
+        await this.connectPromise;
+      }
+      return await this.client.sendCommand(args.map(String));
+    } catch {
+      throw new Error('REDIS_COMMAND_UNAVAILABLE');
     }
+  }
 
-    const payload = await response.json();
-    if (payload?.error) {
-      throw new Error(`REDIS_COMMAND_ERROR:${payload.error}`);
+  async close() {
+    if (this.client.isOpen) {
+      await this.client.close();
     }
-
-    return payload?.result;
   }
 }
 
@@ -294,8 +297,7 @@ function printUsage() {
   node scripts/dlq-cli.mjs replay-all [--limit=20] [--delay-ms=250] [--force] --confirm=${REPLAY_ALL_CONFIRM_VALUE}
 
 Required env:
-  UPSTASH_REDIS_REST_URL
-  UPSTASH_REDIS_REST_TOKEN
+  REDIS_URL (redis:// or rediss://)
 Optional env:
   CONTACT_REDIS_PREFIX (default: lead)
   CONTACT_LEAD_RECORD_TTL_SEC (default: 2592000)
@@ -317,14 +319,20 @@ async function main() {
     return;
   }
 
-  const endpoint = String(process.env.UPSTASH_REDIS_REST_URL || '').trim();
-  const token = String(process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
-  if (!endpoint || !token) {
-    throw new Error('UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are required');
+  const redisUrl = String(process.env.REDIS_URL || '').trim();
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(redisUrl);
+  } catch {
+    throw new Error('REDIS_URL must be a valid redis:// or rediss:// URL');
+  }
+  if (!['redis:', 'rediss:'].includes(parsedUrl.protocol) || !parsedUrl.hostname) {
+    throw new Error('REDIS_URL must be a valid redis:// or rediss:// URL');
   }
 
   const prefix = normalizePrefix(process.env.CONTACT_REDIS_PREFIX);
-  const client = new UpstashRedisClient(endpoint, token);
+  const client = new NativeRedisClient(redisUrl);
+  activeClient = client;
   const keys = buildKeys(prefix);
   const actor = resolveAuditActor();
   const startedAt = new Date().toISOString();
@@ -412,8 +420,13 @@ async function main() {
   throw new Error(`Unknown command: ${command}`);
 }
 
-main().catch((error) => {
-  console.error('DLQ CLI failed.');
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+let activeClient;
+main()
+  .catch((error) => {
+    console.error('DLQ CLI failed.');
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    if (activeClient) await activeClient.close();
+  });

@@ -114,11 +114,8 @@ const child = spawn(process.execPath, [path.join(projectRoot, 'scripts', 'start-
     CONTACT_WEBHOOK_URL: 'http://127.0.0.1:9/never-called',
     CONTACT_WEBHOOK_SECRET: 'node-runtime-smoke-secret',
     CONTACT_TURNSTILE_REQUIRED: 'false',
-    CONTACT_DEGRADED_DIRECT_DELIVERY_ENABLED: 'false',
     CONTACT_ALERT_WEBHOOK_URL: '',
     CONTACT_ALERT_WEBHOOK_URL_SECONDARY: '',
-    UPSTASH_REDIS_REST_URL: '',
-    UPSTASH_REDIS_REST_TOKEN: '',
     REDIS_URL: '',
   },
   stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
@@ -188,8 +185,8 @@ try {
   assert.equal((await readJson(validShapeContact)).code, 'LEAD_STORE_NOT_CONFIGURED');
 
   const admin = await runtimeFetch(baseUrl, '/api/admin/health');
-  assert.equal(admin.status, 401);
-  assert.equal((await readJson(admin)).code, 'UNAUTHORIZED');
+  assert.equal(admin.status, 503);
+  assert.equal((await readJson(admin)).code, 'ADMIN_AUTH_STORE_UNAVAILABLE');
 
   const worker = await runtimeFetch(baseUrl, '/api/workers/lead-delivery?limit=1', {
     method: 'POST',
@@ -207,7 +204,7 @@ try {
 
   console.log(`[node-runtime] PASS: ${htmlCount} prerendered HTML files, standalone API routes responded safely`);
   console.log(
-    '[node-runtime] 6 public routes 200; Gone 410; health 503 fail-closed; contact 307/400/500; admin 401; worker 401 (missing and invalid token)'
+    '[node-runtime] 6 public routes 200; Gone 410; health 503 fail-closed; contact 307/400/500; admin store 503 fail-closed; worker 401 (missing and invalid token)'
   );
 } finally {
   await stopServer(child);

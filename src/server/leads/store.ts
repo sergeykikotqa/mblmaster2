@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { hasRedisConfig, redisCommand } from '~/server/redis/client';
 
 import type {
   ContactSuccessResponse,
@@ -121,7 +122,6 @@ return {1, deliveredAtIso}
 `;
 
 const METRICS_RETENTION_SEC = 60 * 60 * 24 * 7;
-const DEFAULT_REDIS_TIMEOUT_MS = 1200;
 const DEFAULT_REDIS_MAX_ATTEMPTS = 2;
 const DEFAULT_REDIS_RETRY_BASE_DELAY_MS = 120;
 const DEFAULT_REDIS_CIRCUIT_FAILURE_THRESHOLD = 3;
@@ -129,13 +129,7 @@ const DEFAULT_REDIS_CIRCUIT_OPEN_MS = 15_000;
 
 type RedisArg = string | number;
 
-type UpstashResponse<T> = {
-  result?: T;
-  error?: string;
-};
-
 type RedisClientOptions = {
-  timeoutMs: number;
   maxAttempts: number;
   retryBaseDelayMs: number;
   circuitFailureThreshold: number;
@@ -150,7 +144,6 @@ function parsePositiveInt(value: string | undefined, fallback: number, min: numb
 
 function resolveRedisClientOptions(): RedisClientOptions {
   return {
-    timeoutMs: parsePositiveInt(process.env.CONTACT_REDIS_TIMEOUT_MS, DEFAULT_REDIS_TIMEOUT_MS, 200),
     maxAttempts: parsePositiveInt(process.env.CONTACT_REDIS_MAX_ATTEMPTS, DEFAULT_REDIS_MAX_ATTEMPTS, 1),
     retryBaseDelayMs: parsePositiveInt(
       process.env.CONTACT_REDIS_RETRY_BASE_DELAY_MS,
@@ -176,17 +169,7 @@ function toError(error: unknown): Error {
 }
 
 function isRetryableRedisMessage(message: string): boolean {
-  return (
-    message === 'REDIS_TIMEOUT' ||
-    message === 'REDIS_NETWORK_ERROR' ||
-    message === 'REDIS_CIRCUIT_OPEN' ||
-    message.startsWith('REDIS_HTTP_408') ||
-    message.startsWith('REDIS_HTTP_429') ||
-    message.startsWith('REDIS_HTTP_500') ||
-    message.startsWith('REDIS_HTTP_502') ||
-    message.startsWith('REDIS_HTTP_503') ||
-    message.startsWith('REDIS_HTTP_504')
-  );
+  return message === 'REDIS_TIMEOUT' || message === 'REDIS_NETWORK_ERROR' || message === 'REDIS_CIRCUIT_OPEN';
 }
 
 export function isRedisRuntimeError(error: unknown): boolean {
@@ -197,23 +180,17 @@ export function isRedisRuntimeError(error: unknown): boolean {
     message === 'REDIS_TIMEOUT' ||
     message === 'REDIS_NETWORK_ERROR' ||
     message === 'REDIS_CIRCUIT_OPEN' ||
-    message.startsWith('REDIS_HTTP_') ||
-    message.startsWith('REDIS_COMMAND_ERROR:') ||
-    message.startsWith('REDIS_RESPONSE_') ||
-    message.includes('fetch failed')
+    message === 'REDIS_COMMAND_ERROR' ||
+    message.startsWith('REDIS_RESPONSE_')
   );
 }
 
-class UpstashRedisClient {
-  private readonly endpoint: string;
-  private readonly token: string;
+class NativeRedisClient {
   private readonly options: RedisClientOptions;
   private consecutiveFailures = 0;
   private circuitOpenUntilMs = 0;
 
-  constructor(endpoint: string, token: string, options: RedisClientOptions) {
-    this.endpoint = endpoint;
-    this.token = token;
+  constructor(options: RedisClientOptions) {
     this.options = options;
   }
 
@@ -250,41 +227,7 @@ class UpstashRedisClient {
   }
 
   private async executeCommand<T>(args: RedisArg[]): Promise<T> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.options.timeoutMs);
-    try {
-      const response = await fetch(this.endpoint, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(args),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`REDIS_HTTP_${response.status}`);
-      }
-
-      const payload = (await response.json()) as UpstashResponse<T>;
-      if (payload.error) {
-        throw new Error(`REDIS_COMMAND_ERROR:${payload.error}`);
-      }
-
-      return payload.result as T;
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error('REDIS_TIMEOUT');
-      }
-      const normalized = toError(error);
-      if (normalized.message && normalized.message.startsWith('REDIS_')) {
-        throw normalized;
-      }
-      throw new Error('REDIS_NETWORK_ERROR');
-    } finally {
-      clearTimeout(timeout);
-    }
+    return redisCommand<T>(...args);
   }
 
   async command<T>(...args: RedisArg[]): Promise<T> {
@@ -347,10 +290,10 @@ class RedisLeadStore implements LeadStore {
   mode = 'redis' as const;
   hasDurableStorage = true;
 
-  private readonly client: UpstashRedisClient;
+  private readonly client: NativeRedisClient;
   private readonly prefix: string;
 
-  constructor(client: UpstashRedisClient, prefix: string) {
+  constructor(client: NativeRedisClient, prefix: string) {
     this.client = client;
     this.prefix = prefix;
   }
@@ -1203,9 +1146,7 @@ function normalizePrefix(rawValue: string | undefined): string {
 }
 
 export function hasRedisLeadStoreConfig(): boolean {
-  const endpoint = (process.env.UPSTASH_REDIS_REST_URL || '').trim();
-  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
-  return Boolean(endpoint && token);
+  return hasRedisConfig();
 }
 
 export function getLeadStore(): LeadStore {
@@ -1213,15 +1154,10 @@ export function getLeadStore(): LeadStore {
     return leadStoreSingleton;
   }
 
-  const endpoint = (process.env.UPSTASH_REDIS_REST_URL || '').trim();
-  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
   const prefix = normalizePrefix(process.env.CONTACT_REDIS_PREFIX);
 
-  if (endpoint && token) {
-    leadStoreSingleton = new RedisLeadStore(
-      new UpstashRedisClient(endpoint, token, resolveRedisClientOptions()),
-      prefix
-    );
+  if (hasRedisConfig()) {
+    leadStoreSingleton = new RedisLeadStore(new NativeRedisClient(resolveRedisClientOptions()), prefix);
     return leadStoreSingleton;
   }
 

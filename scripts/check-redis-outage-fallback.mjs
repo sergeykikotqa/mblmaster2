@@ -12,12 +12,10 @@ const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const serverStartTimeoutMs = Number(process.env.REDIS_OUTAGE_SMOKE_TIMEOUT_MS || 45000);
 const requestTimeoutMs = Number(process.env.REDIS_OUTAGE_REQUEST_TIMEOUT_MS || 10000);
 const pollIntervalMs = 500;
-const localMode =
-  String(process.env.REDIS_OUTAGE_SMOKE_LOCAL_MODE || 'dev')
-    .trim()
-    .toLowerCase() === 'preview'
-    ? 'preview'
-    : 'dev';
+const requestedLocalMode = String(process.env.REDIS_OUTAGE_SMOKE_LOCAL_MODE || 'dev')
+  .trim()
+  .toLowerCase();
+const localMode = ['node', 'preview'].includes(requestedLocalMode) ? requestedLocalMode : 'dev';
 const serverLogs = [];
 
 function addServerLogs(source, chunk) {
@@ -109,16 +107,19 @@ async function startMockWebhookServer() {
 }
 
 function startAstroServer(webhookUrl) {
-  const child = spawn(npmCommand, ['run', localMode, '--', '--host', host, '--port', String(port)], {
+  const npmArgs = localMode === 'node' ? ['start'] : ['run', localMode, '--', '--host', host, '--port', String(port)];
+  const child = spawn(npmCommand, npmArgs, {
     env: {
       ...process.env,
       ASTRO_TELEMETRY_DISABLED: '1',
+      HOST: host,
+      PORT: String(port),
       CONTACT_WEBHOOK_URL: webhookUrl,
+      CONTACT_WEBHOOK_SECRET: 'redis-outage-local-mock-secret',
       CONTACT_WORKER_TOKEN: `redis-outage-worker-${Date.now().toString(36)}`,
       CONTACT_WORKER_URL: '',
       CONTACT_TURNSTILE_REQUIRED: 'false',
-      UPSTASH_REDIS_REST_URL: 'http://127.0.0.1:1',
-      UPSTASH_REDIS_REST_TOKEN: 'broken',
+      REDIS_URL: process.env.REDIS_OUTAGE_URL || 'redis://127.0.0.1:1',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: process.platform !== 'win32',
@@ -168,7 +169,7 @@ async function waitForHealth(server) {
 
     try {
       const response = await fetchWithTimeout(`${baseUrl}/api/health`, { method: 'GET' });
-      if (response.ok) {
+      if ([200, 503].includes(response.status)) {
         const payload = await response.json().catch(() => null);
         if (payload && typeof payload === 'object') return;
       }
@@ -183,8 +184,9 @@ async function waitForHealth(server) {
 }
 
 function ensureProductionBuild() {
-  if (localMode === 'preview' && !fs.existsSync('dist')) {
-    throw new Error('dist directory is missing. Run `npm run build` before Redis outage production fallback check.');
+  const artifactExists = localMode === 'node' ? fs.existsSync('.output/server/entry.mjs') : fs.existsSync('dist');
+  if (['node', 'preview'].includes(localMode) && !artifactExists) {
+    throw new Error('Production artifact is missing. Run `npm run build` before Redis outage fail-closed check.');
   }
 }
 
@@ -228,6 +230,9 @@ async function main() {
 
   try {
     await waitForHealth(astroServer);
+
+    const health = await fetchWithTimeout(`${baseUrl}/api/health`, { method: 'GET' });
+    assert(health.status === 503, `GET /api/health must return 503 during Redis outage, got ${health.status}`);
 
     const contact = await postLead();
     assert(

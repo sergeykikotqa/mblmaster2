@@ -4,26 +4,18 @@ import { post as postTrack } from '../src/pages/api/track';
 import { getFunnelRollupFull, recordFunnelMetric } from '../src/server/metrics/funnel';
 
 const ORIGINAL_ENV = {
-  UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
-  UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+  REDIS_URL: process.env.REDIS_URL,
 };
 
 beforeEach(() => {
-  delete process.env.UPSTASH_REDIS_REST_URL;
-  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  delete process.env.REDIS_URL;
 });
 
 afterEach(() => {
-  if (ORIGINAL_ENV.UPSTASH_REDIS_REST_URL) {
-    process.env.UPSTASH_REDIS_REST_URL = ORIGINAL_ENV.UPSTASH_REDIS_REST_URL;
+  if (ORIGINAL_ENV.REDIS_URL) {
+    process.env.REDIS_URL = ORIGINAL_ENV.REDIS_URL;
   } else {
-    delete process.env.UPSTASH_REDIS_REST_URL;
-  }
-
-  if (ORIGINAL_ENV.UPSTASH_REDIS_REST_TOKEN) {
-    process.env.UPSTASH_REDIS_REST_TOKEN = ORIGINAL_ENV.UPSTASH_REDIS_REST_TOKEN;
-  } else {
-    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    delete process.env.REDIS_URL;
   }
 });
 

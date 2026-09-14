@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { BlockList, isIP } from 'node:net';
+import { assertMemoryFallbackAllowed, hasRedisConfig, redisCommand } from '~/server/redis/client';
 import { extractBearerToken, isProd, parseBooleanEnv, requireAdminToken, timingSafeCompare } from '~/server/utils/auth';
 import { normalizeIp, resolveClientIp as resolveClientIpFromRequest } from '~/server/utils/ip';
 
@@ -16,7 +17,12 @@ const DEFAULT_AUTH_FAIL_BLOCK_SEC = 10 * 60;
 const FORBIDDEN_QUERY_KEYS = ['token', 'access_token', 'auth', 'authorization', 'bearer'];
 
 type AuthMethod = 'bearer' | 'allowlist' | 'dev-bypass';
-type AdminAuthCode = 'UNAUTHORIZED' | 'TOO_MANY_REQUESTS' | 'TOKEN_IN_QUERY_NOT_ALLOWED' | 'ADMIN_AUTH_NOT_CONFIGURED';
+type AdminAuthCode =
+  | 'UNAUTHORIZED'
+  | 'TOO_MANY_REQUESTS'
+  | 'TOKEN_IN_QUERY_NOT_ALLOWED'
+  | 'ADMIN_AUTH_NOT_CONFIGURED'
+  | 'ADMIN_AUTH_STORE_UNAVAILABLE';
 export type AdminAuthMethod = AuthMethod;
 
 type AdminAuthSuccess = {
@@ -47,11 +53,6 @@ type FailedAuthState = {
   count: number;
   windowStartedAtMs: number;
   blockedUntilMs: number;
-};
-
-type UpstashResponse<T> = {
-  result?: T;
-  error?: string;
 };
 
 const memoryFailedAuthAttempts = new Map<string, FailedAuthState>();
@@ -116,19 +117,6 @@ function resolveRedisPrefix(): string {
   const value = (process.env.CONTACT_REDIS_PREFIX || '').trim();
   if (!value) return 'lead';
   return value.replace(/[^a-zA-Z0-9:_-]/g, '-');
-}
-
-function hasRedisConfig(): boolean {
-  const endpoint = (process.env.UPSTASH_REDIS_REST_URL || '').trim();
-  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
-  return Boolean(endpoint && token);
-}
-
-function getRedisConfig() {
-  return {
-    endpoint: (process.env.UPSTASH_REDIS_REST_URL || '').trim(),
-    token: (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim(),
-  };
 }
 
 function parseAllowlist(entries: string[]): {
@@ -243,6 +231,27 @@ function makeAuthFailureResponse(status: number, code: AdminAuthCode, retryAfter
   );
 }
 
+function makeAuthStoreUnavailableFailure(
+  scope: string,
+  clientIp: string,
+  operation: 'block_check' | 'failure_register' | 'failure_clear',
+  error: unknown
+): AdminAuthFailure {
+  console.error('[admin-auth] redis unavailable; denying request', {
+    scope,
+    clientIp: clientIp || 'unknown',
+    operation,
+    errorName: error instanceof Error ? error.name : 'UNKNOWN',
+  });
+  return {
+    ok: false,
+    status: 503,
+    code: 'ADMIN_AUTH_STORE_UNAVAILABLE',
+    clientIp,
+    response: makeAuthFailureResponse(503, 'ADMIN_AUTH_STORE_UNAVAILABLE'),
+  };
+}
+
 function hashTokenIdentity(value: string): string {
   return createHash('sha256').update(value).digest('hex').slice(0, 40);
 }
@@ -262,29 +271,6 @@ function resolveFailureIdentity(request: Request, clientIp: string): string {
 
   if (fallbackParts.length === 0) return 'unknown';
   return `fp:${hashTokenIdentity(fallbackParts.join('|'))}`;
-}
-
-async function redisCommand<T>(...args: Array<string | number>): Promise<T> {
-  const { endpoint, token } = getRedisConfig();
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(args),
-  });
-
-  if (!response.ok) {
-    throw new Error(`REDIS_HTTP_${response.status}`);
-  }
-
-  const payload = (await response.json()) as UpstashResponse<T>;
-  if (payload.error) {
-    throw new Error(`REDIS_COMMAND_ERROR:${payload.error}`);
-  }
-
-  return payload.result as T;
 }
 
 function authFailureKeys(identity: string, rateLimitScope: string): { failKey: string; blockKey: string } {
@@ -415,9 +401,11 @@ async function getBlockRetryAfterSec(identity: string, nowMs: number, rateLimitS
     try {
       return await getRedisBlockRetryAfterSec(identity, rateLimitScope);
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       markAuthFallbackMemory(`get_block_retry_after_sec:${error instanceof Error ? error.message : 'UNKNOWN'}`);
     }
   }
+  assertMemoryFallbackAllowed();
   return getMemoryBlockRetryAfterSec(identity, nowMs, rateLimitScope);
 }
 
@@ -430,9 +418,11 @@ async function registerFailure(
     try {
       return await registerRedisFailure(identity, rateLimitScope);
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       markAuthFallbackMemory(`register_failure:${error instanceof Error ? error.message : 'UNKNOWN'}`);
     }
   }
+  assertMemoryFallbackAllowed();
   return registerMemoryFailure(identity, nowMs, rateLimitScope);
 }
 
@@ -440,10 +430,13 @@ async function clearFailures(identity: string, rateLimitScope: string): Promise<
   if (hasRedisConfig()) {
     try {
       await clearRedisFailures(identity, rateLimitScope);
+      return;
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       markAuthFallbackMemory(`clear_failures:${error instanceof Error ? error.message : 'UNKNOWN'}`);
     }
   }
+  assertMemoryFallbackAllowed();
   clearMemoryFailures(identity, rateLimitScope);
 }
 
@@ -472,7 +465,12 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
     };
   }
 
-  const blockedRetryAfterSec = await getBlockRetryAfterSec(identity, nowMs, rateLimitScope);
+  let blockedRetryAfterSec: number;
+  try {
+    blockedRetryAfterSec = await getBlockRetryAfterSec(identity, nowMs, rateLimitScope);
+  } catch (error) {
+    return makeAuthStoreUnavailableFailure(scope, clientIp, 'block_check', error);
+  }
   if (blockedRetryAfterSec > 0) {
     return {
       ok: false,
@@ -522,7 +520,11 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
   const allowlistAuthorized = allowlistConfigured && clientIp ? isAllowlistedIp(clientIp, allowlist) : false;
 
   if (bearerAuthorized || allowlistAuthorized) {
-    await clearFailures(identity, rateLimitScope);
+    try {
+      await clearFailures(identity, rateLimitScope);
+    } catch (error) {
+      return makeAuthStoreUnavailableFailure(scope, clientIp, 'failure_clear', error);
+    }
     return {
       ok: true,
       method: bearerAuthorized ? 'bearer' : 'allowlist',
@@ -530,7 +532,12 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
     };
   }
 
-  const failure = await registerFailure(identity, nowMs, rateLimitScope);
+  let failure: { blocked: boolean; retryAfterSec: number };
+  try {
+    failure = await registerFailure(identity, nowMs, rateLimitScope);
+  } catch (error) {
+    return makeAuthStoreUnavailableFailure(scope, clientIp, 'failure_register', error);
+  }
   const status = failure.blocked ? 429 : 401;
   const code: AdminAuthCode = failure.blocked ? 'TOO_MANY_REQUESTS' : 'UNAUTHORIZED';
   console.warn('[admin-auth] unauthorized', {

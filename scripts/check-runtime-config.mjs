@@ -1,5 +1,6 @@
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
+import { createClient } from 'redis';
 
 const DEFAULT_TIMEOUT_MS = 5000;
 const DEFAULT_RETRY_ATTEMPTS = 3;
@@ -84,6 +85,25 @@ function assertNotPlaceholderUrl(rawValue, envName) {
   const parsed = parseAbsoluteHttpUrl(rawValue, envName);
   if (isPlaceholderHost(parsed.hostname)) {
     throw new Error(`${envName} cannot use placeholder host (${parsed.hostname})`);
+  }
+  return parsed;
+}
+
+function assertRedisUrl(rawValue) {
+  let parsed;
+  try {
+    parsed = new URL(rawValue);
+  } catch {
+    throw new Error('REDIS_URL must be an absolute redis:// or rediss:// URL');
+  }
+  if (!['redis:', 'rediss:'].includes(parsed.protocol) || !parsed.hostname || parsed.search || parsed.hash) {
+    throw new Error('REDIS_URL must be a valid redis:// or rediss:// URL');
+  }
+  if (parsed.pathname && parsed.pathname !== '/' && !/^\/\d+$/.test(parsed.pathname)) {
+    throw new Error('REDIS_URL database path must be numeric');
+  }
+  if (isPlaceholderHost(parsed.hostname) && parsed.hostname !== 'localhost') {
+    throw new Error('REDIS_URL cannot use a placeholder host');
   }
   return parsed;
 }
@@ -212,35 +232,25 @@ async function assertAlertEndpointReachable(alertUrls, timeoutMs) {
   throw new Error(`Alert webhook is not reachable (${lastError || 'no response'})`);
 }
 
-async function assertRedisHealthy(endpoint, token, timeoutMs) {
-  await withRetry('redis_ping', async () => {
-    const response = await fetchWithTimeout(
-      endpoint,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(['PING']),
-      },
-      timeoutMs
-    );
-
-    if (!response.ok) {
-      throw new Error(`Redis ping failed with HTTP ${response.status}`);
-    }
-
-    const payload = await response.json();
-    if (payload?.error) {
-      throw new Error(`Redis ping failed: ${payload.error}`);
-    }
-
-    const result = String(payload?.result || '').toUpperCase();
-    if (result !== 'PONG') {
-      throw new Error(`Redis ping returned unexpected result: ${String(payload?.result)}`);
-    }
+async function assertRedisHealthy(redisUrl, timeoutMs) {
+  const client = createClient({
+    url: redisUrl,
+    RESP: 2,
+    disableOfflineQueue: true,
+    socket: { connectTimeout: timeoutMs, reconnectStrategy: false },
   });
+  client.on('error', () => {});
+  try {
+    await withRetry('redis_ping', async () => {
+      if (!client.isOpen) await client.connect();
+      const result = await client.ping();
+      if (String(result || '').toUpperCase() !== 'PONG') throw new Error('Redis ping returned unexpected result');
+    });
+  } catch {
+    throw new Error('Redis ping failed');
+  } finally {
+    if (client.isOpen) await client.close().catch(() => client.destroy());
+  }
 }
 
 async function assertTurnstileSecretValid(secret, timeoutMs) {
@@ -303,8 +313,7 @@ async function main() {
   const publicSiteUrl = readRequiredEnv('PUBLIC_SITE_URL');
   const webhookUrl = readRequiredEnv('CONTACT_WEBHOOK_URL');
   const webhookSecret = readRequiredEnv('CONTACT_WEBHOOK_SECRET');
-  const redisEndpoint = readRequiredEnv('UPSTASH_REDIS_REST_URL');
-  const redisToken = readRequiredEnv('UPSTASH_REDIS_REST_TOKEN');
+  const redisUrl = readRequiredEnv('REDIS_URL');
   const turnstileSecret = readRequiredEnv('TURNSTILE_SECRET_KEY');
   const metricsAdminToken = readOptionalEnv('METRICS_ADMIN_TOKEN');
   const adminAllowlist = readOptionalEnv('ADMIN_ALLOWLIST_IPS');
@@ -324,10 +333,7 @@ async function main() {
   const alertWebhookUrls = readAlertWebhookUrls();
   checks.push('alert_channel_configured');
 
-  const parsedRedisUrl = assertNotPlaceholderUrl(redisEndpoint, 'UPSTASH_REDIS_REST_URL');
-  if (parsedRedisUrl.protocol !== 'https:') {
-    throw new Error('UPSTASH_REDIS_REST_URL must use https in CI runtime checks');
-  }
+  assertRedisUrl(redisUrl);
   checks.push('redis_url_ok');
 
   if (turnstileSecret.length < 10 || /replace|example|changeme|placeholder/i.test(turnstileSecret)) {
@@ -373,7 +379,7 @@ async function main() {
   );
   checks.push(`alert_reachable_status_${alertStatus}`);
 
-  await assertRedisHealthy(parsedRedisUrl.toString(), redisToken, timeoutMs);
+  await assertRedisHealthy(redisUrl, timeoutMs);
   checks.push('redis_ping_ok');
 
   const turnstileStatus = await assertTurnstileSecretValid(turnstileSecret, timeoutMs);

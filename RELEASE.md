@@ -5,8 +5,7 @@
 1. Confirm production env is complete.
    Required:
    - `PUBLIC_SITE_URL`
-   - `UPSTASH_REDIS_REST_URL`
-   - `UPSTASH_REDIS_REST_TOKEN`
+   - `REDIS_URL`
    - `CONTACT_WORKER_URL`
    - `CONTACT_WORKER_TOKEN`
    - `CONTACT_WEBHOOK_URL`

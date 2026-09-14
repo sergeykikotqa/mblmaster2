@@ -1,3 +1,4 @@
+import { assertMemoryFallbackAllowed, hasRedisConfig, redisCommand } from '~/server/redis/client';
 import type { HealthScope, HealthState, HealthStateRecord, HealthTransitionEvent } from './health-types';
 
 export type HealthStateStoreSource = 'redis' | 'memory';
@@ -11,11 +12,6 @@ export type HealthStateStoreResult<T> = {
 export type HealthStateStoreRuntimeStats = {
   redisFallbackToMemoryCount: number;
   redisFallbackToMemoryLastAtMs: number;
-};
-
-type UpstashResponse<T> = {
-  result?: T;
-  error?: string;
 };
 
 const DEFAULT_TRANSITION_MAXLEN = 5000;
@@ -64,42 +60,6 @@ function resolvePrefix(): string {
   const value = (process.env.CONTACT_REDIS_PREFIX || '').trim();
   if (!value) return 'lead';
   return value.replace(/[^a-zA-Z0-9:_-]/g, '-');
-}
-
-function hasRedisConfig(): boolean {
-  const endpoint = (process.env.UPSTASH_REDIS_REST_URL || '').trim();
-  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
-  return Boolean(endpoint && token);
-}
-
-function getRedisConfig() {
-  return {
-    endpoint: (process.env.UPSTASH_REDIS_REST_URL || '').trim(),
-    token: (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim(),
-  };
-}
-
-async function redisCommand<T>(...args: Array<string | number>): Promise<T> {
-  const { endpoint, token } = getRedisConfig();
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(args),
-  });
-
-  if (!response.ok) {
-    throw new Error(`REDIS_HTTP_${response.status}`);
-  }
-
-  const payload = (await response.json()) as UpstashResponse<T>;
-  if (payload.error) {
-    throw new Error(`REDIS_COMMAND_ERROR:${payload.error}`);
-  }
-
-  return payload.result as T;
 }
 
 function statesKey(): string {
@@ -259,10 +219,12 @@ export async function getHealthState(
         degraded: false,
       };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       markFallbackMemory(`get_state:${error instanceof Error ? error.message : 'UNKNOWN'}`);
     }
   }
 
+  assertMemoryFallbackAllowed();
   return {
     value: memoryStates.get(field) || null,
     dataSource: 'memory',
@@ -288,10 +250,12 @@ export async function upsertHealthState(record: HealthStateRecord): Promise<Heal
         degraded: false,
       };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       markFallbackMemory(`upsert_state:${error instanceof Error ? error.message : 'UNKNOWN'}`);
     }
   }
 
+  assertMemoryFallbackAllowed();
   memoryStates.set(field, normalized);
   return {
     value: normalized,
@@ -328,10 +292,12 @@ export async function listHealthStates(params?: {
         degraded: false,
       };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       markFallbackMemory(`list_states:${error instanceof Error ? error.message : 'UNKNOWN'}`);
     }
   }
 
+  assertMemoryFallbackAllowed();
   const memoryRecords = [...memoryStates.values()].filter((record) =>
     requestedScope ? record.scope === requestedScope : true
   );
@@ -368,10 +334,12 @@ export async function appendHealthTransition(
         degraded: false,
       };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       markFallbackMemory(`append_transition:${error instanceof Error ? error.message : 'UNKNOWN'}`);
     }
   }
 
+  assertMemoryFallbackAllowed();
   memoryTransitionPush(normalized);
   return {
     value: normalized,
@@ -426,10 +394,12 @@ export async function getHealthTransitionHistory(params?: {
         degraded: false,
       };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       markFallbackMemory(`get_transition_history:${error instanceof Error ? error.message : 'UNKNOWN'}`);
     }
   }
 
+  assertMemoryFallbackAllowed();
   return {
     value: memoryTransitions.slice(0, limit),
     dataSource: 'memory',

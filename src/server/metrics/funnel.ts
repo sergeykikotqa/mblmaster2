@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { getGeneratedPageBySlug } from '~/lib/geo-data';
+import { assertMemoryFallbackAllowed, hasRedisConfig, redisCommand } from '~/server/redis/client';
 
 type FunnelConversionEventName = 'page_view' | 'form_opened' | 'form_submitted';
 type FunnelOpsEventName =
@@ -96,11 +97,6 @@ type FunnelRollupParams = {
   limit?: number;
 };
 
-type UpstashResponse<T> = {
-  result?: T;
-  error?: string;
-};
-
 const DEFAULT_HOUR_RETENTION_SEC = 60 * 60 * 24 * 14;
 const DEFAULT_DAY_RETENTION_SEC = 60 * 60 * 24 * 90;
 const DEFAULT_LIMIT = 20;
@@ -169,19 +165,6 @@ function resolvePrefix(): string {
   const value = (process.env.CONTACT_REDIS_PREFIX || '').trim();
   if (!value) return 'lead';
   return value.replace(/[^a-zA-Z0-9:_-]/g, '-');
-}
-
-function hasRedisConfig(): boolean {
-  const endpoint = (process.env.UPSTASH_REDIS_REST_URL || '').trim();
-  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
-  return Boolean(endpoint && token);
-}
-
-function getRedisConfig() {
-  return {
-    endpoint: (process.env.UPSTASH_REDIS_REST_URL || '').trim(),
-    token: (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim(),
-  };
 }
 
 function keyFor(span: 'hour' | 'day', bucket: string): string {
@@ -279,7 +262,9 @@ function encodeField(eventName: FunnelEventName, dimensions: FunnelDimensions, r
   ].join('|');
 }
 
-function decodeField(field: string): { eventName: FunnelEventName; dimensions: FunnelDimensions; reason: string } | null {
+function decodeField(
+  field: string
+): { eventName: FunnelEventName; dimensions: FunnelDimensions; reason: string } | null {
   const parts = String(field || '').split('|');
   if (parts.length !== 6 && parts.length !== 7) return null;
   const eventName = parts[0] as FunnelEventName;
@@ -360,29 +345,6 @@ function incrementOpsCount(target: FunnelOpsCounts, eventName: FunnelOpsEventNam
       target.formAbandoned += count;
       break;
   }
-}
-
-async function redisCommand<T>(...args: Array<string | number>): Promise<T> {
-  const { endpoint, token } = getRedisConfig();
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(args),
-  });
-
-  if (!response.ok) {
-    throw new Error(`REDIS_HTTP_${response.status}`);
-  }
-
-  const payload = (await response.json()) as UpstashResponse<T>;
-  if (payload.error) {
-    throw new Error(`REDIS_COMMAND_ERROR:${payload.error}`);
-  }
-
-  return payload.result as T;
 }
 
 function rememberMemoryHash(key: string, ttlSec: number) {
@@ -653,12 +615,14 @@ async function loadFunnelBucket(
         dataSource: 'redis',
       };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       console.warn('[funnel-metrics] redis_read_failed', {
         code: error instanceof Error ? error.message : 'UNKNOWN',
       });
     }
   }
 
+  assertMemoryFallbackAllowed();
   return {
     hash: readMemoryHash(key),
     dataSource: 'memory',
@@ -716,12 +680,14 @@ export async function recordFunnelMetric(params: FunnelRecordParams): Promise<{ 
       await redisCommand('EXPIRE', dayKey, dayTtlSec);
       return { dataSource: 'redis' };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       console.warn('[funnel-metrics] redis_write_failed', {
         code: error instanceof Error ? error.message : 'UNKNOWN',
       });
     }
   }
 
+  assertMemoryFallbackAllowed();
   recordMemoryMetric(hourKey, field, hourTtlSec);
   recordMemoryMetric(dayKey, field, dayTtlSec);
   return { dataSource: 'memory' };
@@ -828,12 +794,14 @@ export async function checkTrackRateLimit(params: { ip: string; pageSlug: string
         dataSource: 'redis',
       };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       console.warn('[funnel-metrics] track_rate_limit_redis_failed', {
         code: error instanceof Error ? error.message : 'UNKNOWN',
       });
     }
   }
 
+  assertMemoryFallbackAllowed();
   const ip = incrementMemoryTrackRateLimit(ipKey, windowSec);
   const page = incrementMemoryTrackRateLimit(pageKey, windowSec);
   const allowed = ip.count <= ipMax && page.count <= pageMax;
