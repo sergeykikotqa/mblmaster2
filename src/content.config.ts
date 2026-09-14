@@ -1,5 +1,6 @@
-import { z, defineCollection } from 'astro:content';
+import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
+import { z } from 'astro/zod';
 
 const metadataDefinition = () =>
   z
@@ -122,7 +123,7 @@ const projectBlockSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('gallery'),
     images: z.array(z.string()).optional(),
-    captions: z.record(z.string()).optional(),
+    captions: z.record(z.string(), z.string()).optional(),
     includeHero: z.boolean().optional(),
   }),
   z.object({
@@ -291,7 +292,7 @@ const projectsCollection = defineCollection({
 
     images: z.array(z.string()).default([]),
     imageBaseDir: z.string().optional(),
-    imageCaptions: z.record(z.string()).optional(),
+    imageCaptions: z.record(z.string(), z.string()).optional(),
 
     task: z.string().optional(),
     solution: z.string().optional(),

@@ -3,12 +3,11 @@ import { fileURLToPath } from 'url';
 
 import { defineConfig } from 'astro/config';
 
-import tailwind from '@astrojs/tailwind';
 import mdx from '@astrojs/mdx';
 import partytown from '@astrojs/partytown';
+import { unified } from '@astrojs/markdown-remark';
 import node from '@astrojs/node';
 import icon from 'astro-icon';
-import compress from 'astro-compress';
 import type { AstroIntegration } from 'astro';
 
 import astrowind from './vendor/integration';
@@ -34,7 +33,13 @@ export default defineConfig({
   // Public pages stay prerendered; routes with prerender=false run in Node.
   output: 'static',
   trailingSlash: 'never',
-  adapter: node({ mode: 'standalone' }),
+  adapter: node({
+    mode: 'standalone',
+    bodySizeLimit: 1024 * 1024,
+  }),
+  session: false,
+  // Preserve Astro 6 whitespace semantics during the framework migration.
+  compressHTML: true,
   // Keep the established public artifact path used by SEO/image/a11y gates.
   // Server code must be outside the public directory, never served as an asset.
   build: {
@@ -51,9 +56,6 @@ export default defineConfig({
   },
 
   integrations: [
-    tailwind({
-      applyBaseStyles: false,
-    }),
     mdx(),
     icon({
       include: {
@@ -78,19 +80,6 @@ export default defineConfig({
       })
     ),
 
-    compress({
-      CSS: true,
-      HTML: {
-        'html-minifier-terser': {
-          removeAttributeQuotes: false,
-        },
-      },
-      Image: false,
-      JavaScript: true,
-      SVG: false,
-      Logger: 1,
-    }),
-
     astrowind({
       config: './src/config.yaml',
     }),
@@ -104,13 +93,16 @@ export default defineConfig({
   },
 
   markdown: {
-    remarkPlugins: [readingTimeRemarkPlugin],
-    rehypePlugins: [
-      normalizeMarkdownHeadingsRehypePlugin,
-      responsiveTablesRehypePlugin,
-      lazyImagesRehypePlugin,
-      autoInternalLinksRehypePlugin,
-    ],
+    // Astro 7 defaults to Satteri. These existing plugins use the unified pipeline.
+    processor: unified({
+      remarkPlugins: [readingTimeRemarkPlugin],
+      rehypePlugins: [
+        normalizeMarkdownHeadingsRehypePlugin,
+        responsiveTablesRehypePlugin,
+        lazyImagesRehypePlugin,
+        autoInternalLinksRehypePlugin,
+      ],
+    }),
   },
 
   vite: {

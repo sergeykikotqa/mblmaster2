@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const DIST_PATH = path.join(process.cwd(), 'dist');
+const useExternalServer = process.env.PLAYWRIGHT_EXTERNAL_SERVER === '1';
 
 function loadRoutes() {
   if (!fs.existsSync(DIST_PATH) || !fs.statSync(DIST_PATH).isDirectory()) {
@@ -30,15 +31,20 @@ function loadRoutes() {
         : relativePath === 'index.html'
           ? '/'
           : `/${relativePath.slice(0, -'.html'.length)}`;
-      // Astro serves the built 404.html entry directly in dev; /404 is a normal dynamic route.
-      const routePath = relativePath === '404.html' ? '/404.html' : pathname;
+      // The standalone server exposes the error route at /404 with its HTTP 404 status.
+      const routePath = relativePath === '404.html' ? (useExternalServer ? '/404' : '/404.html') : pathname;
       routes.push({
         path: routePath,
-        expectedStatus: routePath === '/404.html' ? 404 : routePath === '/410' ? 410 : 200,
+        expectedStatus: routePath === '/404.html' || routePath === '/404' ? 404 : routePath === '/410' ? 410 : 200,
       });
     }
   };
   visit(DIST_PATH);
+
+  // The standalone Node route must render with HTTP 410, so it has no static HTML file.
+  if (useExternalServer && !routes.some((route) => route.path === '/410')) {
+    routes.push({ path: '/410', expectedStatus: 410 });
+  }
 
   if (routes.length === 0) {
     throw new Error(`No built HTML routes found under ${DIST_PATH}. Run "npm run build" first.`);

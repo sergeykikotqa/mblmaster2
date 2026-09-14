@@ -1,0 +1,44 @@
+---
+import type { SeoHeadProps } from '~/types/seo';
+
+export type Props = SeoHeadProps;
+
+const { title, titleTemplate, canonical, noindex, nofollow, description, openGraph, twitter } = Astro.props;
+const formattedTitle = title ? (titleTemplate ? titleTemplate.replace('%s', title) : title) : undefined;
+const robots = [
+  typeof noindex === 'boolean' ? (noindex ? 'noindex' : 'index') : undefined,
+  typeof nofollow === 'boolean' ? (nofollow ? 'nofollow' : 'follow') : undefined,
+]
+  .filter(Boolean)
+  .join(',');
+const openGraphTitle = openGraph?.title || title;
+const openGraphDescription = openGraph?.description || description;
+---
+
+{formattedTitle && <title>{formattedTitle}</title>}
+{description && <meta name="description" content={description} />}
+{robots && <meta name="robots" content={robots} />}
+{canonical && <link rel="canonical" href={canonical} />}
+
+{openGraphTitle && <meta property="og:title" content={openGraphTitle} />}
+{openGraphDescription && <meta property="og:description" content={openGraphDescription} />}
+{openGraph?.url && <meta property="og:url" content={openGraph.url} />}
+{openGraph?.type && <meta property="og:type" content={openGraph.type} />}
+{
+  openGraph?.images?.map((image) => (
+    <>
+      {image.url && <meta property="og:image" content={image.url} />}
+      {image.alt && <meta property="og:image:alt" content={image.alt} />}
+      {image.secureUrl && <meta property="og:image:secure_url" content={image.secureUrl} />}
+      {image.type && <meta property="og:image:type" content={image.type} />}
+      {image.width && <meta property="og:image:width" content={String(image.width)} />}
+      {image.height && <meta property="og:image:height" content={String(image.height)} />}
+    </>
+  ))
+}
+{openGraph?.locale && <meta property="og:locale" content={openGraph.locale} />}
+{openGraph?.site_name && <meta property="og:site_name" content={openGraph.site_name} />}
+
+{twitter?.cardType && <meta name="twitter:card" content={twitter.cardType} />}
+{twitter?.site && <meta name="twitter:site" content={twitter.site} />}
+{twitter?.handle && <meta name="twitter:creator" content={twitter.handle} />}

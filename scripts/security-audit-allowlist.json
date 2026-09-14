@@ -1,46 +1,5 @@
 {
-  "version": 3,
-  "updatedAt": "2026-03-12",
-  "entries": [
-    {
-      "advisory": "GHSA-9PPJ-QMQM-Q256",
-      "package": "tar",
-      "path": "@mapbox/node-pre-gyp > tar",
-      "severity": "high",
-      "range": "<=7.5.10",
-      "allowedUntil": "2026-04-26",
-      "owner": "security/devlead",
-      "reason": "Nested package remains pinned to tar 7.5.9 after override attempt; tracked until upstream dependency chain updates."
-    },
-    {
-      "advisory": "GHSA-9PPJ-QMQM-Q256",
-      "package": "tar",
-      "path": "@netlify/edge-bundler > tar",
-      "severity": "high",
-      "range": "<=7.5.10",
-      "allowedUntil": "2026-04-26",
-      "owner": "security/devlead",
-      "reason": "Nested package remains pinned to tar 7.5.9 after override attempt; tracked until upstream dependency chain updates."
-    },
-    {
-      "advisory": "GHSA-QFFP-2RHF-9H96",
-      "package": "tar",
-      "path": "@mapbox/node-pre-gyp > tar",
-      "severity": "high",
-      "range": "<=7.5.9",
-      "allowedUntil": "2026-04-26",
-      "owner": "security/devlead",
-      "reason": "Nested package remains pinned to tar 7.5.9 after override attempt; tracked until upstream dependency chain updates."
-    },
-    {
-      "advisory": "GHSA-QFFP-2RHF-9H96",
-      "package": "tar",
-      "path": "@netlify/edge-bundler > tar",
-      "severity": "high",
-      "range": "<=7.5.9",
-      "allowedUntil": "2026-04-26",
-      "owner": "security/devlead",
-      "reason": "Nested package remains pinned to tar 7.5.9 after override attempt; tracked until upstream dependency chain updates."
-    }
-  ]
+  "version": 4,
+  "updatedAt": "2026-09-14",
+  "entries": []
 }

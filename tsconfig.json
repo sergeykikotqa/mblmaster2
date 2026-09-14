@@ -7,8 +7,7 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["src/*"],
-      "@/*": ["src/*"],
-      "@astrolib/seo": ["src/types/astrolib-seo-typecheck.d.ts"]
+      "@/*": ["src/*"]
     }
   },
   "include": [".astro/types.d.ts", "**/*"],

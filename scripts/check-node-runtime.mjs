@@ -95,7 +95,7 @@ assert.ok(
   'Project detail was not prerendered'
 );
 const htmlCount = countHtml(publicRoot);
-assert.ok(htmlCount >= 75, `Expected public routes to remain prerendered; found only ${htmlCount} HTML files`);
+assert.ok(htmlCount >= 74, `Expected public routes to remain prerendered; found only ${htmlCount} HTML files`);
 
 const port = await reservePort();
 const baseUrl = `http://127.0.0.1:${port}`;
@@ -133,6 +133,15 @@ try {
   const home = await waitForServer(baseUrl, child, output);
   assert.match(home.headers.get('content-type') || '', /text\/html/i);
   assert.match(await home.text(), /<!doctype html/i);
+
+  for (const route of ['/kuhni', '/projects', '/projects/kuhnya-bogdana', '/articles/kak-vybrat-kuhnyu', '/contacts']) {
+    const response = await runtimeFetch(baseUrl, route);
+    assert.equal(response.status, 200, `Expected prerendered ${route} to respond with 200`);
+    assert.match(response.headers.get('content-type') || '', /text\/html/i);
+  }
+
+  const gone = await runtimeFetch(baseUrl, '/410');
+  assert.equal(gone.status, 410, 'The dynamic Gone page must preserve its HTTP status');
 
   const health = await runtimeFetch(baseUrl, '/api/health');
   assert.equal(health.status, 503);
@@ -189,8 +198,17 @@ try {
   assert.equal(worker.status, 401);
   assert.equal((await readJson(worker)).code, 'UNAUTHORIZED');
 
+  const invalidTokenWorker = await runtimeFetch(baseUrl, '/api/workers/lead-delivery?limit=1', {
+    method: 'POST',
+    headers: { Origin: runtimeSite.origin, Authorization: 'Bearer invalid-local-test-token' },
+  });
+  assert.equal(invalidTokenWorker.status, 401);
+  assert.equal((await readJson(invalidTokenWorker)).code, 'UNAUTHORIZED');
+
   console.log(`[node-runtime] PASS: ${htmlCount} prerendered HTML files, standalone API routes responded safely`);
-  console.log('[node-runtime] / 200; health 503 fail-closed; contact 307/400/500; admin 401; worker 401');
+  console.log(
+    '[node-runtime] 6 public routes 200; Gone 410; health 503 fail-closed; contact 307/400/500; admin 401; worker 401 (missing and invalid token)'
+  );
 } finally {
   await stopServer(child);
 }

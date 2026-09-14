@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const args = ['audit', '--omit=dev', '--json'];
+const npmExecPath = typeof process.env.npm_execpath === 'string' ? process.env.npm_execpath.trim() : '';
+const auditCommand = npmExecPath ? process.execPath : npmCommand;
+const auditArgs = npmExecPath ? [npmExecPath, ...args] : args;
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '..');
 const allowlistPath = path.resolve(scriptDir, 'security-audit-allowlist.json');
@@ -238,9 +241,8 @@ function isoDateInDays(daysFromNow) {
   return date.toISOString().slice(0, 10);
 }
 
-const result = spawnSync(npmCommand, args, {
+const result = spawnSync(auditCommand, auditArgs, {
   encoding: 'utf8',
-  shell: process.platform === 'win32',
 });
 
 const rawOutput = `${result.stdout || ''}\n${result.stderr || ''}`.trim();
