@@ -1,0 +1,11 @@
+[Unit]
+Description=Verify encrypted MBL Redis backup repository weekly
+
+[Timer]
+OnCalendar=Sun *-*-* 04:30:00
+Persistent=true
+RandomizedDelaySec=15min
+Unit=mbl-redis-backup-check.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,65 @@
+services:
+  # One-shot job. Invoke through the systemd timer or explicitly with
+  # `docker compose ... --profile backup run --rm mbl-backup backup`.
+  # It never mounts mbl-redis-data and therefore cannot overwrite production.
+  mbl-backup:
+    profiles: [backup]
+    image: mbl-backup:${MBL_IMAGE_TAG:?Set MBL_IMAGE_TAG to the immutable full Git SHA}
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backup-runtime
+      args:
+        MBL_BUILD_REVISION: ${MBL_IMAGE_TAG:?Set MBL_IMAGE_TAG to the immutable full Git SHA}
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    environment:
+      MBL_BACKUP_RELEASE_SHA: ${MBL_IMAGE_TAG:?Set MBL_IMAGE_TAG to the immutable full Git SHA}
+      MBL_BACKUP_REPOSITORY_FILE: /run/mbl-backup-secrets/repository
+      MBL_BACKUP_PASSWORD_FILE: /run/mbl-backup-secrets/password
+      MBL_BACKUP_S3_ACCESS_KEY_FILE: /run/mbl-backup-secrets/s3-access-key
+      MBL_BACKUP_S3_SECRET_KEY_FILE: /run/mbl-backup-secrets/s3-secret-key
+      MBL_BACKUP_S3_SESSION_TOKEN_FILE: ${MBL_BACKUP_S3_SESSION_TOKEN_FILE_IN_CONTAINER:-}
+      MBL_BACKUP_REDIS_PASSWORD_FILE: ${MBL_BACKUP_REDIS_PASSWORD_FILE_IN_CONTAINER:-}
+      MBL_BACKUP_REDIS_HOST: mbl-redis
+      MBL_BACKUP_REDIS_PORT: '6379'
+      MBL_BACKUP_HOST: mbl-production
+      MBL_BACKUP_STATUS_DIR: /status
+      MBL_BACKUP_RESTORE_ROOT: /restore
+      MBL_BACKUP_ALLOW_LOCAL_REPOSITORY: ${MBL_BACKUP_ALLOW_LOCAL_REPOSITORY:-false}
+      AWS_DEFAULT_REGION: ${MBL_BACKUP_S3_REGION:-us-east-1}
+    volumes:
+      - type: bind
+        source: ${MBL_BACKUP_SECRET_DIR:-./secrets/backup}
+        target: /run/mbl-backup-secrets
+        read_only: true
+      - type: bind
+        source: ${MBL_BACKUP_STATUS_DIR:-./var/backup-status}
+        target: /status
+      - type: bind
+        source: ${MBL_BACKUP_RESTORE_DIR:-./var/restore}
+        target: /restore
+    depends_on:
+      mbl-redis:
+        condition: service_healthy
+    networks:
+      - mbl-backend
+      - mbl-backup-egress
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+networks:
+  # Separate non-internal network gives only the one-shot backup job outbound
+  # access to the S3 endpoint. No port is published from this network.
+  mbl-backup-egress:
+    driver: bridge

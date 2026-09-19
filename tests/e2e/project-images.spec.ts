@@ -94,12 +94,15 @@ for (const viewport of VIEWPORTS) {
 
     const cardImages = projectsPage.locator('.project-card .project-cover img');
     expect(await cardImages.count()).toBeGreaterThan(AFFECTED_PROJECTS.length);
-    const brokenCardImages = await cardImages.evaluateAll((images: HTMLImageElement[]) =>
-      images
-        .filter((image) => !image.complete || image.naturalWidth === 0)
-        .map((image) => image.currentSrc || image.src)
-    );
-    expect(brokenCardImages).toEqual([]);
+    await expect
+      .poll(() =>
+        cardImages.evaluateAll((images: HTMLImageElement[]) =>
+          images
+            .filter((image) => !image.complete || image.naturalWidth === 0)
+            .map((image) => image.currentSrc || image.src)
+        )
+      )
+      .toEqual([]);
 
     for (const slug of AFFECTED_PROJECTS) {
       await openProjectModal(

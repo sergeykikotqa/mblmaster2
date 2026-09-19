@@ -142,6 +142,9 @@ networks:
     internal: true
 
 volumes:
-  # Intentionally project-scoped. A test project can safely run `down -v`
-  # without ever attaching to or deleting the production Redis volume.
   mbl-redis-data:
+    # Production uses a pre-created external volume. This makes the dangerous
+    # `docker compose down -v` incapable of deleting real lead data. Runtime
+    # gates explicitly override this to a disposable project-scoped volume.
+    name: ${MBL_REDIS_VOLUME_NAME:-mbl-production-redis-data}
+    external: ${MBL_REDIS_VOLUME_EXTERNAL:-true}

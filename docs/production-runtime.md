@@ -55,12 +55,14 @@ not place an unconfigured TLS terminator in front and trust arbitrary client
 - `/api/workers/*` is blocked at the public edge; the trigger calls Astro over
   the private backend network.
 - Redis has AOF (`everysec`), periodic RDB snapshots, `noeviction` and a
-  Compose-project-scoped persistent volume.
+  pre-created external persistent volume. The external volume is intentionally
+  immune to `docker compose down -v`.
 - Web, worker, Redis and Nginx use read-only root filesystems. Nginx alone gets
   a small `/tmp` tmpfs for its PID and request/proxy buffers.
 - The test-only `compose.runtime-test.yml` overlay adds host-gateway resolution
   for a local mock webhook. It is not part of production startup.
 
-Redis backup/restore automation is deliberately deferred to the next
-reliability checkpoint. A persistent volume and AOF are not a substitute for a
-tested off-host backup.
+The one-shot encrypted off-host backup and isolated restore procedure lives in
+[`backup-restore-runbook.md`](backup-restore-runbook.md). A persistent volume,
+AOF and provider snapshot are still not substitutes for a tested Restic
+restore from separate object storage.

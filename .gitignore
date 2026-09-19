@@ -28,6 +28,9 @@ prod.env
 *.pem
 *.key
 *.crt
+secrets/
+var/
+releases/
 
 # macOS-specific files
 .DS_Store

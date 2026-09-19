@@ -21,6 +21,9 @@ artifacts/
 *.pem
 *.key
 *.crt
+secrets/
+var/
+releases/
 
 *.log
 npm-debug.log*

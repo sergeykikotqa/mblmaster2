@@ -28,6 +28,28 @@ RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --omit=optional --no-audit --no-fund \
     && npm cache clean --force
 
+# Backup tooling is versioned with the application release but runs only as a
+# one-shot job. Restic encrypts before upload; redis-cli obtains a consistent
+# RDB over the private Redis protocol, so the production data volume is never
+# mounted in this image. The Restic multi-platform digest is pinned.
+FROM restic/restic:0.19.1@sha256:136600b6ff6843d61d355f7f71f460a166429f35de6fd11b568fece3c9a4d510 AS restic-tools
+FROM redis:7.4.7-alpine3.21 AS redis-tools
+
+FROM base AS backup-runtime
+ARG MBL_BUILD_REVISION=unknown
+LABEL org.opencontainers.image.title="MBL encrypted Redis backup tool" \
+      org.opencontainers.image.revision="${MBL_BUILD_REVISION}" \
+      org.opencontainers.image.version="restic-0.19.1"
+ENV NODE_ENV=production \
+    RESTIC_CACHE_DIR=/tmp/restic-cache
+COPY --from=restic-tools /usr/bin/restic /usr/local/bin/restic
+COPY --from=redis-tools /usr/local/bin/redis-cli /usr/local/bin/redis-server /usr/local/bin/
+RUN ln -s redis-server /usr/local/bin/redis-check-rdb
+COPY --chown=node:node scripts/redis-backup.mjs ./scripts/redis-backup.mjs
+USER node
+ENTRYPOINT ["node", "scripts/redis-backup.mjs"]
+CMD ["backup"]
+
 FROM base AS web-runtime
 ARG MBL_BUILD_REVISION=unknown
 LABEL org.opencontainers.image.title="MBL Astro Node runtime" \

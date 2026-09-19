@@ -345,6 +345,8 @@ function makeTempEnvironment({ mockPort, canonicalOrigin, publicPort, projectNam
       MBL_BIND_ADDRESS: '127.0.0.1',
       MBL_HTTP_PORT: String(publicPort),
       MBL_IMAGE_TAG: imageRevision,
+      MBL_REDIS_VOLUME_NAME: `${projectName}_mbl-redis-data`,
+      MBL_REDIS_VOLUME_EXTERNAL: 'false',
       PUBLIC_SITE_URL: canonicalOrigin,
       WORKER_TRIGGER_INTERVAL_MS: '1000',
       WORKER_TRIGGER_TIMEOUT_MS: '3000',
