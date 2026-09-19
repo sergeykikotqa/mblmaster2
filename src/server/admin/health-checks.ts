@@ -1,5 +1,6 @@
 import { getFallbackLeadPipelineHealth } from '~/server/leads/metrics-fallback';
 import { hasLeadAlertChannelConfig, probeLeadAlertEndpointReachability } from '~/server/leads/alerts';
+import { getWorkerRuntimeHealth, type WorkerRuntimeHealth } from '~/server/leads/runtime-health';
 import { getLeadStore, hasRedisLeadStoreConfig, isRedisRuntimeError } from '~/server/leads/store';
 import { hasWebhookSecretConfig, isWebhookConfigured } from '~/server/leads/webhook';
 import { getFunnelRollup } from '~/server/metrics/funnel';
@@ -68,6 +69,7 @@ export type AdminWorkerHealthPayload = {
     turnstileReady: boolean;
     workerPaused: boolean;
   };
+  runtime: WorkerRuntimeHealth;
 } & AdminHealthCheckTiming;
 
 export type AdminPipelineHealthPayload =
@@ -158,6 +160,9 @@ export type AdminHealthSummary = {
     ok: boolean;
     label: string;
     status: string | null;
+    heartbeatState: string | null;
+    oldestPendingState: string | null;
+    oldestPendingAgeMs: number | null;
   };
   failOpen: boolean;
   systemAuth: {
@@ -253,7 +258,10 @@ async function getWorkerDependencyStatus() {
   };
 }
 
-function isWorkerRuntimeReady(dependencies: NonNullable<AdminWorkerHealthPayload['dependencies']>): boolean {
+function isWorkerRuntimeReady(
+  dependencies: NonNullable<AdminWorkerHealthPayload['dependencies']>,
+  runtime: WorkerRuntimeHealth
+): boolean {
   return (
     dependencies.workerTokenConfigured &&
     dependencies.redisConfigured &&
@@ -262,7 +270,8 @@ function isWorkerRuntimeReady(dependencies: NonNullable<AdminWorkerHealthPayload
     dependencies.turnstileReady &&
     dependencies.alertChannelConfigured &&
     dependencies.alertEndpointReachable &&
-    !dependencies.workerPaused
+    !dependencies.workerPaused &&
+    runtime.ok
   );
 }
 
@@ -412,8 +421,8 @@ export async function buildWorkerHealthCheck(
   authMethod: AdminAuthMethod
 ): Promise<AdminHealthCheckEntry<AdminWorkerHealthPayload>> {
   const startedAtMs = Date.now();
-  const dependencies = await getWorkerDependencyStatus();
-  const ok = isWorkerRuntimeReady(dependencies);
+  const [dependencies, runtime] = await Promise.all([getWorkerDependencyStatus(), getWorkerRuntimeHealth()]);
+  const ok = isWorkerRuntimeReady(dependencies, runtime);
   const status = import.meta.env.PROD && !ok ? 503 : 200;
   const timing = createCheckTiming(startedAtMs);
 
@@ -426,6 +435,7 @@ export async function buildWorkerHealthCheck(
       authMethod,
       now: timing.checkedAtMs,
       dependencies,
+      runtime,
       ...timing,
     },
   };
@@ -675,9 +685,17 @@ export function buildAdminHealthSummary(
     typeof workerPayload === 'object' && workerPayload && 'dependencies' in workerPayload
       ? workerPayload.dependencies
       : undefined;
+  const workerRuntime =
+    typeof workerPayload === 'object' && workerPayload && 'runtime' in workerPayload
+      ? workerPayload.runtime
+      : undefined;
   const workerPaused = Boolean(workerDependencies?.workerPaused);
   const alertChannelConfigured = Boolean(workerDependencies?.alertChannelConfigured);
   const alertEndpointReachable = Boolean(workerDependencies?.alertEndpointReachable);
+  const heartbeatState = workerRuntime?.heartbeat.state || null;
+  const heartbeatStatus = workerRuntime?.heartbeat.value?.status || null;
+  const oldestPendingState = workerRuntime?.oldestPending.state || null;
+  const oldestPendingAgeMs = workerRuntime?.oldestPending.ageMs ?? null;
 
   const failOpen =
     redisSource === 'fallback_memory' ||
@@ -733,6 +751,12 @@ export function buildAdminHealthSummary(
   const status = degraded ? 'degraded' : warning ? 'warning' : 'ok';
   const workerLabelSuffix = [
     workerPaused ? 'paused' : '',
+    heartbeatState === 'stale' ? 'heartbeat_stale' : '',
+    heartbeatState === 'missing' ? 'heartbeat_missing' : '',
+    heartbeatState === 'unavailable' ? 'redis_unavailable' : '',
+    heartbeatStatus === 'error' ? 'last_cycle_error' : '',
+    oldestPendingState === 'warning' ? 'oldest_pending_warning' : '',
+    oldestPendingState === 'critical' ? 'oldest_pending_critical' : '',
     !alertChannelConfigured ? 'alerts_unconfigured' : '',
     alertChannelConfigured && !alertEndpointReachable ? 'alerts_unreachable' : '',
     pipelineQueueBackpressure ? 'queue_backpressure' : '',
@@ -760,6 +784,9 @@ export function buildAdminHealthSummary(
       ok: workerOk,
       label: workerLabelSuffix ? `${workerLabel} (${workerLabelSuffix})` : workerLabel,
       status: workerStatus,
+      heartbeatState,
+      oldestPendingState,
+      oldestPendingAgeMs,
     },
     failOpen,
     systemAuth: {

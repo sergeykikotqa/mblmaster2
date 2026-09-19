@@ -50,6 +50,31 @@ function createHealthyChecks(overrides: Partial<AdminHealthAggregateChecks> = {}
           turnstileReady: true,
           workerPaused: false,
         },
+        runtime: {
+          ok: true,
+          redisLive: true,
+          heartbeat: {
+            state: 'cycling',
+            ageMs: 1000,
+            staleAfterMs: 60_000,
+            value: {
+              lastCycleAt: new Date(0).toISOString(),
+              status: 'ok',
+              processed: 0,
+              delivered: 0,
+              error: '',
+            },
+          },
+          oldestPending: {
+            ageMs: null,
+            state: 'empty',
+            thresholdsMs: {
+              normal: 60_000,
+              warning: 120_000,
+              critical: 600_000,
+            },
+          },
+        },
         checkedAtMs: 1,
         latencyMs: 0,
       },
@@ -269,6 +294,46 @@ describe('admin health aggregate', () => {
     expect(payload.ok).toBe(false);
     expect(payload.summary.status).toBe('degraded');
     expect(payload.summary.worker.label).toContain('queue_backpressure');
+  });
+
+  it('distinguishes a stale worker heartbeat and reports pending queue age', () => {
+    const healthy = createHealthyChecks();
+    const workerPayload = healthy.worker.payload;
+    if (!('runtime' in workerPayload)) throw new Error('worker runtime fixture missing');
+
+    const checks = createHealthyChecks({
+      worker: {
+        status: 503,
+        payload: {
+          ...workerPayload,
+          ok: false,
+          status: 'degraded',
+          runtime: {
+            ...workerPayload.runtime,
+            ok: false,
+            heartbeat: {
+              ...workerPayload.runtime.heartbeat,
+              state: 'stale',
+              ageMs: 61_000,
+            },
+            oldestPending: {
+              ...workerPayload.runtime.oldestPending,
+              ageMs: 180_000,
+              state: 'warning',
+            },
+          },
+        },
+      },
+    });
+
+    const summary = buildAdminHealthSummary(checks, 'bearer');
+
+    expect(summary.status).toBe('degraded');
+    expect(summary.worker.heartbeatState).toBe('stale');
+    expect(summary.worker.oldestPendingState).toBe('warning');
+    expect(summary.worker.oldestPendingAgeMs).toBe(180_000);
+    expect(summary.worker.label).toContain('heartbeat_stale');
+    expect(summary.worker.label).toContain('oldest_pending_warning');
   });
 
   it('marks timed out checks as degraded and exposes timeout metadata', async () => {

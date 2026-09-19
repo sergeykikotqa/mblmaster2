@@ -60,7 +60,14 @@ else
   redis.call('SET', KEYS[2], ARGV[3])
 end
 redis.call('ZADD', KEYS[3], ARGV[6], ARGV[5])
+redis.call('ZADD', KEYS[4], ARGV[7], ARGV[5])
 return {1}
+`;
+
+const REMOVE_FROM_SCHEDULE_SCRIPT = `
+redis.call('ZREM', KEYS[1], ARGV[1])
+redis.call('ZREM', KEYS[2], ARGV[1])
+return 1
 `;
 
 const RATE_LIMIT_SCRIPT = `
@@ -91,6 +98,7 @@ local claimKey = KEYS[1]
 local fenceKey = KEYS[2]
 local recordKey = KEYS[3]
 local queueKey = KEYS[4]
+local pendingSinceKey = KEYS[5]
 
 local claimId = ARGV[1]
 local deliveredAtIso = ARGV[2]
@@ -117,6 +125,7 @@ else
 end
 
 redis.call('ZREM', queueKey, leadId)
+redis.call('ZREM', pendingSinceKey, leadId)
 redis.call('DEL', claimKey)
 return {1, deliveredAtIso}
 `;
@@ -325,11 +334,14 @@ class RedisLeadStore implements LeadStore {
     const idempotencyKey = this.keyIdempotency(params.idempotencyHash);
     const leadRecordKey = this.keyLeadRecord(params.leadRecord.leadId);
     const queueKey = this.keyQueue();
+    const pendingSinceKey = this.keyPendingSince();
+    const parsedCreatedAtMs = Date.parse(params.leadRecord.createdAt);
+    const pendingSinceMs = Number.isFinite(parsedCreatedAtMs) ? Math.floor(parsedCreatedAtMs) : Date.now();
 
     const raw = await this.client.eval<unknown[]>(
       ENQUEUE_LEAD_WITH_IDEMPOTENCY_SCRIPT,
-      3,
-      [idempotencyKey, leadRecordKey, queueKey],
+      4,
+      [idempotencyKey, leadRecordKey, queueKey, pendingSinceKey],
       [
         JSON.stringify(params.successResponse),
         params.idempotencyTtlSec,
@@ -337,6 +349,7 @@ class RedisLeadStore implements LeadStore {
         params.leadRecordTtlSec,
         params.leadRecord.leadId,
         params.leadRecord.nextRetryAt,
+        pendingSinceMs,
       ]
     );
 
@@ -465,12 +478,13 @@ class RedisLeadStore implements LeadStore {
   }): Promise<DeliveryCommitResult> {
     const raw = await this.client.eval<unknown[]>(
       COMMIT_DELIVERED_IF_CLAIM_OWNED_SCRIPT,
-      4,
+      5,
       [
         this.keyDeliveryClaim(params.leadId),
         this.keyDeliveryFence(params.leadId),
         this.keyLeadRecord(params.leadId),
         this.keyQueue(),
+        this.keyPendingSince(),
       ],
       [
         params.claimId,
@@ -501,7 +515,7 @@ class RedisLeadStore implements LeadStore {
   }
 
   async removeFromSchedule(leadId: string): Promise<void> {
-    await this.client.command('ZREM', this.keyQueue(), leadId);
+    await this.client.eval<number>(REMOVE_FROM_SCHEDULE_SCRIPT, 2, [this.keyQueue(), this.keyPendingSince()], [leadId]);
   }
 
   async getQueueDepth(): Promise<number> {
@@ -639,6 +653,10 @@ class RedisLeadStore implements LeadStore {
 
   private keyQueue() {
     return `${this.prefix}:delivery:queue`;
+  }
+
+  private keyPendingSince() {
+    return `${this.prefix}:delivery:pending-since`;
   }
 
   private keyProcessingLock(leadId: string) {
@@ -1139,7 +1157,7 @@ function parseLeadRecord(raw: unknown): LeadRecord | null {
   }
 }
 
-function normalizePrefix(rawValue: string | undefined): string {
+export function resolveLeadRedisPrefix(rawValue = process.env.CONTACT_REDIS_PREFIX): string {
   const value = (rawValue || '').trim();
   if (!value) return 'lead';
   return value.replace(/[^a-zA-Z0-9:_-]/g, '-');
@@ -1154,7 +1172,7 @@ export function getLeadStore(): LeadStore {
     return leadStoreSingleton;
   }
 
-  const prefix = normalizePrefix(process.env.CONTACT_REDIS_PREFIX);
+  const prefix = resolveLeadRedisPrefix();
 
   if (hasRedisConfig()) {
     leadStoreSingleton = new RedisLeadStore(new NativeRedisClient(resolveRedisClientOptions()), prefix);

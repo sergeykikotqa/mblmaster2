@@ -22,7 +22,7 @@ const redisDescribe = runAgainstRedis ? describe : describe.skip;
 const prefix = `mbl-o22-test-${randomUUID().replaceAll('-', '')}`;
 
 function createLead(leadId: string, dueAtMs = Date.now() - 1000): LeadRecord {
-  const nowIso = new Date().toISOString();
+  const nowIso = new Date(dueAtMs).toISOString();
   return {
     leadId,
     receivedAt: nowIso,
@@ -46,6 +46,8 @@ redisDescribe('native Redis lead pipeline integration', () => {
   let redisCommand: <T>(...args: Array<string | number>) => Promise<T>;
   let closeRedisClient: () => Promise<void>;
   let processLeadQueue: typeof import('../src/server/leads/worker').processLeadQueue;
+  let recordWorkerCycleHeartbeat: typeof import('../src/server/leads/runtime-health').recordWorkerCycleHeartbeat;
+  let getWorkerRuntimeHealth: typeof import('../src/server/leads/runtime-health').getWorkerRuntimeHealth;
   let recordFunnelMetric: typeof import('../src/server/metrics/funnel').recordFunnelMetric;
   let getFunnelRollupFull: typeof import('../src/server/metrics/funnel').getFunnelRollupFull;
   let authorizeAdminRequest: typeof import('../src/server/admin/auth').authorizeAdminRequest;
@@ -64,6 +66,10 @@ redisDescribe('native Redis lead pipeline integration', () => {
       'CONTACT_ALERT_WEBHOOK_URL_SECONDARY',
       'CONTACT_DELIVERY_MAX_RETRIES',
       'CONTACT_RETRY_BASE_DELAY_SEC',
+      'CONTACT_WORKER_HEARTBEAT_STALE_SEC',
+      'CONTACT_QUEUE_OLDEST_NORMAL_SEC',
+      'CONTACT_QUEUE_OLDEST_WARNING_SEC',
+      'CONTACT_QUEUE_OLDEST_CRITICAL_SEC',
       'METRICS_ADMIN_TOKEN',
       'ADMIN_AUTH_FORCE_PROD_MODE',
       'ADMIN_AUTH_FAIL_MAX_ATTEMPTS',
@@ -77,6 +83,10 @@ redisDescribe('native Redis lead pipeline integration', () => {
     process.env.CONTACT_ALERT_WEBHOOK_URL_SECONDARY = '';
     process.env.CONTACT_DELIVERY_MAX_RETRIES = '2';
     process.env.CONTACT_RETRY_BASE_DELAY_SEC = '1';
+    process.env.CONTACT_WORKER_HEARTBEAT_STALE_SEC = '60';
+    process.env.CONTACT_QUEUE_OLDEST_NORMAL_SEC = '60';
+    process.env.CONTACT_QUEUE_OLDEST_WARNING_SEC = '120';
+    process.env.CONTACT_QUEUE_OLDEST_CRITICAL_SEC = '600';
     process.env.METRICS_ADMIN_TOKEN = 'redis-integration-admin-token';
     process.env.ADMIN_AUTH_FORCE_PROD_MODE = 'true';
     process.env.ADMIN_AUTH_FAIL_MAX_ATTEMPTS = '2';
@@ -87,6 +97,9 @@ redisDescribe('native Redis lead pipeline integration', () => {
     closeRedisClient = redisModule.closeRedisClient;
     store = (await import('../src/server/leads/store')).getLeadStore();
     processLeadQueue = (await import('../src/server/leads/worker')).processLeadQueue;
+    const runtimeHealth = await import('../src/server/leads/runtime-health');
+    recordWorkerCycleHeartbeat = runtimeHealth.recordWorkerCycleHeartbeat;
+    getWorkerRuntimeHealth = runtimeHealth.getWorkerRuntimeHealth;
     const funnel = await import('../src/server/metrics/funnel');
     recordFunnelMetric = funnel.recordFunnelMetric;
     getFunnelRollupFull = funnel.getFunnelRollupFull;
@@ -268,6 +281,55 @@ redisDescribe('native Redis lead pipeline integration', () => {
     expect(health.counters.delivery_failed_total).toBe(1);
     expect(health.counters.delivery_dlq_total).toBe(1);
   }, 15_000);
+
+  test('persists worker heartbeat and exposes stale cycles plus oldest pending age', async () => {
+    const nowMs = Date.now();
+    await recordWorkerCycleHeartbeat({
+      status: 'ok',
+      processed: 3,
+      delivered: 2,
+      lastCycleAtMs: nowMs - 10_000,
+    });
+    expect(
+      await redisCommand<string[]>('HMGET', `${prefix}:worker:heartbeat`, 'status', 'processed', 'delivered', 'error')
+    ).toEqual(['ok', '3', '2', '']);
+
+    const leadId = randomUUID();
+    const pending = createLead(leadId, nowMs - 180_000);
+    await store.enqueueLeadWithIdempotency({
+      idempotencyHash: pending.idempotencyHash,
+      idempotencyTtlSec: 30,
+      successResponse: successResponse(leadId),
+      leadRecord: pending,
+      leadRecordTtlSec: 30,
+    });
+
+    const warning = await getWorkerRuntimeHealth(nowMs);
+    expect(warning.redisLive).toBe(true);
+    expect(warning.heartbeat).toMatchObject({ state: 'cycling', ageMs: 10_000 });
+    expect(warning.oldestPending.state).toBe('warning');
+    expect(warning.oldestPending.ageMs).toBeGreaterThanOrEqual(180_000);
+    expect(warning.ok).toBe(false);
+
+    await store.scheduleLead(leadId, nowMs + 60_000);
+    const warningAfterRetryReschedule = await getWorkerRuntimeHealth(nowMs);
+    expect(warningAfterRetryReschedule.oldestPending.state).toBe('warning');
+    expect(warningAfterRetryReschedule.oldestPending.ageMs).toBeGreaterThanOrEqual(180_000);
+
+    await store.removeFromSchedule(leadId);
+    await recordWorkerCycleHeartbeat({
+      status: 'error',
+      processed: 0,
+      delivered: 0,
+      error: new Error('REDIS_NETWORK_ERROR'),
+      lastCycleAtMs: nowMs - 61_000,
+    });
+    const stale = await getWorkerRuntimeHealth(nowMs);
+    expect(stale.heartbeat).toMatchObject({ state: 'stale', ageMs: 61_000 });
+    expect(stale.heartbeat.value).toMatchObject({ status: 'error', error: 'REDIS_NETWORK_ERROR' });
+    expect(stale.oldestPending.state).toBe('empty');
+    expect(stale.ok).toBe(false);
+  });
 
   test('funnel counters use the same Redis namespace', async () => {
     const timestampMs = Date.now();

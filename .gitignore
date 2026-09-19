@@ -20,9 +20,14 @@ devserver.*
 .pyhttp.*
 
 
-# environment variables
-.env
-.env.production
+# Environment files and private key material must never be staged. Keep the
+# documented, intentionally public template available to Git.
+.env*
+!.env.example
+prod.env
+*.pem
+*.key
+*.crt
 
 # macOS-specific files
 .DS_Store

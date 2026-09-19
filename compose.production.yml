@@ -1,0 +1,147 @@
+name: mbl-production
+
+x-web-image: &web-image
+  image: mbl-web:${MBL_IMAGE_TAG:?Set MBL_IMAGE_TAG to the immutable Git SHA}
+  pull_policy: build
+  build:
+    context: .
+    dockerfile: Dockerfile
+    target: web-runtime
+    args:
+      MBL_BUILD_REVISION: ${MBL_IMAGE_TAG:?Set MBL_IMAGE_TAG to the immutable Git SHA}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?Set PUBLIC_SITE_URL to the canonical HTTPS origin}
+
+x-common-hardening: &common-hardening
+  init: true
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  restart: unless-stopped
+
+x-common-logging: &common-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
+services:
+  mbl-nginx:
+    <<: *common-hardening
+    image: mbl-nginx:${MBL_IMAGE_TAG:?Set MBL_IMAGE_TAG to the immutable Git SHA}
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: nginx-runtime
+      args:
+        MBL_BUILD_REVISION: ${MBL_IMAGE_TAG:?Set MBL_IMAGE_TAG to the immutable Git SHA}
+        PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?Set PUBLIC_SITE_URL to the canonical HTTPS origin}
+    depends_on:
+      mbl-web:
+        condition: service_healthy
+    ports:
+      - '${MBL_BIND_ADDRESS:-0.0.0.0}:${MBL_HTTP_PORT:-8080}:8080'
+    networks:
+      - mbl-edge
+    tmpfs:
+      # Nginx runs as an unprivileged user; PID and proxy/client temp files are
+      # deliberately kept out of /var/run and the read-only image filesystem.
+      - /tmp:size=32m,mode=1777
+    logging: *common-logging
+
+  mbl-web:
+    <<: [*web-image, *common-hardening]
+    env_file:
+      - ${MBL_ENV_FILE:?Set MBL_ENV_FILE to a 0600 production env file}
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: '4321'
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:?Set PUBLIC_SITE_URL to the canonical HTTPS origin}
+      REDIS_URL: redis://mbl-redis:6379/0
+      CONTACT_WORKER_URL: http://mbl-web:4321/api/workers/lead-delivery
+      # Nginx is the only public caller and overwrites, rather than appends,
+      # forwarding headers. Direct container ports are never published.
+      CONTACT_TRUST_PROXY_HEADERS: 'true'
+      TRACK_TRUST_PROXY_HEADERS: 'true'
+      ADMIN_TRUST_PROXY_HEADERS: 'true'
+    depends_on:
+      mbl-redis:
+        condition: service_healthy
+    networks:
+      - mbl-edge
+      - mbl-backend
+    stop_grace_period: 20s
+    logging: *common-logging
+
+  mbl-worker-trigger:
+    <<: [*web-image, *common-hardening]
+    command: ['node', 'scripts/worker-trigger.mjs']
+    # The shared web image probes its local HTTP server by default. This
+    # sidecar intentionally runs only the loop; stale-cycle detection lives in
+    # Redis/admin health rather than a fake local HTTP endpoint.
+    healthcheck:
+      disable: true
+    env_file:
+      - ${MBL_ENV_FILE:?Set MBL_ENV_FILE to a 0600 production env file}
+    environment:
+      NODE_ENV: production
+      WORKER_TRIGGER_URL: http://mbl-web:4321/api/workers/lead-delivery
+      WORKER_TRIGGER_INTERVAL_MS: ${WORKER_TRIGGER_INTERVAL_MS:-15000}
+      WORKER_TRIGGER_TIMEOUT_MS: ${WORKER_TRIGGER_TIMEOUT_MS:-10000}
+      WORKER_TRIGGER_BATCH_LIMIT: ${WORKER_TRIGGER_BATCH_LIMIT:-20}
+    depends_on:
+      mbl-web:
+        condition: service_healthy
+      mbl-redis:
+        condition: service_healthy
+    networks:
+      - mbl-backend
+    stop_grace_period: 20s
+    logging: *common-logging
+
+  mbl-redis:
+    <<: *common-hardening
+    image: redis:7.4.7-alpine3.21
+    pull_policy: missing
+    user: redis
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --appendfsync
+      - everysec
+      - --maxmemory-policy
+      - noeviction
+      - --save
+      - '900 1'
+      - --save
+      - '300 10'
+      - --dir
+      - /data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    volumes:
+      - mbl-redis-data:/data
+    networks:
+      - mbl-backend
+    stop_grace_period: 30s
+    logging: *common-logging
+
+networks:
+  mbl-edge:
+    driver: bridge
+  mbl-backend:
+    driver: bridge
+    internal: true
+
+volumes:
+  # Intentionally project-scoped. A test project can safely run `down -v`
+  # without ever attaching to or deleting the production Redis volume.
+  mbl-redis-data:

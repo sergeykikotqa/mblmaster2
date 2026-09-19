@@ -5,6 +5,7 @@ import type { DeliveryAttemptMetric, LeadPipelineHealth, LeadRecord } from '../s
 
 const getLeadStoreMock = vi.fn();
 const deliverLeadWebhookMock = vi.fn();
+const recordWorkerCycleHeartbeatMock = vi.fn();
 
 vi.mock('../src/server/leads/store', () => ({
   getLeadStore: () => getLeadStoreMock(),
@@ -21,6 +22,11 @@ vi.mock('../src/server/leads/alerts', () => ({
 
 vi.mock('../src/server/leads/metrics-fallback', () => ({
   recordFallbackDeliveryMetric: vi.fn(),
+}));
+
+vi.mock('../src/server/leads/runtime-health', () => ({
+  recordWorkerCycleHeartbeat: (...args: unknown[]) => recordWorkerCycleHeartbeatMock(...args),
+  toWorkerHeartbeatErrorCode: () => 'WORKER_HEARTBEAT_WRITE_ERROR',
 }));
 
 import { processLeadQueue } from '../src/server/leads/worker';
@@ -141,6 +147,11 @@ test('worker recovers delivered status from commit fence and avoids duplicate we
   expect(record.current?.status).toBe('delivered');
   expect(queued.current).toBe(false);
   expect(metrics.filter((metric) => metric.status === 'success')).toHaveLength(1);
+  expect(recordWorkerCycleHeartbeatMock).toHaveBeenCalledWith({
+    status: 'ok',
+    processed: 1,
+    delivered: 1,
+  });
 });
 
 test('worker skips success commit when claim is missing after webhook send', async () => {
@@ -220,11 +231,59 @@ test('worker returns paused summary without touching the store when CONTACT_WORK
   });
   expect(getLeadStoreMock).not.toHaveBeenCalled();
   expect(deliverLeadWebhookMock).not.toHaveBeenCalled();
+  expect(recordWorkerCycleHeartbeatMock).toHaveBeenCalledWith({
+    status: 'paused',
+    processed: 0,
+    delivered: 0,
+  });
+});
+
+test('worker records a failed cycle without changing the original error', async () => {
+  const cycleError = new Error('REDIS_NETWORK_ERROR');
+  getLeadStoreMock.mockReturnValue({
+    listDueLeadIds: vi.fn().mockRejectedValue(cycleError),
+  });
+
+  await expect(processLeadQueue(1)).rejects.toBe(cycleError);
+  expect(recordWorkerCycleHeartbeatMock).toHaveBeenCalledWith({
+    status: 'error',
+    processed: 0,
+    delivered: 0,
+    error: cycleError,
+  });
+});
+
+test('worker heartbeat storage failure does not change a completed delivery result', async () => {
+  const warningSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const record = { current: null as LeadRecord | null };
+  const queued = { current: false };
+  getLeadStoreMock.mockReturnValue(
+    createStore({
+      record,
+      queued,
+      metrics: [],
+      commitResults: [],
+    })
+  );
+  recordWorkerCycleHeartbeatMock.mockRejectedValue(new Error('REDIS_NETWORK_ERROR'));
+
+  await expect(processLeadQueue(1)).resolves.toEqual({
+    processed: 0,
+    delivered: 0,
+    retried: 0,
+    failed: 0,
+    deadLettered: 0,
+    skipped: 0,
+  });
+  expect(warningSpy).toHaveBeenCalledWith(expect.stringContaining('lead_worker_heartbeat_write_failed'));
+  warningSpy.mockRestore();
 });
 
 beforeEach(() => {
   getLeadStoreMock.mockReset();
   deliverLeadWebhookMock.mockReset();
+  recordWorkerCycleHeartbeatMock.mockReset();
+  recordWorkerCycleHeartbeatMock.mockResolvedValue(true);
   delete process.env.CONTACT_WORKER_PAUSED;
 });
 

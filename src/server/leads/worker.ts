@@ -1,5 +1,6 @@
 import { notifyLeadDeadLetter, notifyLeadRetryRateWarning } from './alerts';
 import { recordFallbackDeliveryMetric } from './metrics-fallback';
+import { recordWorkerCycleHeartbeat, toWorkerHeartbeatErrorCode } from './runtime-health';
 import { getLeadStore, type LeadStore } from './store';
 import type { DeadLetterEntry, DeliveryAttemptMetric, LeadRecord } from './types';
 import { deliverLeadWebhook } from './webhook';
@@ -222,7 +223,7 @@ async function maybeNotifyRetryRateWarning(store: LeadStore): Promise<void> {
   );
 }
 
-export async function processLeadQueue(limitOverride?: number): Promise<ProcessLeadQueueResult> {
+async function processLeadQueueCycle(limitOverride?: number): Promise<ProcessLeadQueueResult> {
   if (isLeadWorkerPaused()) {
     emitLeadEvent('lead_worker_paused', {
       limitOverride: typeof limitOverride === 'number' ? limitOverride : undefined,
@@ -640,4 +641,40 @@ export async function processLeadQueue(limitOverride?: number): Promise<ProcessL
   }
 
   return result;
+}
+
+async function recordHeartbeatWithoutChangingDelivery(
+  input: Parameters<typeof recordWorkerCycleHeartbeat>[0]
+): Promise<void> {
+  try {
+    await recordWorkerCycleHeartbeat(input);
+  } catch (error) {
+    emitLeadEvent(
+      'lead_worker_heartbeat_write_failed',
+      {
+        code: toWorkerHeartbeatErrorCode(error),
+      },
+      'warn'
+    );
+  }
+}
+
+export async function processLeadQueue(limitOverride?: number): Promise<ProcessLeadQueueResult> {
+  try {
+    const result = await processLeadQueueCycle(limitOverride);
+    await recordHeartbeatWithoutChangingDelivery({
+      status: result.paused ? 'paused' : 'ok',
+      processed: result.processed,
+      delivered: result.delivered,
+    });
+    return result;
+  } catch (error) {
+    await recordHeartbeatWithoutChangingDelivery({
+      status: 'error',
+      processed: 0,
+      delivered: 0,
+      error,
+    });
+    throw error;
+  }
 }

@@ -1,6 +1,5 @@
-services:
-  astrowind:
-    build: .
-    container_name: astrowind
-    ports:
-      - 8080:8080
+# Transitional pointer for operators. Production and its test-only overlay are
+# explicit so `docker compose up` cannot accidentally launch the retired
+# static-only image.
+include:
+  - path: compose.production.yml

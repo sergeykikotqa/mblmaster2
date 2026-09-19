@@ -1,0 +1,120 @@
+# MBL platform-neutral redirect policy.
+# Syntax: <source> <target> <status>. Supported statuses: 301, 307, 404, 410.
+# `*` matches a trailing path and `:name` matches exactly one path segment.
+
+http://mebel-irkutsk.ru/* https://mebel-irkutsk.ru/:splat 301
+http://www.mebel-irkutsk.ru/* https://mebel-irkutsk.ru/:splat 301
+https://www.mebel-irkutsk.ru/* https://mebel-irkutsk.ru/:splat 301
+http://mebelirkutsk.ru/* https://mebel-irkutsk.ru/:splat 301
+http://www.mebelirkutsk.ru/* https://mebel-irkutsk.ru/:splat 301
+https://mebelirkutsk.ru/* https://mebel-irkutsk.ru/:splat 301
+https://www.mebelirkutsk.ru/* https://mebel-irkutsk.ru/:splat 301
+
+/api/contact /api/leads 307
+
+# Explicit status pages
+/404 /404.html 404
+
+# Legacy service aliases -> service money pages
+/kitchens /kuhni 301
+/kitchens/* /kuhni 301
+/wardrobes /shkafy 301
+/wardrobes/* /shkafy 301
+/kuhni-na-zakaz /kuhni 301
+/kuhni-na-zakaz/* /kuhni 301
+/shkafy-kupe /shkafy 301
+/shkafy-kupe/* /shkafy 301
+/vstroennye-shkafy /shkafy 301
+/vstroennye-shkafy/* /shkafy 301
+
+# Legacy reverse geo permutations -> service money pages
+/kuhni/irkutsk /kuhni 301
+/kuhni/angarsk /kuhni 301
+/kuhni/shelekhov /kuhni 301
+/kuhni/shelehov /kuhni 301
+/shkafy/irkutsk /shkafy 301
+/shkafy/angarsk /shkafy 301
+/shkafy/shelekhov /shkafy 301
+/shkafy/shelehov /shkafy 301
+/garderobnye/irkutsk /garderobnye 301
+/garderobnye/angarsk /garderobnye 301
+/garderobnye/shelekhov /garderobnye 301
+/garderobnye/shelehov /garderobnye 301
+
+# Geo service routes -> service money pages
+/irkutsk/kuhni /kuhni 301
+/angarsk/kuhni /kuhni 301
+/shelekhov/kuhni /kuhni 301
+/shelehov/kuhni /kuhni 301
+/irkutsk/shkafy /shkafy 301
+/angarsk/shkafy /shkafy 301
+/shelekhov/shkafy /shkafy 301
+/shelehov/shkafy /shkafy 301
+/irkutsk/garderobnye /garderobnye 301
+/angarsk/garderobnye /garderobnye 301
+/shelekhov/garderobnye /garderobnye 301
+/shelehov/garderobnye /garderobnye 301
+
+# Geo service legacy aliases -> service money pages
+/irkutsk/kuhni-na-zakaz /kuhni 301
+/angarsk/kuhni-na-zakaz /kuhni 301
+/shelekhov/kuhni-na-zakaz /kuhni 301
+/shelehov/kuhni-na-zakaz /kuhni 301
+/irkutsk/shkafy-kupe /shkafy 301
+/angarsk/shkafy-kupe /shkafy 301
+/shelekhov/shkafy-kupe /shkafy 301
+/shelehov/shkafy-kupe /shkafy 301
+/irkutsk/vstroennye-shkafy /shkafy 301
+/angarsk/vstroennye-shkafy /shkafy 301
+/shelekhov/vstroennye-shkafy /shkafy 301
+/shelehov/vstroennye-shkafy /shkafy 301
+
+# Flat legacy geo aliases -> service money pages
+/irkutsk-kuhni-na-zakaz /kuhni 301
+/angarsk-kuhni-na-zakaz /kuhni 301
+/shelekhov-kuhni-na-zakaz /kuhni 301
+/shelehov-kuhni-na-zakaz /kuhni 301
+/irkutsk-shkafy-kupe /shkafy 301
+/angarsk-shkafy-kupe /shkafy 301
+/shelekhov-shkafy-kupe /shkafy 301
+/shelehov-shkafy-kupe /shkafy 301
+/irkutsk-garderobnye /garderobnye 301
+/angarsk-garderobnye /garderobnye 301
+/shelekhov-garderobnye /garderobnye 301
+/shelehov-garderobnye /garderobnye 301
+
+# Legacy kitchen intent aliases -> /kuhni
+/irkutsk/mebel-v-novostroyke /kuhni 301
+/mebel-v-novostroyku-irkutsk /kuhni 301
+/irkutsk/novostroyka-mebel /kuhni 301
+
+# Project slug redirects -> short slugs
+/projects/kuhnya-irkutsk-baykalskaya /projects/mebel-pod-lestnitsey 301
+/projects/kuhnya-baykalskaya /projects/mebel-pod-lestnitsey 301
+/projects/kuhnya-irkutsk-grafitovaya-dalnevostochnaya /projects/kuhnya-grafitovaya 301
+/projects/kuhnya-irkutsk-uglovaya-piskunova /projects/kuhnya-piskunova 301
+/projects/kuhnya-irkutsk-belaya-uglovaya-trilissera /projects/kuhnya-trilissera 301
+/projects/kuhnya-irkutsk-uglovaya-krasnokazachya /projects/kuhnya-krasnokazachya 301
+/projects/kuhnya-irkutsk-belaya-uglovaya-baykalskiy-trakt /projects/kuhnya-baykalskiy-trakt 301
+/projects/kuhnya-irkutsk-biryuzovaya-uglovaya-bogdana /projects/kuhnya-bogdana 301
+/projects/kuhnya-irkutsk-belaya-s-barom-dzerzhinskogo /projects/kuhnya-dzerzhinskogo 301
+/projects/shkaf-irkutsk-rabochaya-zona-deputatskaya /projects/shkaf-deputatskaya 301
+/projects/kuhnya-irkutsk-verkhnyaya-naberezhnaya /projects/kuhnya-verkhnyaya-naberezhnaya 301
+/projects/rabochaya-zona-pod-skatom-irkutsk /projects/mansardnaya-rabochaya-zona-pod-skatom-irkutsk 301
+
+# District legacy is deprecated and removed (District OFF hard)
+/raiony /410 410
+/raiony/* /410 410
+/irkutsk/:district/kuhni-na-zakaz /410 410
+/irkutsk/:district/kuhni-na-zakaz/* /410 410
+/irkutsk/:district/shkafy-kupe /410 410
+/irkutsk/:district/shkafy-kupe/* /410 410
+/irkutsk/:district/garderobnye /410 410
+/irkutsk/:district/garderobnye/* /410 410
+/irkutsk/:district/kuhni /410 410
+/irkutsk/:district/kuhni/* /410 410
+/irkutsk/:district/shkafy /410 410
+/irkutsk/:district/shkafy/* /410 410
+
+# Common typo for city hub
+/shelehov /shelekhov 301

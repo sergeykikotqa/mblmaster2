@@ -1,0 +1,6 @@
+# Test-only overlay: production containers may call a mock receiver running on
+# the Docker host. The production base intentionally has no host-gateway route.
+services:
+  mbl-web:
+    extra_hosts:
+      - host.docker.internal:host-gateway
