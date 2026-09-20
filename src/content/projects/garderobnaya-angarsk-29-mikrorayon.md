@@ -38,6 +38,12 @@ blocks:
       - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
       - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
       - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg
+  - type: quote
+    text: >-
+      Гардеробная получилась вместительной и аккуратной, особенно удобно, что сделали раздельные зоны хранения.
+    author: Полина Ф., Ангарск
+    role: Отзыв клиента
+    tocLabel: Отзыв клиента
   - type: result
     title: Итог проекта
   - type: specs
