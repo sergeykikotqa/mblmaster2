@@ -8,7 +8,7 @@ WORKDIR /app
 
 FROM base AS build-dependencies
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm ci --no-audit --no-fund
 
 FROM base AS build
@@ -24,9 +24,8 @@ RUN node scripts/generate-runtime-redirects.mjs --check \
 FROM base AS production-dependencies
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev --omit=optional --no-audit --no-fund \
-    && npm cache clean --force
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm ci --omit=dev --omit=optional --no-audit --no-fund
 
 # Backup tooling is versioned with the application release but runs only as a
 # one-shot job. Restic encrypts before upload; redis-cli obtains a consistent
