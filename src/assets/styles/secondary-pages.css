@@ -324,7 +324,7 @@ body.mbl-page-secondary .hm-mobile-proof {
   color: var(--mbl-color-text-primary);
 }
 
-/* Shared lead/contact surfaces. Backend, consent and Turnstile contracts remain untouched. */
+/* Shared lead/contact surfaces. Backend, consent and SmartCaptcha contracts remain untouched. */
 body.mbl-page-secondary :is(.contact-wrap, .contacts-card, .map-card) {
   border-color: var(--mbl-color-border-subtle);
   background:
@@ -409,6 +409,10 @@ body.mbl-page-secondary .lead-contact-form :is(h2, h3, label, .text-slate-900) {
 
 body.mbl-page-secondary .lead-contact-form :is(p, .text-slate-600, .text-slate-500) {
   color: var(--mbl-color-text-secondary) !important;
+}
+
+body.mbl-page-secondary .lead-contact-form [data-submit-fallback] p {
+  color: var(--mbl-color-text-inverse) !important;
 }
 
 body.mbl-page-secondary .lead-contact-form :is(input:not([type='hidden']), textarea, select) {

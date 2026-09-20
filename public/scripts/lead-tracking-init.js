@@ -5,8 +5,6 @@
     document.currentScript ||
     document.querySelector('script[data-lead-tracking-init]');
   const rawConfig = script?.getAttribute('data-lead-tracking-config') || '';
-  const turnstileSiteKey = String(script?.getAttribute('data-turnstile-site-key') || '').trim();
-
   let leadTrackingConfig = {};
   if (rawConfig) {
     try {
@@ -46,9 +44,6 @@
   }
 
   if (hasContactForm) {
-    if (turnstileSiteKey) {
-      loadScript('https://challenges.cloudflare.com/turnstile/v0/api.js', { async: true, defer: true });
-    }
     leadPromise.then(() => loadScript('/scripts/contact-form-client.js', { defer: true }));
   }
 })();

@@ -3,7 +3,6 @@ export type ContactSuccessResponse = {
   leadId: string;
   receivedAt: string;
   duplicate?: boolean;
-  botProtectionBypassed?: boolean;
 };
 
 export type LeadStatus = 'pending' | 'delivered' | 'failed';

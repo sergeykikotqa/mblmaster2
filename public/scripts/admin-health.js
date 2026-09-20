@@ -117,7 +117,7 @@ const missing = [];
 if (deps.workerTokenConfigured === false) missing.push('worker token');
 if (deps.redisConfigured === false) missing.push('redis');
 if (deps.webhookConfigured === false) missing.push('webhook');
-if (deps.turnstileRequired && deps.turnstileReady === false) missing.push('turnstile');
+if (deps.smartCaptchaRequired && deps.smartCaptchaReady === false) missing.push('SmartCaptcha');
 return missing.length > 0 ? `missing: ${missing.join(', ')}` : 'runtime ready';
 };
 const summarizePipeline = (entry) => {

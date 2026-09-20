@@ -37,7 +37,7 @@ test('records ops funnel counters and reason buckets without breaking conversion
     eventName: 'form_submit_blocked',
     pageSlug: '/kuhni',
     timestampMs,
-    reason: 'turnstile_required',
+    reason: 'smartcaptcha_required',
   });
   await recordFunnelMetric({ eventName: 'form_submitted', pageSlug: '/kuhni', timestampMs });
 
@@ -55,7 +55,7 @@ test('records ops funnel counters and reason buckets without breaking conversion
   expect(rollup.totalOps.formValidationError).toBeGreaterThanOrEqual(1);
   expect(rollup.totalOps.formSubmitBlocked).toBeGreaterThanOrEqual(1);
   expect(rollup.totalOpsReasons.validationErrors.phone).toBeGreaterThanOrEqual(1);
-  expect(rollup.totalOpsReasons.submitBlocked.turnstile_required).toBeGreaterThanOrEqual(1);
+  expect(rollup.totalOpsReasons.submitBlocked.smartcaptcha_required).toBeGreaterThanOrEqual(1);
 
   const kuhniEntry = rollup.entries.find((entry) => entry.pageSlug === '/kuhni');
   expect(kuhniEntry).toBeTruthy();
@@ -80,7 +80,7 @@ test('api/track persists ops funnel events with reasons into storage', async () 
         service: 'kuhni-na-zakaz',
         page_slug: '/kuhni',
         lead_page_type: 'service-money',
-        reason: 'turnstile_unavailable',
+        reason: 'smartcaptcha_unavailable',
       },
     }),
   });
@@ -99,5 +99,5 @@ test('api/track persists ops funnel events with reasons into storage', async () 
   });
 
   expect(rollup.totalOps.formSubmitBlocked).toBeGreaterThanOrEqual(1);
-  expect(rollup.totalOpsReasons.submitBlocked.turnstile_unavailable).toBeGreaterThanOrEqual(1);
+  expect(rollup.totalOpsReasons.submitBlocked.smartcaptcha_unavailable).toBeGreaterThanOrEqual(1);
 });

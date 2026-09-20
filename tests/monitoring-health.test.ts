@@ -48,8 +48,8 @@ function healthyWorker(): NonNullable<MonitoringInputs['worker']> {
         webhookSecretConfigured: true,
         alertChannelConfigured: true,
         alertEndpointReachable: true,
-        turnstileRequired: true,
-        turnstileReady: true,
+        smartCaptchaRequired: true,
+        smartCaptchaReady: true,
         workerPaused: false,
       },
       runtime: {

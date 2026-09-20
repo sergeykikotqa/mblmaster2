@@ -5,7 +5,6 @@ import { createClient } from 'redis';
 const DEFAULT_TIMEOUT_MS = 5000;
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_BASE_DELAY_MS = 400;
-const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const PLACEHOLDER_HOST_PATTERNS = [
   'example.com',
   'example.org',
@@ -42,10 +41,6 @@ function parseBoolean(value, fallback) {
   if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
   if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
   return fallback;
-}
-
-function allowTurnstileDegraded() {
-  return parseBoolean(process.env.RUNTIME_CONFIG_ALLOW_TURNSTILE_DEGRADED, false);
 }
 
 function isPlaceholderHost(hostname) {
@@ -253,59 +248,6 @@ async function assertRedisHealthy(redisUrl, timeoutMs) {
   }
 }
 
-async function assertTurnstileSecretValid(secret, timeoutMs) {
-  const run = async () => {
-    const payload = new URLSearchParams();
-    payload.set('secret', secret);
-    payload.set('response', 'runtime-config-gate-test');
-
-    const response = await fetchWithTimeout(
-      TURNSTILE_VERIFY_URL,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: payload.toString(),
-      },
-      timeoutMs
-    );
-
-    if (!response.ok) {
-      throw new Error(`Turnstile verification endpoint failed with HTTP ${response.status}`);
-    }
-
-    const body = await response.json();
-    const errorCodes = Array.isArray(body?.['error-codes']) ? body['error-codes'].map((item) => String(item)) : [];
-    if (errorCodes.includes('invalid-input-secret')) {
-      throw new Error('TURNSTILE_SECRET_KEY is invalid (invalid-input-secret)');
-    }
-  };
-
-  if (allowTurnstileDegraded()) {
-    try {
-      await withRetry('turnstile_verify', run);
-      return {
-        degraded: false,
-      };
-    } catch (error) {
-      const transient = isTransientError(error);
-      if (!transient) throw error;
-      console.warn(
-        `[runtime-config] turnstile verification degraded (transient): ${error instanceof Error ? error.message : String(error)}`
-      );
-      return {
-        degraded: true,
-      };
-    }
-  }
-
-  await withRetry('turnstile_verify', run);
-  return {
-    degraded: false,
-  };
-}
-
 async function main() {
   const timeoutMs = getTimeoutMs();
   const checks = [];
@@ -314,7 +256,9 @@ async function main() {
   const webhookUrl = readRequiredEnv('CONTACT_WEBHOOK_URL');
   const webhookSecret = readRequiredEnv('CONTACT_WEBHOOK_SECRET');
   const redisUrl = readRequiredEnv('REDIS_URL');
-  const turnstileSecret = readRequiredEnv('TURNSTILE_SECRET_KEY');
+  const smartCaptchaClientKey = readRequiredEnv('SMARTCAPTCHA_CLIENT_KEY');
+  const smartCaptchaServerKey = readRequiredEnv('SMARTCAPTCHA_SERVER_KEY');
+  const smartCaptchaAllowedHosts = readRequiredEnv('SMARTCAPTCHA_ALLOWED_HOSTS');
   const metricsAdminToken = readOptionalEnv('METRICS_ADMIN_TOKEN');
   const monitoringToken = readRequiredEnv('MBL_MONITORING_TOKEN');
   const backupStatusDir = readRequiredEnv('MBL_BACKUP_STATUS_DIR');
@@ -338,10 +282,33 @@ async function main() {
   assertRedisUrl(redisUrl);
   checks.push('redis_url_ok');
 
-  if (turnstileSecret.length < 10 || /replace|example|changeme|placeholder/i.test(turnstileSecret)) {
-    throw new Error('TURNSTILE_SECRET_KEY looks like a placeholder');
+  if (!smartCaptchaClientKey.startsWith('ysc1_') || smartCaptchaClientKey.length < 25) {
+    throw new Error('SMARTCAPTCHA_CLIENT_KEY must use the ysc1_ key format');
   }
-  checks.push('turnstile_secret_format_ok');
+  if (!smartCaptchaServerKey.startsWith('ysc2_') || smartCaptchaServerKey.length < 25) {
+    throw new Error('SMARTCAPTCHA_SERVER_KEY must use the ysc2_ key format');
+  }
+  if (smartCaptchaClientKey.slice(5, 25) !== smartCaptchaServerKey.slice(5, 25)) {
+    throw new Error('SmartCaptcha client/server keys do not belong to the same CAPTCHA');
+  }
+  if (!parseBoolean(process.env.CONTACT_SMARTCAPTCHA_REQUIRED, true)) {
+    throw new Error('CONTACT_SMARTCAPTCHA_REQUIRED must remain true in production');
+  }
+  const allowedHosts = smartCaptchaAllowedHosts
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+  const publicHostname = new URL(publicSiteUrl).hostname.toLowerCase();
+  if (!allowedHosts.includes(publicHostname)) {
+    throw new Error(`SMARTCAPTCHA_ALLOWED_HOSTS must include ${publicHostname}`);
+  }
+  if (parseBoolean(process.env.SMARTCAPTCHA_ALLOW_LOCAL_VERIFY_OVERRIDE, false)) {
+    throw new Error('SMARTCAPTCHA_ALLOW_LOCAL_VERIFY_OVERRIDE must be false in production configuration');
+  }
+  if (String(process.env.SMARTCAPTCHA_VERIFY_URL || '').trim()) {
+    throw new Error('SMARTCAPTCHA_VERIFY_URL must be empty in production configuration');
+  }
+  checks.push('smartcaptcha_keys_and_hosts_ok');
 
   if (!metricsAdminToken) {
     throw new Error('Admin metrics auth is not configured: set METRICS_ADMIN_TOKEN');
@@ -393,9 +360,6 @@ async function main() {
 
   await assertRedisHealthy(redisUrl, timeoutMs);
   checks.push('redis_ping_ok');
-
-  const turnstileStatus = await assertTurnstileSecretValid(turnstileSecret, timeoutMs);
-  checks.push(turnstileStatus.degraded ? 'turnstile_secret_degraded' : 'turnstile_secret_valid');
 
   console.log(`Runtime config gate passed: ${checks.join(', ')}`);
 }

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { mockSmartCaptcha } from './smartcaptcha-mock';
 
 const CONTACTS_PAGE = '/contacts';
 
@@ -40,6 +41,8 @@ test.describe('Contact form', () => {
   test('shows retry button on API failure and success state after retry', async ({ page }) => {
     let submitCalls = 0;
 
+    await mockSmartCaptcha(page);
+
     await page.route('**/api/leads', async (route) => {
       submitCalls += 1;
 
@@ -79,11 +82,20 @@ test.describe('Contact form', () => {
     await form.locator('textarea[name="message"]').fill('Нужен расчет кухни');
     await form.locator('input[name="consent"]').check();
 
+    const widgetButton = form.locator('[data-smartcaptcha-widget] button');
+    await expect(widgetButton).toBeVisible();
+    await widgetButton.click();
+
     await form.locator('[data-submit-btn]').click();
     await expect(form.locator('[data-form-status]')).toContainText('Lead delivery failed');
 
     const retryButton = form.locator('[data-retry-btn]');
     await expect(retryButton).toBeVisible();
+    await retryButton.click();
+    await expect(form.locator('[data-error-smartcaptcha]')).toContainText('Сначала завершите проверку');
+    expect(submitCalls).toBe(1);
+
+    await widgetButton.click();
     await retryButton.click();
 
     await expect(form.locator('[data-success-box]')).toBeVisible();
@@ -94,6 +106,8 @@ test.describe('Contact form', () => {
   test('reveals anti-bot step after valid phone and blocks submit until challenge is completed', async ({ page }) => {
     let submitCalls = 0;
 
+    await mockSmartCaptcha(page);
+
     await page.route('**/api/leads', async (route) => {
       submitCalls += 1;
       await route.abort();
@@ -102,28 +116,26 @@ test.describe('Contact form', () => {
     await page.goto(CONTACTS_PAGE);
 
     const form = await getLeadForm(page);
-    await form.evaluate((node) => {
-      (node as HTMLFormElement).dataset.turnstileTestMode = 'required';
-      (window as Window & { turnstile?: Record<string, unknown> }).turnstile = {};
-    });
-
     await form.locator('input[name="phone"]').fill('9123456789');
     await form.locator('input[name="name"]').fill('CI E2E');
     await form.locator('input[name="consent"]').check();
 
-    await expect(form.locator('[data-turnstile-step]')).toBeVisible();
+    await expect(form.locator('[data-smartcaptcha-step]')).toBeVisible();
+    await expect(form.locator('[data-smartcaptcha-widget] button')).toBeVisible();
 
     await form.locator('[data-submit-btn]').click();
 
-    await expect(form.locator('[data-error-turnstile]')).toContainText('Сначала завершите проверку');
+    await expect(form.locator('[data-error-smartcaptcha]')).toContainText('Сначала завершите проверку');
     await expect(form.locator('[data-form-status]')).toContainText('Нужно завершить проверку формы.');
     await expect(form.locator('[data-submit-fallback]')).toBeVisible();
     await expect(form.locator('[data-submit-fallback-call]')).toHaveAttribute('href', 'tel:+79641072613');
     expect(submitCalls).toBe(0);
   });
 
-  test('shows explicit unavailable state and fallback call when turnstile cannot load', async ({ page }) => {
+  test('shows explicit unavailable state and fallback call when SmartCaptcha cannot load', async ({ page }) => {
     let submitCalls = 0;
+
+    await mockSmartCaptcha(page, { scriptUnavailable: true });
 
     await page.route('**/api/leads', async (route) => {
       submitCalls += 1;
@@ -133,22 +145,68 @@ test.describe('Contact form', () => {
     await page.goto(CONTACTS_PAGE);
 
     const form = await getLeadForm(page);
-    await form.evaluate((node) => {
-      delete (window as Window & { turnstile?: unknown }).turnstile;
-      (node as HTMLFormElement).dataset.turnstileTestMode = 'unavailable';
-    });
-
     await form.locator('input[name="phone"]').fill('9123456789');
     await form.locator('input[name="name"]').fill('CI E2E');
     await form.locator('input[name="consent"]').check();
-    await expect(form.locator('[data-turnstile-step]')).toBeVisible();
+    await expect(form.locator('[data-smartcaptcha-step]')).toBeVisible();
 
     await form.locator('[data-submit-btn]').click();
 
-    await expect(form.locator('[data-error-turnstile]')).toContainText('Не удалось загрузить проверку');
+    await expect(form.locator('[data-error-smartcaptcha]')).toContainText('Не удалось загрузить проверку');
     await expect(form.locator('[data-form-status]')).toContainText('Проверка формы временно недоступна.');
     await expect(form.locator('[data-submit-fallback]')).toBeVisible();
     await expect(form.locator('[data-submit-fallback-call]')).toHaveAttribute('href', 'tel:+79641072613');
     expect(submitCalls).toBe(0);
+  });
+
+  test('uses one SmartCaptcha token per attempt and avoids duplicate submission on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockSmartCaptcha(page);
+    let submitCalls = 0;
+
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      const payload = route.request().postDataJSON() as Record<string, unknown>;
+      expect(payload.smartCaptchaToken).toBe('mock-valid-token');
+
+      if (submitCalls === 1) {
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: false, code: 'BOT_PROTECTION_FAILED', message: 'Проверка истекла.' }),
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, leadId: 'mobile-mock-lead', receivedAt: new Date().toISOString() }),
+      });
+    });
+
+    await page.goto(CONTACTS_PAGE);
+    const form = await getLeadForm(page);
+    await form.locator('input[name="phone"]').fill('9123456789');
+    await form.locator('input[name="name"]').fill('Mobile Mock');
+    await form.locator('input[name="consent"]').check();
+    const widgetButton = form.locator('[data-smartcaptcha-widget] button');
+    await expect(widgetButton).toBeVisible();
+    await widgetButton.click();
+
+    await form.locator('[data-submit-btn]').dblclick();
+    await expect(form.locator('[data-error-smartcaptcha]')).toContainText('Проверка истекла.');
+    expect(submitCalls).toBe(1);
+    const resetCount = await page.evaluate(() =>
+      Number((window as Window & { __smartCaptchaMock?: { resetCount: number } }).__smartCaptchaMock?.resetCount || 0)
+    );
+    expect(resetCount).toBe(1);
+
+    await form.locator('[data-retry-btn]').click();
+    expect(submitCalls).toBe(1);
+    await widgetButton.click();
+    await form.locator('[data-retry-btn]').click();
+    await expect(form.locator('[data-success-box]')).toBeVisible();
+    expect(submitCalls).toBe(2);
   });
 });

@@ -331,8 +331,7 @@ function makeTempEnvironment({ mockPort, canonicalOrigin, publicPort, projectNam
     `CONTACT_WORKER_TOKEN=${secrets.worker}`,
     `METRICS_ADMIN_TOKEN=${secrets.admin}`,
     `MBL_MONITORING_TOKEN=${secrets.monitoring}`,
-    'CONTACT_TURNSTILE_REQUIRED=false',
-    'CONTACT_TURNSTILE_FAILURE_MODE=closed',
+    'CONTACT_SMARTCAPTCHA_REQUIRED=false',
     'CONTACT_TRUST_PROXY_HEADERS=true',
     'TRACK_TRUST_PROXY_HEADERS=true',
     'ADMIN_TRUST_PROXY_HEADERS=true',
@@ -875,7 +874,7 @@ function checkImageMetadata(imageId, expectedRevision, imageName) {
   const imageEnv = inspection?.Config?.Env || [];
   const serializedConfig = JSON.stringify({ env: imageEnv, labels: inspection?.Config?.Labels || {} });
   assert(
-    !/(?:SECRET|TOKEN|PASSWORD|PRIVATE_KEY|API_KEY|REDIS_URL|TURNSTILE|WEBHOOK|RUM_KEY)=/i.test(serializedConfig),
+    !/(?:SECRET|TOKEN|PASSWORD|PRIVATE_KEY|API_KEY|REDIS_URL|SMARTCAPTCHA|WEBHOOK|RUM_KEY)=/i.test(serializedConfig),
     `${imageName} config embeds a runtime secret`
   );
   assert(

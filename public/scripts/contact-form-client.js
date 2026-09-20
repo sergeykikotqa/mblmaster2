@@ -38,6 +38,103 @@
     return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
+  const SMARTCAPTCHA_CONFIG_URL = '/api/captcha/config';
+  const SMARTCAPTCHA_SCRIPT_ID = 'mbl-smartcaptcha-script';
+  const SMARTCAPTCHA_SCRIPT_CALLBACK = '__mblSmartCaptchaLoaded';
+  let smartCaptchaConfigPromise;
+  let smartCaptchaScriptPromise;
+
+  function loadSmartCaptchaConfig() {
+    if (smartCaptchaConfigPromise) return smartCaptchaConfigPromise;
+    smartCaptchaConfigPromise = fetch(SMARTCAPTCHA_CONFIG_URL, {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        const required = payload?.required === true;
+        const ready = payload?.ready === true;
+        const clientKey = typeof payload?.clientKey === 'string' ? payload.clientKey.trim() : '';
+        if (required && (!response.ok || !ready || !clientKey.startsWith('ysc1_'))) {
+          throw new Error('SMARTCAPTCHA_CONFIG_UNAVAILABLE');
+        }
+        return { required, ready, clientKey };
+      })
+      .catch((error) => {
+        smartCaptchaConfigPromise = undefined;
+        throw error;
+      });
+    return smartCaptchaConfigPromise;
+  }
+
+  function loadSmartCaptchaScript() {
+    if (window.smartCaptcha && typeof window.smartCaptcha.render === 'function') {
+      return Promise.resolve(window.smartCaptcha);
+    }
+    if (smartCaptchaScriptPromise) return smartCaptchaScriptPromise;
+
+    smartCaptchaScriptPromise = new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (callback) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeoutId);
+        callback();
+      };
+      const timeoutId = window.setTimeout(() => {
+        finish(() => {
+          document.getElementById(SMARTCAPTCHA_SCRIPT_ID)?.remove();
+          reject(new Error('SMARTCAPTCHA_SCRIPT_TIMEOUT'));
+        });
+      }, 15000);
+
+      window[SMARTCAPTCHA_SCRIPT_CALLBACK] = () => {
+        if (window.smartCaptcha && typeof window.smartCaptcha.render === 'function') {
+          finish(() => resolve(window.smartCaptcha));
+          return;
+        }
+        finish(() => reject(new Error('SMARTCAPTCHA_API_MISSING')));
+      };
+
+      const existing = document.getElementById(SMARTCAPTCHA_SCRIPT_ID);
+      if (existing instanceof HTMLScriptElement) {
+        existing.addEventListener(
+          'error',
+          () =>
+            finish(() => {
+              existing.remove();
+              reject(new Error('SMARTCAPTCHA_SCRIPT_FAILED'));
+            }),
+          { once: true }
+        );
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.id = SMARTCAPTCHA_SCRIPT_ID;
+      script.src = `https://smartcaptcha.cloud.yandex.ru/captcha.js?render=onload&onload=${SMARTCAPTCHA_SCRIPT_CALLBACK}`;
+      script.async = true;
+      script.defer = true;
+      script.addEventListener(
+        'error',
+        () =>
+          finish(() => {
+            script.remove();
+            reject(new Error('SMARTCAPTCHA_SCRIPT_FAILED'));
+          }),
+        { once: true }
+      );
+      document.head.appendChild(script);
+    }).catch((error) => {
+      smartCaptchaScriptPromise = undefined;
+      throw error;
+    });
+
+    return smartCaptchaScriptPromise;
+  }
+
   function resolveTracking() {
     const tracking = window.leadTracking || {};
     return {
@@ -64,22 +161,17 @@
       trackLeadSuccess:
         typeof tracking.trackLeadSuccess === 'function' ? tracking.trackLeadSuccess.bind(tracking) : () => {},
       trackLeadError: typeof tracking.trackLeadError === 'function' ? tracking.trackLeadError.bind(tracking) : () => {},
-      trackFormView:
-        typeof tracking.trackFormView === 'function' ? tracking.trackFormView.bind(tracking) : () => {},
-      trackFormFocus:
-        typeof tracking.trackFormFocus === 'function' ? tracking.trackFormFocus.bind(tracking) : () => {},
+      trackFormView: typeof tracking.trackFormView === 'function' ? tracking.trackFormView.bind(tracking) : () => {},
+      trackFormFocus: typeof tracking.trackFormFocus === 'function' ? tracking.trackFormFocus.bind(tracking) : () => {},
       trackFormFirstInputFocus:
         typeof tracking.trackFormFirstInputFocus === 'function'
           ? tracking.trackFormFirstInputFocus.bind(tracking)
           : () => {},
-      trackFormStart:
-        typeof tracking.trackFormStart === 'function' ? tracking.trackFormStart.bind(tracking) : () => {},
+      trackFormStart: typeof tracking.trackFormStart === 'function' ? tracking.trackFormStart.bind(tracking) : () => {},
       trackFormProgress:
         typeof tracking.trackFormProgress === 'function' ? tracking.trackFormProgress.bind(tracking) : () => {},
       trackFormPhoneValid:
-        typeof tracking.trackFormPhoneValid === 'function'
-          ? tracking.trackFormPhoneValid.bind(tracking)
-          : () => {},
+        typeof tracking.trackFormPhoneValid === 'function' ? tracking.trackFormPhoneValid.bind(tracking) : () => {},
       trackFormValidationError:
         typeof tracking.trackFormValidationError === 'function'
           ? tracking.trackFormValidationError.bind(tracking)
@@ -126,9 +218,10 @@
     const serviceInput = form.querySelector('input[name="service"]');
     const pageTypeInput = form.querySelector('input[name="pageType"]');
     const pageSlugInput = form.querySelector('input[name="pageSlug"]');
-    const errorTurnstile = form.querySelector('[data-error-turnstile]');
-    const turnstileStep = form.querySelector('[data-turnstile-step]');
-    const turnstileHelp = form.querySelector('[data-turnstile-help]');
+    const errorSmartCaptcha = form.querySelector('[data-error-smartcaptcha]');
+    const smartCaptchaStep = form.querySelector('[data-smartcaptcha-step]');
+    const smartCaptchaHelp = form.querySelector('[data-smartcaptcha-help]');
+    const smartCaptchaWidget = form.querySelector('[data-smartcaptcha-widget]');
     const submitFallback = form.querySelector('[data-submit-fallback]');
     const submitFallbackCopy = form.querySelector('[data-submit-fallback-copy]');
 
@@ -159,19 +252,24 @@
     const formId = `${form.dataset.formContext || 'section'}-${pageType}`;
     const placement = form.dataset.formContext || 'section';
     const defaultBtnLabel = btnText.textContent || 'Отправить заявку';
-    const turnstileSiteKey = String(form.dataset.turnstileSiteKey || '').trim();
     const firstInput =
       form.querySelector('[data-first-input]') instanceof HTMLInputElement
         ? form.querySelector('[data-first-input]')
         : phoneInput;
 
     let isSubmitting = false;
+    let isPreparing = false;
     let submitIdempotencyKey = '';
     let resetIdempotencyAfterSubmit = false;
     let formOpenTracked = false;
     let formViewTracked = false;
     let formFocusTracked = false;
     let firstInputFocusTracked = false;
+    let smartCaptchaRequired = false;
+    let smartCaptchaAvailable = false;
+    let smartCaptchaToken = '';
+    let smartCaptchaWidgetId;
+    let smartCaptchaWidgetPromise;
     let formStartTracked = false;
     let formProgressTracked = false;
     let phoneValidTracked = false;
@@ -326,39 +424,25 @@
       });
     };
 
-    const getTurnstileTestMode = function getTurnstileTestMode() {
-      return String(form.dataset.turnstileTestMode || '')
-        .trim()
-        .toLowerCase();
+    const isSmartCaptchaAvailable = function isSmartCaptchaAvailable() {
+      return smartCaptchaAvailable;
     };
 
-    const isTurnstileGateEnabled = function isTurnstileGateEnabled() {
-      const testMode = getTurnstileTestMode();
-      return Boolean(turnstileSiteKey) || testMode === 'required' || testMode === 'unavailable';
+    const setSmartCaptchaStepVisible = function setSmartCaptchaStepVisible(visible) {
+      if (!(smartCaptchaStep instanceof HTMLElement)) return;
+      smartCaptchaStep.hidden = !visible;
+      smartCaptchaStep.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      smartCaptchaStep.classList.toggle('hidden', !visible);
     };
 
-    const isTurnstileAvailable = function isTurnstileAvailable() {
-      const testMode = getTurnstileTestMode();
-      if (testMode === 'unavailable') return false;
-      if (testMode === 'required') return true;
-      return typeof window.turnstile !== 'undefined';
+    const focusSmartCaptchaStep = function focusSmartCaptchaStep() {
+      if (!(smartCaptchaStep instanceof HTMLElement)) return;
+      smartCaptchaStep.scrollIntoView({ block: 'center', behavior: 'smooth' });
     };
 
-    const setTurnstileStepVisible = function setTurnstileStepVisible(visible) {
-      if (!(turnstileStep instanceof HTMLElement)) return;
-      turnstileStep.hidden = !visible;
-      turnstileStep.setAttribute('aria-hidden', visible ? 'false' : 'true');
-      turnstileStep.classList.toggle('hidden', !visible);
-    };
-
-    const focusTurnstileStep = function focusTurnstileStep() {
-      if (!(turnstileStep instanceof HTMLElement)) return;
-      turnstileStep.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    };
-
-    const setTurnstileHelpText = function setTurnstileHelpText(message) {
-      if (!(turnstileHelp instanceof HTMLElement)) return;
-      turnstileHelp.textContent = message;
+    const setSmartCaptchaHelpText = function setSmartCaptchaHelpText(message) {
+      if (!(smartCaptchaHelp instanceof HTMLElement)) return;
+      smartCaptchaHelp.textContent = message;
     };
 
     const showSubmitFallback = function showSubmitFallback(message) {
@@ -374,42 +458,101 @@
       submitFallback.classList.add('hidden');
     };
 
-    const revealTurnstileStep = function revealTurnstileStep(options = {}) {
-      if (!isTurnstileGateEnabled()) return;
-      setTurnstileStepVisible(true);
-      if (errorTurnstile instanceof HTMLElement && !options.keepError) {
-        errorTurnstile.classList.add('hidden');
-      }
-      if (!options.message) {
-        setTurnstileHelpText('Показываем проверку только после телефона, чтобы не тормозить первый шаг.');
-        return;
-      }
-      setTurnstileHelpText(options.message);
-    };
-
-    const showTurnstileBlockedState = function showTurnstileBlockedState(reason, message) {
-      revealTurnstileStep({
-        keepError: true,
-        message:
-          reason === 'turnstile_unavailable'
-            ? 'Защита формы временно недоступна. Если не хочется ждать, можно сразу позвонить.'
-            : 'Нужно завершить проверку, чтобы форма приняла заявку.',
-      });
-      if (errorTurnstile instanceof HTMLElement) {
-        errorTurnstile.textContent =
+    const showSmartCaptchaBlockedState = function showSmartCaptchaBlockedState(reason, message) {
+      setSmartCaptchaStepVisible(true);
+      retryBtn.classList.remove('hidden');
+      setSmartCaptchaHelpText(
+        reason === 'smartcaptcha_unavailable'
+          ? 'Защита формы временно недоступна. Если не хочется ждать, можно сразу позвонить.'
+          : 'Нужно завершить проверку, чтобы форма приняла заявку.'
+      );
+      if (errorSmartCaptcha instanceof HTMLElement) {
+        errorSmartCaptcha.textContent =
           message ||
-          (reason === 'turnstile_unavailable'
+          (reason === 'smartcaptcha_unavailable'
             ? 'Не удалось загрузить проверку. Попробуйте ещё раз или позвоните.'
             : 'Сначала завершите проверку, затем отправьте заявку.');
-        errorTurnstile.classList.remove('hidden');
+        errorSmartCaptcha.classList.remove('hidden');
       }
       showSubmitFallback('Если форма сейчас не проходит, мы всё равно можем принять заявку по телефону.');
-      focusTurnstileStep();
+      focusSmartCaptchaStep();
+    };
+
+    const handleSmartCaptchaUnavailable = function handleSmartCaptchaUnavailable() {
+      smartCaptchaAvailable = false;
+      smartCaptchaToken = '';
+      showSmartCaptchaBlockedState('smartcaptcha_unavailable');
+    };
+
+    const ensureSmartCaptchaWidget = function ensureSmartCaptchaWidget() {
+      if (smartCaptchaWidgetPromise) return smartCaptchaWidgetPromise;
+
+      smartCaptchaWidgetPromise = loadSmartCaptchaConfig()
+        .then(async (config) => {
+          smartCaptchaRequired = config.required;
+          if (!config.required) {
+            smartCaptchaAvailable = true;
+            return;
+          }
+          if (!(smartCaptchaWidget instanceof HTMLElement)) {
+            throw new Error('SMARTCAPTCHA_CONTAINER_MISSING');
+          }
+
+          const api = await loadSmartCaptchaScript();
+          if (smartCaptchaWidgetId === undefined) {
+            smartCaptchaWidgetId = api.render(smartCaptchaWidget, {
+              sitekey: config.clientKey,
+              hl: 'ru',
+              callback(token) {
+                smartCaptchaToken = String(token || '').trim();
+                if (smartCaptchaToken && errorSmartCaptcha instanceof HTMLElement) {
+                  errorSmartCaptcha.classList.add('hidden');
+                }
+              },
+            });
+
+            if (typeof api.subscribe === 'function') {
+              api.subscribe(smartCaptchaWidgetId, 'network-error', handleSmartCaptchaUnavailable);
+              api.subscribe(smartCaptchaWidgetId, 'javascript-error', handleSmartCaptchaUnavailable);
+              api.subscribe(smartCaptchaWidgetId, 'token-expired', () => {
+                smartCaptchaToken = '';
+                showSmartCaptchaBlockedState(
+                  'smartcaptcha_required',
+                  'Срок действия проверки истёк. Пройдите её ещё раз.'
+                );
+              });
+            }
+          }
+          smartCaptchaAvailable = true;
+        })
+        .catch((error) => {
+          smartCaptchaWidgetPromise = undefined;
+          smartCaptchaAvailable = false;
+          throw error;
+        });
+
+      return smartCaptchaWidgetPromise;
+    };
+
+    const revealSmartCaptchaStep = function revealSmartCaptchaStep(options = {}) {
+      if (errorSmartCaptcha instanceof HTMLElement && !options.keepError) {
+        errorSmartCaptcha.classList.add('hidden');
+      }
+      setSmartCaptchaHelpText(
+        options.message || 'Показываем проверку только после телефона, чтобы не тормозить первый шаг.'
+      );
+      void ensureSmartCaptchaWidget()
+        .then(() => setSmartCaptchaStepVisible(smartCaptchaRequired))
+        .catch(handleSmartCaptchaUnavailable);
     };
 
     const handleTextInputTracking = function handleTextInputTracking(fieldName, rawValue, inputType) {
       const normalizedValue =
-        inputType === 'phone' ? onlyDigits(rawValue) : String(rawValue || '').replace(/\s+/g, ' ').trim();
+        inputType === 'phone'
+          ? onlyDigits(rawValue)
+          : String(rawValue || '')
+              .replace(/\s+/g, ' ')
+              .trim();
       if (!normalizedValue) return;
 
       startedFields.add(fieldName);
@@ -422,7 +565,7 @@
 
       if (fieldName === 'phone' && validPhone(rawValue)) {
         trackPhoneValid();
-        revealTurnstileStep();
+        revealSmartCaptchaStep();
       }
     };
 
@@ -472,7 +615,13 @@
         .replace(/^#/, '')
         .trim()
         .toLowerCase();
-      const recognizedHashes = new Set(['contact', 'form', String(form.id || '').trim().toLowerCase()]);
+      const recognizedHashes = new Set([
+        'contact',
+        'form',
+        String(form.id || '')
+          .trim()
+          .toLowerCase(),
+      ]);
       if (!recognizedHashes.has(hash)) return;
       activateFormAttention('anchor', true);
     };
@@ -488,7 +637,13 @@
         .replace(/^#/, '')
         .trim()
         .toLowerCase();
-      const recognizedHashes = new Set(['contact', 'form', String(form.id || '').trim().toLowerCase()]);
+      const recognizedHashes = new Set([
+        'contact',
+        'form',
+        String(form.id || '')
+          .trim()
+          .toLowerCase(),
+      ]);
       if (!recognizedHashes.has(hash)) return;
 
       activateFormAttention('anchor-click', true);
@@ -516,7 +671,7 @@
       if (errorPhone instanceof HTMLElement) errorPhone.classList.add('hidden');
       if (errorMessage instanceof HTMLElement) errorMessage.classList.add('hidden');
       if (errorConsent instanceof HTMLElement) errorConsent.classList.add('hidden');
-      if (errorTurnstile instanceof HTMLElement) errorTurnstile.classList.add('hidden');
+      if (errorSmartCaptcha instanceof HTMLElement) errorSmartCaptcha.classList.add('hidden');
       clearFieldInvalid(nameInput);
       clearFieldInvalid(phoneInput);
       clearFieldInvalid(messageInput);
@@ -544,13 +699,27 @@
       return submitIdempotencyKey;
     };
 
-    const hasTurnstileWidget = function hasTurnstileWidget() {
-      return isTurnstileGateEnabled() && form.querySelector('[data-turnstile-widget]') instanceof HTMLElement;
+    const getSmartCaptchaToken = function getSmartCaptchaToken() {
+      if (
+        smartCaptchaWidgetId !== undefined &&
+        window.smartCaptcha &&
+        typeof window.smartCaptcha.getResponse === 'function'
+      ) {
+        return String(window.smartCaptcha.getResponse(smartCaptchaWidgetId) || '').trim();
+      }
+      if (smartCaptchaToken) return smartCaptchaToken;
+      return '';
     };
 
-    const getTurnstileToken = function getTurnstileToken() {
-      const input = form.querySelector('input[name="cf-turnstile-response"]');
-      return input instanceof HTMLInputElement ? input.value.trim() : '';
+    const resetSmartCaptcha = function resetSmartCaptcha() {
+      smartCaptchaToken = '';
+      if (
+        smartCaptchaWidgetId !== undefined &&
+        window.smartCaptcha &&
+        typeof window.smartCaptcha.reset === 'function'
+      ) {
+        window.smartCaptcha.reset(smartCaptchaWidgetId);
+      }
     };
 
     const collectPayload = function collectPayload() {
@@ -570,7 +739,7 @@
         message: messageInput instanceof HTMLTextAreaElement ? messageInput.value.trim() : '',
         consent: Boolean(consentInput.checked),
         website: trapInput instanceof HTMLInputElement ? trapInput.value.trim() : '',
-        turnstileToken: getTurnstileToken(),
+        smartCaptchaToken: getSmartCaptchaToken(),
         city: leadContext.city,
         district: leadContext.district,
         service: leadContext.service,
@@ -594,7 +763,7 @@
     };
 
     const submitLead = async function submitLead() {
-      if (isSubmitting) return;
+      if (isSubmitting || isPreparing) return;
 
       clearErrors();
       ensureFormOpened('submit');
@@ -605,9 +774,6 @@
       const phone = phoneInput.value.trim();
       const messageValue = messageInput instanceof HTMLTextAreaElement ? messageInput.value.trim() : '';
       const hasConsent = consentInput.checked;
-      const turnstileToken = getTurnstileToken();
-      const turnstileEnabled = hasTurnstileWidget();
-      const hasTurnstileToken = !turnstileEnabled || Boolean(turnstileToken);
       const messageTooLong = messageValue.length > 2000;
 
       const invalidFields = [];
@@ -656,18 +822,34 @@
         return;
       }
 
-      if (!hasTurnstileToken) {
-        const blockedReason = isTurnstileAvailable() ? 'turnstile_required' : 'turnstile_unavailable';
+      isPreparing = true;
+      try {
+        await ensureSmartCaptchaWidget();
+      } catch {
+        isPreparing = false;
+        const blockedReason = 'smartcaptcha_unavailable';
         tracking.trackLeadError(formId, pageType, blockedReason);
         trackSubmitBlocked(blockedReason);
-        showTurnstileBlockedState(
+        showSmartCaptchaBlockedState(blockedReason, 'Не удалось загрузить проверку. Попробуйте ещё раз или позвоните.');
+        setStatus('Проверка формы временно недоступна.', 'warning');
+        return;
+      }
+
+      const smartCaptchaEnabled = smartCaptchaRequired;
+      const hasSmartCaptchaToken = !smartCaptchaEnabled || Boolean(getSmartCaptchaToken());
+      if (!hasSmartCaptchaToken) {
+        isPreparing = false;
+        const blockedReason = isSmartCaptchaAvailable() ? 'smartcaptcha_required' : 'smartcaptcha_unavailable';
+        tracking.trackLeadError(formId, pageType, blockedReason);
+        trackSubmitBlocked(blockedReason);
+        showSmartCaptchaBlockedState(
           blockedReason,
-          blockedReason === 'turnstile_unavailable'
+          blockedReason === 'smartcaptcha_unavailable'
             ? 'Не удалось загрузить проверку. Попробуйте ещё раз или позвоните.'
             : 'Сначала завершите проверку, затем отправьте заявку.'
         );
         setStatus(
-          blockedReason === 'turnstile_unavailable'
+          blockedReason === 'smartcaptcha_unavailable'
             ? 'Проверка формы временно недоступна.'
             : 'Нужно завершить проверку формы.',
           'warning'
@@ -675,6 +857,7 @@
         return;
       }
 
+      isPreparing = false;
       isSubmitting = true;
       setSubmittingState(true);
       retryBtn.classList.add('hidden');
@@ -695,6 +878,7 @@
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok || !data || data.success !== true) {
+          if (smartCaptchaEnabled) resetSmartCaptcha();
           const reason = response.status >= 500 ? 'server' : response.status >= 400 ? 'validation' : 'unknown';
           tracking.trackLeadError(formId, pageType, reason);
           retryBtn.classList.remove('hidden');
@@ -721,11 +905,12 @@
             code === 'BOT_PROTECTION_FAILED' ||
             code === 'BOT_PROTECTION_UNAVAILABLE'
           ) {
-            const blockedReason = code === 'BOT_PROTECTION_UNAVAILABLE' ? 'turnstile_unavailable' : 'turnstile_required';
+            const blockedReason =
+              code === 'BOT_PROTECTION_UNAVAILABLE' ? 'smartcaptcha_unavailable' : 'smartcaptcha_required';
             trackSubmitBlocked(blockedReason);
-            showTurnstileBlockedState(blockedReason, message);
-            if (blockedReason === 'turnstile_required') {
-              focusTurnstileStep();
+            showSmartCaptchaBlockedState(blockedReason, message);
+            if (blockedReason === 'smartcaptcha_required') {
+              focusSmartCaptchaStep();
             }
             handled = true;
           } else if (response.status >= 500) {
@@ -743,6 +928,7 @@
         tracking.trackFormSubmitSuccess(formId, pageType, data.leadId);
         showSuccess();
       } catch {
+        if (smartCaptchaEnabled) resetSmartCaptcha();
         tracking.trackLeadError(formId, pageType, 'network');
         trackSubmitBlocked('network');
         retryBtn.classList.remove('hidden');

@@ -246,7 +246,7 @@ function startLocalServer(mockWebhookUrl, workerToken, adminToken) {
       CONTACT_WORKER_URL: '',
       CONTACT_WORKER_TRIGGER_TIMEOUT_MS: '1000',
       CONTACT_WORKER_TRIGGER_LIMIT: '3',
-      CONTACT_TURNSTILE_REQUIRED: 'false',
+      CONTACT_SMARTCAPTCHA_REQUIRED: 'false',
       CONTACT_WEBHOOK_TIMEOUT_MS: String(webhookTimeoutMs),
       CONTACT_RETRY_BASE_DELAY_SEC: String(retryBaseDelaySec),
       CONTACT_DELIVERY_MAX_RETRIES: '4',

@@ -113,7 +113,7 @@ const child = spawn(process.execPath, [path.join(projectRoot, 'scripts', 'start-
     CONTACT_WORKER_TOKEN: 'node-runtime-smoke-worker',
     CONTACT_WEBHOOK_URL: 'http://127.0.0.1:9/never-called',
     CONTACT_WEBHOOK_SECRET: 'node-runtime-smoke-secret',
-    CONTACT_TURNSTILE_REQUIRED: 'false',
+    CONTACT_SMARTCAPTCHA_REQUIRED: 'true',
     CONTACT_ALERT_WEBHOOK_URL: '',
     CONTACT_ALERT_WEBHOOK_URL_SECONDARY: '',
     REDIS_URL: '',
@@ -147,6 +147,14 @@ try {
   assert.equal(healthBody.redis?.configured, false);
   assert.equal(healthBody.redis?.required, true);
   assert.equal(healthBody.redis?.code, 'REDIS_NOT_CONFIGURED');
+
+  const captchaConfig = await runtimeFetch(baseUrl, '/api/captcha/config');
+  assert.equal(captchaConfig.status, 503, 'CAPTCHA configuration must fail closed without runtime keys');
+  const captchaConfigBody = await readJson(captchaConfig);
+  assert.equal(captchaConfigBody.provider, 'smartcaptcha');
+  assert.equal(captchaConfigBody.required, true);
+  assert.equal(captchaConfigBody.ready, false);
+  assert.equal(captchaConfigBody.clientKey, '');
 
   const contactAlias = await runtimeFetch(baseUrl, '/api/contact', {
     method: 'POST',

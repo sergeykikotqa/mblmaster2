@@ -118,7 +118,7 @@ function startAstroServer(webhookUrl) {
       CONTACT_WEBHOOK_SECRET: 'redis-outage-local-mock-secret',
       CONTACT_WORKER_TOKEN: `redis-outage-worker-${Date.now().toString(36)}`,
       CONTACT_WORKER_URL: '',
-      CONTACT_TURNSTILE_REQUIRED: 'false',
+      CONTACT_SMARTCAPTCHA_REQUIRED: 'false',
       REDIS_URL: process.env.REDIS_OUTAGE_URL || 'redis://127.0.0.1:1',
     },
     stdio: ['ignore', 'pipe', 'pipe'],

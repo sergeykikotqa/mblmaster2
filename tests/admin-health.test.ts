@@ -46,8 +46,8 @@ function createHealthyChecks(overrides: Partial<AdminHealthAggregateChecks> = {}
           webhookSecretConfigured: true,
           alertChannelConfigured: true,
           alertEndpointReachable: true,
-          turnstileRequired: false,
-          turnstileReady: true,
+          smartCaptchaRequired: false,
+          smartCaptchaReady: true,
           workerPaused: false,
         },
         runtime: {

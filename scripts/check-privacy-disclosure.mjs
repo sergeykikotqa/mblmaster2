@@ -23,12 +23,17 @@ function main() {
   if (!/cookie|cookies|куки|аналит/.test(normalized)) {
     missing.push('cookie/analytics disclosure');
   }
+  if (!/smartcaptcha/.test(normalized) || !/техническ.*дан|technical.*data/.test(normalized)) {
+    missing.push('SmartCaptcha technical-data disclosure');
+  }
 
   if (missing.length > 0) {
     fail(`Privacy disclosure check failed: missing ${missing.join(', ')}.`);
   }
 
-  console.log('Privacy disclosure check passed: privacy page mentions Yandex.Metrika and cookies/analytics.');
+  console.log(
+    'Privacy disclosure check passed: privacy page mentions Yandex.Metrika, cookies/analytics and SmartCaptcha.'
+  );
 }
 
 try {

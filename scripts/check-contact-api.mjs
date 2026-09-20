@@ -55,6 +55,7 @@ function startServer({ targetPort, redisPrefix, extraEnv = {} }) {
       ASTRO_TELEMETRY_DISABLED: '1',
       CONTACT_RATE_LIMIT_MAX: '100',
       CONTACT_RATE_LIMIT_WINDOW_SEC: '60',
+      CONTACT_SMARTCAPTCHA_REQUIRED: 'false',
       CONTACT_REDIS_PREFIX: redisPrefix,
       ...extraEnv,
     },

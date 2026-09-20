@@ -1,6 +1,10 @@
 import { getFallbackLeadPipelineHealth } from '~/server/leads/metrics-fallback';
 import { hasLeadAlertChannelConfig, probeLeadAlertEndpointReachability } from '~/server/leads/alerts';
 import { getWorkerRuntimeHealth, type WorkerRuntimeHealth } from '~/server/leads/runtime-health';
+import {
+  isSmartCaptchaReady as isSmartCaptchaRuntimeReady,
+  isSmartCaptchaRequired as isSmartCaptchaRuntimeRequired,
+} from '~/server/leads/smartcaptcha';
 import { getLeadStore, hasRedisLeadStoreConfig, isRedisRuntimeError } from '~/server/leads/store';
 import { hasWebhookSecretConfig, isWebhookConfigured } from '~/server/leads/webhook';
 import { getFunnelRollup } from '~/server/metrics/funnel';
@@ -65,8 +69,8 @@ export type AdminWorkerHealthPayload = {
     webhookSecretConfigured: boolean;
     alertChannelConfigured: boolean;
     alertEndpointReachable: boolean;
-    turnstileRequired: boolean;
-    turnstileReady: boolean;
+    smartCaptchaRequired: boolean;
+    smartCaptchaReady: boolean;
     workerPaused: boolean;
   };
   runtime: WorkerRuntimeHealth;
@@ -224,25 +228,13 @@ function hasWorkerTokenConfig(): boolean {
   return Boolean((process.env.CONTACT_WORKER_TOKEN || '').trim());
 }
 
-function hasTurnstileSecretConfig(): boolean {
-  return Boolean((process.env.TURNSTILE_SECRET_KEY || '').trim());
-}
-
-function hasTurnstileSiteKeyConfig(): boolean {
-  return Boolean((process.env.PUBLIC_TURNSTILE_SITE_KEY || '').trim());
-}
-
-function isTurnstileRequired(): boolean {
-  return parseBooleanEnv(process.env.CONTACT_TURNSTILE_REQUIRED, import.meta.env.PROD);
-}
-
 function isWorkerPaused(): boolean {
   return parseBooleanEnv(process.env.CONTACT_WORKER_PAUSED, false);
 }
 
 async function getWorkerDependencyStatus() {
-  const turnstileRequired = isTurnstileRequired();
-  const turnstileReady = !turnstileRequired || (hasTurnstileSecretConfig() && hasTurnstileSiteKeyConfig());
+  const smartCaptchaRequired = isSmartCaptchaRuntimeRequired();
+  const smartCaptchaReady = isSmartCaptchaRuntimeReady();
   const alertReachability = await probeLeadAlertEndpointReachability();
 
   return {
@@ -252,8 +244,8 @@ async function getWorkerDependencyStatus() {
     webhookSecretConfigured: hasWebhookSecretConfig(),
     alertChannelConfigured: hasLeadAlertChannelConfig(),
     alertEndpointReachable: alertReachability.reachable,
-    turnstileRequired,
-    turnstileReady,
+    smartCaptchaRequired,
+    smartCaptchaReady,
     workerPaused: isWorkerPaused(),
   };
 }
@@ -267,7 +259,7 @@ function isWorkerRuntimeReady(
     dependencies.redisConfigured &&
     dependencies.webhookConfigured &&
     dependencies.webhookSecretConfigured &&
-    dependencies.turnstileReady &&
+    dependencies.smartCaptchaReady &&
     dependencies.alertChannelConfigured &&
     dependencies.alertEndpointReachable &&
     !dependencies.workerPaused &&

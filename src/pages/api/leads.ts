@@ -8,6 +8,7 @@ import { appendLeadBackup } from '~/server/leads/backup-log';
 import { recordFunnelMetric, resolveFunnelDimensions } from '~/server/metrics/funnel';
 import { parseBooleanEnv } from '~/server/utils/auth';
 import { resolveClientIp as resolveClientIpFromRequest } from '~/server/utils/ip';
+import { isSmartCaptchaReady, isSmartCaptchaRequired, verifySmartCaptchaToken } from '~/server/leads/smartcaptcha';
 
 export const prerender = false;
 
@@ -18,8 +19,8 @@ type ContactRequestBody = {
   comment?: string;
   consent?: boolean | string;
   website?: string;
-  turnstileToken?: string;
-  'cf-turnstile-response'?: string;
+  smartCaptchaToken?: string;
+  'smart-token'?: string;
   redirectTo?: string;
   errorRedirectTo?: string;
   _redirect?: string;
@@ -53,17 +54,13 @@ const DEFAULT_RATE_LIMIT_MAX = 5;
 const DEFAULT_RATE_LIMIT_WINDOW_SEC = 10 * 60;
 const DEFAULT_WORKER_TRIGGER_TIMEOUT_MS = 800;
 const DEFAULT_WORKER_TRIGGER_LIMIT = 3;
-const DEFAULT_TURNSTILE_TIMEOUT_MS = 4000;
-const DEFAULT_TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-const DEFAULT_TURNSTILE_DEGRADED_ALERT_COOLDOWN_SEC = 900;
+const DEFAULT_SMARTCAPTCHA_DEGRADED_ALERT_COOLDOWN_SEC = 900;
 const DEFAULT_LEAD_STORE_DEGRADED_ALERT_COOLDOWN_SEC = 900;
 const DEFAULT_QUEUE_MAX_DEPTH = 1000;
 const DEFAULT_QUEUE_BACKPRESSURE_RETRY_AFTER_SEC = 60;
 
-type TurnstileFailureMode = 'closed' | 'open';
-
 const isProduction = import.meta.env.PROD;
-let lastTurnstileDegradedAlertAtMs = 0;
+let lastSmartCaptchaDegradedAlertAtMs = 0;
 let lastLeadStoreDegradedAlertAtMs = 0;
 
 function jsonError(status: number, code: string, message: string, headers?: Record<string, string>) {
@@ -183,46 +180,15 @@ async function recordFormSubmittedMetricSafe(dimensions: ReturnType<typeof resol
   }
 }
 
-function resolveTurnstileSecret(): string {
-  return (process.env.TURNSTILE_SECRET_KEY || '').trim();
-}
-
-function resolveTurnstileTimeoutMs(): number {
-  return parsePositiveInt(process.env.TURNSTILE_TIMEOUT_MS, DEFAULT_TURNSTILE_TIMEOUT_MS, 500);
-}
-
-function isTurnstileRequired(): boolean {
-  return parseBooleanEnv(process.env.CONTACT_TURNSTILE_REQUIRED, isProduction);
-}
-
-function resolveTurnstileFailureMode(): TurnstileFailureMode {
-  const configured = (process.env.CONTACT_TURNSTILE_FAILURE_MODE || '').trim().toLowerCase();
-  if (configured === 'open') return 'open';
-  if (configured === 'closed') return 'closed';
-  return isProduction ? 'closed' : 'open';
-}
-
-function resolveTurnstileVerifyUrl(): string {
-  const configured = (process.env.TURNSTILE_VERIFY_URL || '').trim();
-  if (!configured) return DEFAULT_TURNSTILE_VERIFY_URL;
-
-  try {
-    const parsed = new URL(configured);
-    return parsed.toString();
-  } catch {
-    return DEFAULT_TURNSTILE_VERIFY_URL;
-  }
-}
-
-function resolveTurnstileToken(body: ContactRequestBody): string {
-  const rawToken = body.turnstileToken ?? body['cf-turnstile-response'];
+function resolveSmartCaptchaToken(body: ContactRequestBody): string {
+  const rawToken = body.smartCaptchaToken ?? body['smart-token'];
   return typeof rawToken === 'string' ? rawToken.trim() : '';
 }
 
-function resolveTurnstileDegradedAlertCooldownMs(): number {
+function resolveSmartCaptchaDegradedAlertCooldownMs(): number {
   const seconds = parsePositiveInt(
-    process.env.CONTACT_TURNSTILE_DEGRADED_ALERT_COOLDOWN_SEC,
-    DEFAULT_TURNSTILE_DEGRADED_ALERT_COOLDOWN_SEC,
+    process.env.CONTACT_SMARTCAPTCHA_DEGRADED_ALERT_COOLDOWN_SEC,
+    DEFAULT_SMARTCAPTCHA_DEGRADED_ALERT_COOLDOWN_SEC,
     60
   );
   return seconds * 1000;
@@ -237,108 +203,29 @@ function resolveLeadStoreDegradedAlertCooldownMs(): number {
   return seconds * 1000;
 }
 
-type TurnstileVerificationResult =
-  | {
-      ok: true;
-    }
-  | {
-      ok: false;
-      status: number;
-      code: string;
-      message: string;
-    };
-
-async function verifyTurnstileToken(token: string, ipAddress: string): Promise<TurnstileVerificationResult> {
-  const secret = resolveTurnstileSecret();
-  if (!secret) {
-    return {
-      ok: false,
-      status: 500,
-      code: 'BOT_PROTECTION_NOT_CONFIGURED',
-      message: 'Turnstile secret is not configured',
-    };
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), resolveTurnstileTimeoutMs());
-
-  const payload = new URLSearchParams();
-  payload.set('secret', secret);
-  payload.set('response', token);
-  if (ipAddress) {
-    payload.set('remoteip', ipAddress);
-  }
-
-  try {
-    const response = await fetch(resolveTurnstileVerifyUrl(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: payload.toString(),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      return {
-        ok: false,
-        status: 503,
-        code: 'BOT_PROTECTION_UNAVAILABLE',
-        message: `Turnstile verification failed with status ${response.status}`,
-      };
-    }
-
-    const result = (await response.json()) as {
-      success?: boolean;
-      'error-codes'?: unknown;
-    };
-
-    if (result?.success === true) {
-      return { ok: true };
-    }
-
-    const errorCodes = Array.isArray(result?.['error-codes'])
-      ? result['error-codes'].map((item) => String(item)).slice(0, 5)
-      : [];
-
-    return {
-      ok: false,
-      status: 400,
-      code: 'BOT_PROTECTION_FAILED',
-      message: errorCodes.length > 0 ? `Turnstile rejected token: ${errorCodes.join(',')}` : 'Turnstile rejected token',
-    };
-  } catch (error) {
-    const isTimeout = error instanceof DOMException && error.name === 'AbortError';
-    return {
-      ok: false,
-      status: 503,
-      code: 'BOT_PROTECTION_UNAVAILABLE',
-      message: isTimeout ? 'Turnstile verification timed out' : 'Turnstile verification request failed',
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-async function maybeNotifyTurnstileDegradedAlert(params: { code: string; message: string }): Promise<boolean> {
+async function maybeNotifySmartCaptchaDegradedAlert(params: {
+  code: string;
+  message: string;
+  diagnostic: string;
+}): Promise<boolean> {
   if (!isProduction) return false;
 
   const nowMs = Date.now();
-  const cooldownMs = resolveTurnstileDegradedAlertCooldownMs();
-  if (nowMs - lastTurnstileDegradedAlertAtMs < cooldownMs) {
+  const cooldownMs = resolveSmartCaptchaDegradedAlertCooldownMs();
+  if (nowMs - lastSmartCaptchaDegradedAlertAtMs < cooldownMs) {
     return false;
   }
 
   const sent = await notifyBotProtectionDegraded({
-    provider: 'turnstile',
-    failureMode: 'open',
+    provider: 'smartcaptcha',
+    failureMode: 'closed',
     code: params.code,
-    message: params.message,
+    message: `${params.message} (${params.diagnostic})`,
     generatedAtMs: nowMs,
   });
 
   if (sent) {
-    lastTurnstileDegradedAlertAtMs = nowMs;
+    lastSmartCaptchaDegradedAlertAtMs = nowMs;
   }
 
   return sent;
@@ -650,10 +537,9 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
       return fail(500, 'WORKER_TOKEN_NOT_CONFIGURED', 'Lead delivery worker token is not configured');
     }
 
-    const turnstileRequired = isTurnstileRequired();
-    const turnstileFailureMode = resolveTurnstileFailureMode();
-    if (turnstileRequired && !resolveTurnstileSecret()) {
-      return fail(500, 'BOT_PROTECTION_NOT_CONFIGURED', 'Turnstile bot protection is not configured');
+    const smartCaptchaRequired = isSmartCaptchaRequired();
+    if (smartCaptchaRequired && !isSmartCaptchaReady()) {
+      return fail(500, 'BOT_PROTECTION_NOT_CONFIGURED', 'Защита формы не настроена.');
     }
 
     const name = (body.name || '').toString().trim();
@@ -733,33 +619,28 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
       throw error;
     }
 
-    let botProtectionBypassed = false;
-    let turnstileFailureCode = '';
-    if (turnstileRequired) {
-      const turnstileToken = resolveTurnstileToken(body);
-      if (!turnstileToken) {
-        return fail(400, 'BOT_PROTECTION_REQUIRED', 'Bot protection token is required');
+    if (smartCaptchaRequired) {
+      const smartCaptchaToken = resolveSmartCaptchaToken(body);
+      if (!smartCaptchaToken) {
+        return fail(400, 'BOT_PROTECTION_REQUIRED', 'Сначала пройдите проверку формы.');
       }
 
-      const turnstileCheck = await verifyTurnstileToken(turnstileToken, clientIp);
-      if (!turnstileCheck.ok) {
-        const providerUnavailable = turnstileCheck.code === 'BOT_PROTECTION_UNAVAILABLE';
-        if (providerUnavailable && turnstileFailureMode === 'open') {
-          botProtectionBypassed = true;
-          turnstileFailureCode = turnstileCheck.code;
-          const degradedAlertSent = await maybeNotifyTurnstileDegradedAlert({
-            code: turnstileCheck.code,
-            message: turnstileCheck.message,
+      const smartCaptchaCheck = await verifySmartCaptchaToken(smartCaptchaToken, clientIp);
+      if (!smartCaptchaCheck.ok) {
+        if (smartCaptchaCheck.code === 'BOT_PROTECTION_UNAVAILABLE') {
+          const degradedAlertSent = await maybeNotifySmartCaptchaDegradedAlert({
+            code: smartCaptchaCheck.code,
+            message: smartCaptchaCheck.message,
+            diagnostic: smartCaptchaCheck.diagnostic,
           });
-          console.warn('[contact] turnstile_fail_open', {
-            code: turnstileCheck.code,
-            status: turnstileCheck.status,
-            message: turnstileCheck.message,
+          console.warn('[contact] smartcaptcha_fail_closed', {
+            code: smartCaptchaCheck.code,
+            status: smartCaptchaCheck.status,
+            diagnostic: smartCaptchaCheck.diagnostic,
             degradedAlertSent,
           });
-        } else {
-          return fail(turnstileCheck.status, turnstileCheck.code, turnstileCheck.message);
         }
+        return fail(smartCaptchaCheck.status, smartCaptchaCheck.code, smartCaptchaCheck.message);
       }
     }
 
@@ -810,7 +691,6 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
       success: true,
       leadId,
       receivedAt,
-      ...(botProtectionBypassed ? { botProtectionBypassed: true } : {}),
     };
 
     const webhookPayload: Record<string, unknown> = {
@@ -834,11 +714,10 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
         idempotencyHash,
         payloadFingerprint,
         botProtection: {
-          provider: 'turnstile',
-          required: turnstileRequired,
-          failureMode: turnstileFailureMode,
-          bypassed: botProtectionBypassed,
-          failureCode: turnstileFailureCode || undefined,
+          provider: 'smartcaptcha',
+          required: smartCaptchaRequired,
+          failureMode: 'closed',
+          bypassed: false,
         },
       },
     };
