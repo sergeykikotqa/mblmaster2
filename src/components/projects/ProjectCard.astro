@@ -12,7 +12,7 @@ interface Props {
 const { project, useModal = false } = Astro.props as Props;
 const showDescription = !project.proofHighlight;
 const contactHref = `/contacts?from=project&slug=${project.slug}${project.serviceId ? `&service=${project.serviceId}` : ''}`;
-const ctaNote = 'Ответим в течение дня';
+const ctaNote = 'Свяжемся для уточнения деталей';
 const areaLabel = project.areaLabel || '';
 const contextLabel = project.contextLabel || '';
 const audienceLabel = project.audienceLabel || '';

@@ -57,11 +57,7 @@ const fallbackTrustItems = [
   'Доставка и монтаж под ключ',
 ];
 const trustList = trustItems.length > 0 ? trustItems : fallbackTrustItems;
-const fallbackStats = [
-  { value: '10+', label: 'лет опыта' },
-  { value: '500+', label: 'проектов' },
-  { value: '24/7', label: 'поддержка' },
-];
+const fallbackStats: Array<{ value: string; label: string }> = [];
 const heroStats = Array.isArray(stats) ? stats : fallbackStats;
 const isStaticHero = heroSlides.length === 1;
 ---
