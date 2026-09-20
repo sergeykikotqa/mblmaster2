@@ -634,11 +634,8 @@ function run() {
     if (!pkg?.scripts?.['check:deployed-runtime']) throw new Error('check:deployed-runtime script is missing.');
 
     const workflow = fs.readFileSync(workflowPath, 'utf8');
-    if (!workflow.includes('npm run check:prod-runtime')) {
-      throw new Error('Main workflow does not execute npm run check:prod-runtime.');
-    }
-    if (!workflow.includes('npm run check:deployed-runtime')) {
-      throw new Error('Main workflow does not execute npm run check:deployed-runtime.');
+    if (workflow.includes('npm run check:deployed-runtime') || workflow.includes('check-production:')) {
+      throw new Error('GitHub must not execute deployed production runtime checks or hold production secrets.');
     }
 
     runNpm('check:prod-runtime');
@@ -658,8 +655,8 @@ function run() {
     } else {
       runtimeSmoke.deployed = {
         status: 'NA/ops',
-        evidence: ['.github/workflows/actions.yaml#check-production'],
-        comment: 'Deployed runtime smoke requires DEPLOY_SMOKE_BASE_URL and remains enforced in the main release workflow.',
+        evidence: ['docs/external-monitoring.md', 'docs/release-and-rollback.md'],
+        comment: 'Deployed runtime smoke requires DEPLOY_SMOKE_BASE_URL and must run from the release/monitoring perimeter, not GitHub.',
       };
     }
 
@@ -672,7 +669,7 @@ function run() {
         'npm run check:prod-runtime',
         runtimeSmoke.deployed.status === 'PASS'
           ? 'npm run check:deployed-runtime'
-          : '.github/workflows/actions.yaml#check-production',
+          : 'docs/external-monitoring.md',
       ],
       `Release runtime gates are wired. Local smoke=${runtimeSmoke.local.status}; deployed smoke=${runtimeSmoke.deployed.status}. ${runtimeSmoke.deployed.comment}`
     );

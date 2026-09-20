@@ -37,6 +37,8 @@ npm run check:secrets-scope
 npm run check
 npm run typecheck
 npm test
+npm run check:external-monitor
+npm run check:telegram-monitor
 npm run check:image-policy
 $env:PUBLIC_SITE_URL='https://example.com'; npm run build
 npm run check:performance-budgets
@@ -55,8 +57,6 @@ npm run check:metrics-health-fallback-alert
 npm run check:lead-api
 npm run check:redis-outage
 npm run check:webhook-delivery
-npm run check:prod-runtime
-npm run check:deployed-runtime
 npm run check:accessibility:full
 npm run check:e2e
 npm run check:seo
@@ -69,3 +69,7 @@ npm run check:audit
 - PR workflows should stay fast and deterministic.
 - Full visual, SEO, accessibility, runtime, and security-heavy audits belong in nightly or `main` workflows.
 - Do not duplicate `npm run lint` in workflows that already run `npm run check`.
+- GitHub must not hold production monitoring/Telegram credentials or invoke production worker APIs.
+- Run `npm run check:prod-runtime` on a trusted release host and
+  `npm run check:deployed-runtime` only from the authorised release/monitoring
+  perimeter with an explicit target URL. They are not GitHub workflow jobs.

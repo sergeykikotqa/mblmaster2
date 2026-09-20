@@ -6,40 +6,49 @@ import { describe, expect, test } from 'vitest';
 const ROOT = path.resolve(import.meta.dirname, '..');
 
 describe('O2.4.3 external monitoring policy', () => {
-  test('runs read-only from an independent scheduled workflow with bounded privileges', () => {
-    const workflow = fs.readFileSync(
-      path.join(ROOT, '.github', 'workflows', 'external-production-monitor.yaml'),
+  test('runs from a persistent independent host instead of GitHub Actions', () => {
+    const service = fs.readFileSync(
+      path.join(ROOT, 'ops', 'external-monitoring', 'systemd', 'mbl-external-monitor.service'),
       'utf8'
     );
-    expect(workflow).toMatch(/cron: ['"]3\/5 \* \* \* \*['"]/);
-    expect(workflow).toMatch(/workflow_dispatch:/);
-    expect(workflow).not.toMatch(/pull_request(?:_target)?:/);
-    expect(workflow).toMatch(/permissions:\s*\n\s*contents: read/);
-    expect(workflow).toMatch(/timeout-minutes: 4/);
-    expect(workflow).toMatch(/cancel-in-progress: false/);
-    expect(workflow).toContain('persist-credentials: false');
-    expect(workflow).not.toMatch(/continue-on-error:\s*true/);
+    const timer = fs.readFileSync(
+      path.join(ROOT, 'ops', 'external-monitoring', 'systemd', 'mbl-external-monitor.timer'),
+      'utf8'
+    );
+    expect(service).toContain('User=mbl-monitor');
+    expect(service).toContain('EnvironmentFile=/etc/mbl-monitor/monitor.env');
+    expect(service).toContain('StateDirectory=mbl-monitor');
+    expect(service).toContain('NoNewPrivileges=true');
+    expect(service).toContain('ProtectSystem=strict');
+    expect(timer).toContain('OnUnitActiveSec=5min');
+    expect(timer).toContain('OnBootSec=1min');
   });
 
-  test('keeps monitor credentials in step-scoped secrets and fails closed when absent', () => {
-    const workflow = fs.readFileSync(
-      path.join(ROOT, '.github', 'workflows', 'external-production-monitor.yaml'),
-      'utf8'
-    );
-    for (const secret of [
-      'PRODUCTION_MONITOR_TOKEN',
-      'PRODUCTION_MONITOR_SUCCESS_URL',
-      'PRODUCTION_MONITOR_FAILURE_URL',
+  test('keeps production monitoring and Telegram secrets out of GitHub workflows', () => {
+    const workflowDirectory = path.join(ROOT, '.github', 'workflows');
+    for (const retired of [
+      'external-production-monitor.yaml',
+      'lead-worker-cron.yaml',
+      'metrics-health-cron.yaml',
+      'metrics-snapshot-cron.yaml',
     ]) {
-      expect(workflow).toContain(`secrets.${secret}`);
+      expect(fs.existsSync(path.join(workflowDirectory, retired))).toBe(false);
     }
-    expect(workflow).not.toMatch(/if:\s*\$\{\{[^\n]*secrets\./);
-    expect(workflow).not.toMatch(/echo[^\n]*MONITOR_(?:TOKEN|SUCCESS_URL|FAILURE_URL)/i);
+    const workflows = fs
+      .readdirSync(workflowDirectory)
+      .filter((entry) => /\.ya?ml$/i.test(entry))
+      .map((entry) => fs.readFileSync(path.join(workflowDirectory, entry), 'utf8'))
+      .join('\n');
+    expect(workflows).not.toMatch(/PRODUCTION_MONITOR_|TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID/);
+    expect(workflows).not.toContain('check-production:');
+    expect(workflows).not.toContain('check:deployed-runtime');
+    expect(workflows).not.toMatch(/\/api\/workers\//);
 
     const source = fs.readFileSync(path.join(ROOT, 'scripts', 'external-monitor.mjs'), 'utf8');
     expect(source).toContain('MONITOR_TOKEN_MISSING_OR_WEAK');
     expect(source).toContain('SUCCESS_SIGNAL_NOT_INDEPENDENT');
     expect(source).toContain('FAILURE_SIGNAL_NOT_INDEPENDENT');
+    expect(source).not.toContain('GITHUB_');
     expect(source).not.toMatch(/searchParams\.(?:set|append)\([^\n]*(?:token|secret|auth)/i);
   });
 
@@ -58,6 +67,16 @@ describe('O2.4.3 external monitoring policy', () => {
     expect(source).not.toContain('/api/contact');
     expect(source).not.toContain('/api/workers');
     expect(source).toContain("new URL('/api/monitoring/health'");
+  });
+
+  test('keeps Telegram secrets outside the application release bundle', () => {
+    const releaseTool = fs.readFileSync(path.join(ROOT, 'scripts', 'release-tool.mjs'), 'utf8');
+    expect(releaseTool).not.toMatch(/telegram\.env|monitor\.env|ops\/external-monitoring/i);
+
+    const template = fs.readFileSync(path.join(ROOT, 'ops', 'external-monitoring', 'monitor.env.example'), 'utf8');
+    expect(template).toMatch(/TELEGRAM_BOT_TOKEN=\s*$/m);
+    expect(template).toMatch(/TELEGRAM_CHAT_ID=\s*$/m);
+    expect(template).not.toContain('mbl-secrets');
   });
 
   test('requires a dedicated token and never falls back to admin allowlist access', () => {

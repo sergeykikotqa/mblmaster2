@@ -103,6 +103,8 @@
     "check:release-rollback": "node scripts/check-release-rollback.mjs",
     "monitor:external": "node scripts/external-monitor.mjs",
     "check:external-monitor": "node scripts/check-external-monitor.mjs",
+    "check:telegram-monitor": "node scripts/check-telegram-monitor.mjs",
+    "monitor:telegram:test": "node scripts/test-telegram-delivery.mjs",
     "check:nap-consistency": "node scripts/check-nap-consistency.mjs",
     "check:privacy-disclosure": "node scripts/check-privacy-disclosure.mjs",
     "check:audit": "node scripts/security-audit-gate.mjs",

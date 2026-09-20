@@ -122,6 +122,19 @@ async function main() {
     assert.deepEqual(healthy.codes, []);
     assert.equal(signals.at(-1)?.url, '/success/private-signal-key');
 
+    const notificationFailed = await runExternalMonitor(config, {
+      nowMs: Date.now(),
+      notificationAdapter: async () => ({
+        ok: false,
+        action: 'incident',
+        delivered: false,
+        code: 'TELEGRAM_DELIVERY_FAILED',
+      }),
+    });
+    assert.equal(notificationFailed.ok, false);
+    assert(notificationFailed.codes.includes('TELEGRAM_DELIVERY_FAILED'));
+    assert.equal(signals.at(-1)?.url, '/failure/private-signal-key');
+
     const callsBeforeRedirect = siteState.operationalCalls;
     siteState.edge = 'redirect';
     const redirected = await runExternalMonitor(config, { nowMs: Date.now(), env: {} });
@@ -163,7 +176,16 @@ async function main() {
     assert(undeliverable.codes.some((code) => code.includes('SIGNAL') || code.includes('NETWORK')));
     signalStatus = 204;
 
-    const evidence = JSON.stringify({ healthy, redirected, notReady, degraded, invalid, unauthorized, undeliverable });
+    const evidence = JSON.stringify({
+      healthy,
+      notificationFailed,
+      redirected,
+      notReady,
+      degraded,
+      invalid,
+      unauthorized,
+      undeliverable,
+    });
     assert(!evidence.includes(token), 'Evidence contains the monitoring token');
     assert(!evidence.includes('private-signal-key'), 'Evidence contains a signal URL secret');
     assert(!evidence.includes(piiSentinel), 'Evidence contains lead-like PII');
@@ -187,6 +209,7 @@ async function main() {
           authFailureDetected: true,
           invalidContractDetected: true,
           signalFailureDetected: true,
+          notificationFailureDetected: true,
           readOnly: true,
           secretsAndPiiAbsent: true,
         },

@@ -1,13 +1,17 @@
-# External production monitoring
+# External production monitoring and Telegram
 
-This is the O2.4.3 monitoring contract for MBL. The probe runs outside the VPS,
-uses only read-only HTTP requests, and reports both failures and recovery to an
-independent incident/dead-man service. It never creates a synthetic lead and
-never calls a worker endpoint.
+This is the O2.4.3 monitoring contract for MBL. The probe and Telegram
+notification adapter run on a server that is independent of the primary MBL
+VPS and independent of GitHub. GitHub stores source code and may run
+development checks, but it is not a production scheduler, notification relay
+or secret store.
 
-## What is monitored
+The monitor never creates a synthetic lead and never calls a worker endpoint.
 
-The probe checks a strict parent-to-child hierarchy every five minutes:
+## Architecture and failure boundary
+
+Every five minutes, the independent host runs `scripts/external-monitor.mjs`.
+The probe checks a strict parent-to-child hierarchy:
 
 1. TLS validity and certificate expiry;
 2. the public homepage through the real edge/Nginx entry point;
@@ -16,109 +20,151 @@ The probe checks a strict parent-to-child hierarchy every five minutes:
 5. bearer-protected `/api/monitoring/health` for worker heartbeat, oldest
    pending lead, delivery-pipeline state and backup freshness.
 
-If an edge check fails, deeper application checks are skipped. If readiness
-fails, worker/pipeline checks are skipped. This prevents one Redis or edge
-incident from producing a misleading cascade of child alerts. TLS expiry is a
-parallel warning and does not suppress application checks.
+If the edge fails, deeper checks are skipped. If readiness fails, operational
+worker checks are skipped. This prevents one failure from opening a cascade of
+misleading child incidents. TLS expiry remains an independent warning.
 
-The protected endpoint returns only bounded technical status and incident
-codes. It does not return lead fields, Redis URLs, backup paths, snapshot IDs,
-checksums or secrets. HTTP `200` means every strict check is healthy; `503`
-means at least one incident is active.
+The probe sends safe success/failure signals to a separate dead-man/incident
+receiver and uses the Telegram adapter for owner notifications. If Telegram is
+unavailable, the probe and dead-man signal continue. A Telegram delivery
+failure is reported as a safe incident code and retried with a bounded delay.
 
-Initial thresholds:
+The design must keep working when the primary MBL VPS and GitHub are both
+unavailable. The monitoring host, dead-man receiver and Telegram must not be
+hosted inside the primary MBL Docker/VM failure boundary.
 
-- TLS warning: 30 days remaining;
-- TLS critical: 14 days remaining;
-- backup stale: more than 8,100 seconds after the last successful hourly
-  backup (two hours plus 15 minutes for timer jitter);
-- backup clock-skew tolerance: five minutes;
-- worker and queue thresholds: the existing production worker-health settings.
+## Telegram incident lifecycle
 
-## Independent alert receiver
+Telegram uses the existing monitor result and incident codes. It does not
+perform a second health assessment.
 
-The GitHub workflow alone is not the alerting system. Scheduled GitHub Actions
-can be delayed or disabled and run only from the repository's default branch.
-The configured receiver must therefore:
+- A new incident sends one Russian-language notification.
+- Continued failure is suppressed until the explicit escalation interval
+  (default: six hours).
+- Recovery sends one notification and closes the local incident lifecycle.
+- A later failure starts a new lifecycle and sends a new notification.
+- Failed delivery is retried no sooner than the configured retry interval
+  (default: five minutes); retries per HTTP attempt are bounded.
 
-- live outside the MBL VPS and outside the application containers;
-- accept a success URL and a failure URL over HTTPS;
-- open/deduplicate an incident for a failure signal;
-- close or mark the incident recovered after a later success signal;
-- alert when no success signal arrives for 12-15 minutes;
-- notify at least two maintained operator channels;
-- retain an audit trail without storing the URL secrets in notifications.
+State is stored atomically in
+`/var/lib/mbl-monitor/telegram-state.json`, mode `0600`. It contains only safe
+incident codes and timestamps. It never contains bot tokens, Chat IDs, lead
+data, URLs, backup identifiers or response bodies.
 
-Use a provider and notification path approved for the Russian production
-perimeter. Provider configuration is operational state, not repository code.
+Telegram messages may contain the fault class, detection/recovery time,
+duration and safe aggregate status. They must never contain names, phone
+numbers, customer messages, Redis URLs, webhook/HMAC secrets, monitoring
+tokens, Telegram credentials or backup contents.
 
-## Production configuration
+## Independent host installation
 
-Generate one random monitoring token of at least 32 bytes. Store the same value
-in two secret stores only:
+Use a small Linux host or an approved monitoring provider outside the primary
+VPS. Node.js 22 and `flock` are required. Copy a reviewed committed monitor
+release to `/opt/mbl-monitor/current`; do not execute a mutable Git working
+tree as production state.
 
-- VPS `prod.env`: `MBL_MONITORING_TOKEN`;
-- GitHub Actions secret: `PRODUCTION_MONITOR_TOKEN`.
-
-Do not reuse `METRICS_ADMIN_TOKEN`, a worker token or an alert-webhook token.
-The monitoring route deliberately ignores the admin IP allowlist and requires
-its dedicated bearer token.
-
-Configure these repository values on the default branch:
-
-| Kind     | Name                             | Purpose                                                                                |
-| -------- | -------------------------------- | -------------------------------------------------------------------------------------- |
-| Variable | `PRODUCTION_MONITOR_BASE_URL`    | Canonical public HTTPS origin                                                          |
-| Secret   | `PRODUCTION_MONITOR_TOKEN`       | Dedicated route bearer token                                                           |
-| Secret   | `PRODUCTION_MONITOR_SUCCESS_URL` | Private receiver success URL                                                           |
-| Secret   | `PRODUCTION_MONITOR_FAILURE_URL` | Private receiver failure URL                                                           |
-| Variable | `MBL_BACKUP_STATUS_DIR`          | Optional override; defaults to `/opt/mbl/runtime/backup-status` in the production gate |
-
-The signal receiver origin must differ from the monitored site origin. The
-probe sends a stable incident fingerprint, safe incident codes, target host and
-GitHub run URL. It does not forward response bodies.
-
-The backup checkpoint directory is shared by numeric UID/GID 1000: the one-shot
-backup container writes it and the web container mounts it read-only:
+Create the service account and secret file:
 
 ```sh
-sudo install -d -o 1000 -g 1000 -m 0750 /opt/mbl/runtime/backup-status
+sudo useradd --system --home /nonexistent --shell /usr/sbin/nologin mbl-monitor
+sudo install -d -o root -g mbl-monitor -m 0750 /etc/mbl-monitor
+sudo install -o root -g mbl-monitor -m 0640 \
+  ops/external-monitoring/monitor.env.example /etc/mbl-monitor/monitor.env
+sudoedit /etc/mbl-monitor/monitor.env
 ```
 
-Set `MBL_BACKUP_STATUS_DIR=/opt/mbl/runtime/backup-status` in
-`/opt/mbl/runtime/deploy.env`. Keep the directory outside release bundles so a
-deploy or rollback cannot erase the last-success checkpoint.
+Install and start the timer:
 
-## Activation and proof
+```sh
+sudo install -m 0644 ops/external-monitoring/systemd/mbl-external-monitor.service /etc/systemd/system/
+sudo install -m 0644 ops/external-monitoring/systemd/mbl-external-monitor.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now mbl-external-monitor.timer
+sudo systemctl start mbl-external-monitor.service
+sudo systemctl status mbl-external-monitor.service mbl-external-monitor.timer
+```
 
-The workflow can be dispatched manually after it exists on the default branch.
-Before public launch, capture evidence for all of the following from a real
-external runner and the target VPS:
+Systemd creates the persistent state and runtime lock directories. The service
+runs without root privileges, with a read-only OS view except for
+`/var/lib/mbl-monitor`, and prevents overlapping probes.
 
-1. healthy run sends a success signal;
-2. stopping Nginx opens an edge incident and recovery closes it;
-3. stopping Redis opens a readiness incident without child-alert noise;
-4. stopping the worker produces `WORKER_HEARTBEAT_STALE` after its configured
-   threshold and recovery closes it;
-5. an intentionally stale test checkpoint produces `BACKUP_STALE`, then a real
-   successful off-host backup clears it;
-6. an invalid bearer token is rejected without exposing details;
-7. disabling the workflow or withholding success pings triggers the receiver's
-   dead-man alert;
-8. notification messages contain no bearer token, signal URL, lead data or
-   backup identifiers.
+## Secrets and configuration
 
-Use a reversible maintenance window and the incident provider's test contacts.
-Do not submit a production lead as a monitoring canary. Record UTC timestamps,
-GitHub run URLs, incident open/recovery times and the exact release SHA.
+Store these values only in `/etc/mbl-monitor/monitor.env` (or the equivalent
+secret store of the independent provider):
 
-Local gates prove the mechanism only:
+- `MBL_MONITOR_TOKEN`: dedicated bearer token also installed on the MBL VPS;
+- `MBL_MONITOR_SUCCESS_URL` and `MBL_MONITOR_FAILURE_URL`: private independent
+  receiver URLs;
+- `TELEGRAM_BOT_TOKEN`: current BotFather token for `@MBL_Monitor_38_bot`;
+- `TELEGRAM_CHAT_ID`: owner Chat ID after `/start` was sent to the bot.
+
+Do not reuse `METRICS_ADMIN_TOKEN`, worker tokens or webhook secrets. Do not
+copy the developer file `C:\Users\adida\Desktop\mbl-secrets\telegram.env` to
+the repository, an image or a release bundle. That path is only a local test
+input and is not a production dependency.
+
+The signal receiver origin must differ from the monitored site origin. It must
+open/deduplicate failures, close recovery, and alert when no success ping is
+received for 12–15 minutes. Configure at least one contact path independent of
+the direct Telegram adapter so a broken bot token or dead monitoring host is
+still detectable.
+
+## GitHub production workflow retirement
+
+The following legacy production workflows were removed from the source tree
+and must also be disabled/deleted from the repository default branch before
+public launch:
+
+- `external-production-monitor.yaml` — GitHub-scheduled production probe;
+- `lead-worker-cron.yaml` — public worker trigger, obsolete because the worker
+  runs inside the production Compose envelope;
+- `metrics-health-cron.yaml` — public metrics-health worker trigger;
+- `metrics-snapshot-cron.yaml` — public metrics snapshot worker trigger.
+- `actions.yaml` / `check-production` — push-triggered deployed-runtime smoke
+  that carried production secrets and invoked contact/worker APIs.
+
+Their repository secrets and variables must be deleted after confirming no
+other workflow references them. The development-only nightly quality workflow
+may remain because it neither calls the production worker nor carries
+production monitoring/Telegram credentials.
+
+## Tests and production proof
+
+Local deterministic gates:
 
 ```sh
 npm run check:external-monitor
+npm run check:telegram-monitor
 npx vitest run tests/monitoring-health.test.ts tests/external-monitor-policy.test.ts
 ```
 
-O2.4.3 is production-proven only after the external provider, default-branch
-schedule, real notification channels and VPS failure/recovery drill have all
-been observed. A local PASS is not a substitute for that evidence.
+A one-time local delivery test may load the owner-managed file without copying
+it into the repository:
+
+```powershell
+node --env-file="C:\Users\adida\Desktop\mbl-secrets\telegram.env" scripts/test-telegram-delivery.mjs
+```
+
+Run it only after confirming that the BotFather token was rotated after any
+exposure and the owner sent `/start` to the bot. It sends exactly this safe
+message and does not create an incident:
+
+`MBL Monitor: тестовое уведомление. Связь с Telegram работает`
+
+Before public launch, capture evidence from the independent host for:
+
+1. healthy probe and dead-man success signal;
+2. stopped Nginx → one outage message → one recovery message;
+3. stopped Redis → readiness/Redis message without child-alert noise;
+4. stale worker heartbeat → delivery-delay message → recovery;
+5. critical pending age and stale backup classifications;
+6. Telegram/API failure while probing and dead-man signalling continue;
+7. monitor host outage detected by the independent dead-man receiver;
+8. logs, state and notifications containing no secrets or lead PII.
+
+Use a reversible maintenance window. Do not submit a production lead as a
+monitoring canary. Record UTC timestamps, incident/recovery times and the exact
+monitor release SHA. Local and developer-machine delivery tests do not prove
+production readiness until this end-to-end drill succeeds from the independent
+host.

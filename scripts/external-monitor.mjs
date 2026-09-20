@@ -3,6 +3,12 @@ import process from 'node:process';
 import tls from 'node:tls';
 import { pathToFileURL } from 'node:url';
 
+import {
+  loadTelegramNotificationConfig,
+  notifyTelegramForReport,
+  telegramNotifierErrorCode,
+} from './telegram-monitor-notifier.mjs';
+
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_TLS_WARNING_DAYS = 30;
 const DEFAULT_TLS_CRITICAL_DAYS = 14;
@@ -71,14 +77,6 @@ export function loadExternalMonitorConfig(env = process.env) {
     tlsCriticalDays: parsePositiveInt(env.MBL_MONITOR_TLS_CRITICAL_DAYS, DEFAULT_TLS_CRITICAL_DAYS, 1),
     allowHttp,
   };
-}
-
-function monitorRunUrl(env = process.env) {
-  const server = String(env.GITHUB_SERVER_URL || '').replace(/\/+$/, '');
-  const repository = String(env.GITHUB_REPOSITORY || '').replace(/^\/+|\/+$/g, '');
-  const runId = String(env.GITHUB_RUN_ID || '').replace(/[^0-9]/g, '');
-  if (!/^https:\/\//i.test(server) || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository) || !runId) return null;
-  return `${server}/${repository}/actions/runs/${runId}`;
 }
 
 async function fetchWithTimeout(url, options, timeoutMs) {
@@ -223,7 +221,7 @@ function reportFingerprint(codes) {
     .slice(0, 24);
 }
 
-async function sendSignal(config, ok, report, env = process.env) {
+async function sendSignal(config, ok, report) {
   const target = ok ? config.successUrl : config.failureUrl;
   const payload = {
     event: 'mbl_external_monitor',
@@ -232,7 +230,7 @@ async function sendSignal(config, ok, report, env = process.env) {
     targetHost: config.baseUrl.hostname,
     incidentKey: reportFingerprint(report.codes),
     codes: report.codes,
-    runUrl: monitorRunUrl(env),
+    source: 'independent-monitor-host',
   };
   let lastError;
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -314,8 +312,25 @@ export async function runExternalMonitor(config, options = {}) {
     codes: uniqueCodes,
     checks,
   };
+
+  if (typeof options.notificationAdapter === 'function') {
+    try {
+      report.notification = await options.notificationAdapter({ ...report, codes: [...report.codes] });
+      if (report.notification?.ok === false) {
+        report.ok = false;
+        report.codes = [
+          ...new Set([...report.codes, report.notification.code || 'NOTIFICATION_DELIVERY_FAILED']),
+        ].sort();
+      }
+    } catch {
+      report.ok = false;
+      report.codes = [...new Set([...report.codes, 'NOTIFICATION_ADAPTER_FAILED'])].sort();
+      report.notification = { ok: false, action: 'unknown', delivered: false, code: 'NOTIFICATION_ADAPTER_FAILED' };
+    }
+  }
+
   try {
-    report.signal = await sendSignal(config, report.ok, report, options.env || process.env);
+    report.signal = await sendSignal(config, report.ok, report);
   } catch (error) {
     report.ok = false;
     report.codes = [...new Set([...report.codes, errorCode(error, 'SIGNAL_DELIVERY_FAILED')])].sort();
@@ -327,7 +342,23 @@ export async function runExternalMonitor(config, options = {}) {
 const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isDirectRun) {
   try {
-    const report = await runExternalMonitor(loadExternalMonitorConfig());
+    let notificationAdapter;
+    try {
+      const telegramConfig = loadTelegramNotificationConfig();
+      if (telegramConfig.enabled) {
+        notificationAdapter = (report) => notifyTelegramForReport(telegramConfig, report);
+      }
+    } catch (error) {
+      const code = telegramNotifierErrorCode(error);
+      notificationAdapter = async () => ({
+        ok: false,
+        action: 'configuration',
+        delivered: false,
+        code,
+      });
+    }
+
+    const report = await runExternalMonitor(loadExternalMonitorConfig(), { notificationAdapter });
     console.log(JSON.stringify(report));
     if (!report.ok) process.exitCode = 1;
   } catch (error) {
