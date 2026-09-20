@@ -38,12 +38,6 @@ blocks:
       - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
       - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
       - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg
-  - type: quote
-    text: >-
-      После установки гардеробной освободили спальню от лишних шкафов, пользоваться системой очень удобно.
-    author: Виктория Л., Иркутск
-    role: Отзыв клиента
-    tocLabel: Отзыв клиента
   - type: result
     title: Итог проекта
   - type: specs

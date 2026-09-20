@@ -647,13 +647,9 @@ export async function buildProjectViewModel({
     summaryPrice ? { label: hasEstimatedPrice ? 'оценка под ключ' : 'стоимость под ключ', value: summaryPrice } : null,
     formattedDurationShort ? { label: 'срок изготовления', value: formattedDurationShort } : null,
     formattedArea ? { label: `площадь ${serviceLabels.genitive}`, value: formattedArea } : null,
-    { label: 'гарантия на изделие', value: '2 г.' },
   ].filter(isPresent);
 
   const breadcrumbs: ProjectBreadcrumbItem[] = [];
-
-  const hasQuote = hasBlocks ? blockTypes.has('quote') : false;
-  const heroRating = hasQuote ? { value: '5.0', label: 'отзыв клиента' } : null;
 
   const aboutTitleParts: string[] = [];
   if (data.complex) {
@@ -1026,7 +1022,7 @@ export async function buildProjectViewModel({
       heroTags,
       heroStats,
       breadcrumbs,
-      rating: heroRating,
+      rating: null,
     },
     heroBackgroundImage,
     heroBackgroundAlt,

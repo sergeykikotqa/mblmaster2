@@ -20,9 +20,6 @@ const text = (block as { text?: string }).text;
 <section id={anchor} class="section project-section project-quote">
   <p class="project-section-kicker">Отзыв клиента</p>
   <div class="project-quote-card">
-    <div class="project-quote-rating">
-      <span class="project-quote-stars" aria-hidden="true">★★★★★</span>
-    </div>
     <blockquote class="quote">
       <p>{text}</p>
     </blockquote>
@@ -47,7 +44,6 @@ const text = (block as { text?: string }).text;
           {author && <strong>{author}</strong>}
           {role && <span>{role}</span>}
         </div>
-        <span class="project-quote-verified">Подтвержденный отзыв</span>
       </div>
     )}
   </div>

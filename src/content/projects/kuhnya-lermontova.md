@@ -71,13 +71,6 @@ blocks:
       - /images/projects/kuhnya-trilissera/02.jpg
       - /images/projects/kuhnya-trilissera/03.jpg
       - /images/projects/kuhnya-trilissera/04.jpg
-  - type: quote
-    text: >-
-      Кухню сделали точно по размерам, всё установили аккуратно, уложились в срок. Отдельно понравилось, что помогли с
-      выбором фурнитуры и всё объяснили.
-    author: Алексей, Иркутск
-    role: Кухня на заказ
-    tocLabel: Отзыв клиента
   - type: result
     title: Итог проекта
   - type: cost
