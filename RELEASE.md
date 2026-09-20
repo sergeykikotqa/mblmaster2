@@ -16,6 +16,8 @@
    - `SMARTCAPTCHA_SERVER_KEY` (secret, VPS env only)
    - `SMARTCAPTCHA_ALLOWED_HOSTS` (exact hostnames also enabled in Yandex Cloud)
    - `METRICS_ADMIN_TOKEN`
+   - `MBL_MONITORING_TOKEN` (dedicated external health credential)
+   - `MBL_OWNER_METRICS_TOKEN` (distinct read-only Telegram metrics credential)
    - `DEPLOY_SMOKE_BASE_URL`
 2. Run release gates.
    ```bash

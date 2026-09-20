@@ -110,6 +110,72 @@ received for 12–15 minutes. Configure at least one contact path independent of
 the direct Telegram adapter so a broken bot token or dead monitoring host is
 still detectable.
 
+## Telegram Admin Read-Only v1
+
+Owner commands run on the same independent monitoring host and use the same
+bot. The incident notifier only sends messages and does not consume Telegram
+updates. `mbl-telegram-admin.service` is the single `getUpdates` consumer; a
+dedicated `flock` plus its durable offset prevent parallel polling and replay
+after restart. Do not configure a Telegram webhook or another polling process
+for this bot while this service is active.
+
+The available commands are `/today`, `/week`, `/funnel` and `/status`.
+Commands are accepted only when both `message.from.id` and the private
+`message.chat.id` match the configured owner IDs. Group messages and unknown
+senders receive no response. Commands cannot read lead records or invoke any
+admin, worker, shell, delivery or Redis operation.
+
+`/today`, `/week` and `/funnel` call the minimal read-only endpoint
+`/api/monitoring/owner-metrics` with `MBL_OWNER_METRICS_TOKEN`. The credential
+must be strong and different from `METRICS_ADMIN_TOKEN` and
+`MBL_MONITORING_TOKEN`; install it only in the MBL production secret file and
+the independent monitor secret file. The monitoring host never connects to
+Redis directly.
+
+Periods are assembled from retained UTC hour buckets. Irkutsk midnight is
+16:00 UTC, so the hour boundaries align exactly: today begins at local 00:00,
+and the week begins Monday at local 00:00. Expired history is not interpreted
+as zero. The default hourly retention is 14 days, which covers the current
+week; the API returns an explicit incomplete result if configured retention is
+too short.
+
+These are deliberately labelled local funnel events, not unique visitors or
+whole-site traffic. Current collection includes supported generated geo pages.
+`page_view` requires analytics consent, `form_opened` is a local operational
+event, and `form_submitted` is recorded only after a new lead from a supported
+page is durably accepted. Historical consent/tracking coverage is not stored,
+so the bot always explains this limitation and never merges these values with
+Yandex Metrika.
+
+The funnel prints every numerator and denominator. Percentages that combine
+consent-gated page views with operational/server events are deliberately not
+calculated. Only accepted leads divided by form openings is shown as a rate;
+a zero denominator is reported as unavailable rather than `0%`.
+
+`/status` reads `/var/lib/mbl-monitor/status-snapshot.json`, written atomically
+after every independent probe. It does not call the primary VPS. If the latest
+observation is older than ten minutes, the response says that it is stale.
+Failure of this convenience snapshot never changes probe, dead-man or incident
+notification results.
+
+Install and enable the command timer separately from the five-minute probe:
+
+```sh
+sudo install -m 0644 ops/external-monitoring/systemd/mbl-telegram-admin.service /etc/systemd/system/
+sudo install -m 0644 ops/external-monitoring/systemd/mbl-telegram-admin.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now mbl-telegram-admin.timer
+```
+
+Required independent-host values are `MBL_TELEGRAM_ADMIN_USER_ID`,
+`MBL_TELEGRAM_ADMIN_CHAT_ID`, `MBL_OWNER_METRICS_TOKEN`,
+`MBL_TELEGRAM_ADMIN_STATE_FILE` and `MBL_MONITOR_STATUS_FILE`. Keep
+`monitor.env` root-owned and unreadable by other users. Test locally with mocks
+using `npm run check:telegram-admin`. After a production build,
+`npm run check:owner-metrics-runtime` verifies the protected API against a
+disposable Docker Redis. Live commands and the independent-host installation
+remain a separate production acceptance step.
+
 ## GitHub production workflow retirement
 
 The following legacy production workflows were removed from the source tree

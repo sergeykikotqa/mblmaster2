@@ -295,6 +295,12 @@ export async function sendTelegramTestMessage(config, options = {}) {
   return postTelegramMessage(config, 'MBL Monitor: тестовое уведомление. Связь с Telegram работает', options);
 }
 
+export async function sendTelegramMessage(config, message, options = {}) {
+  assert(config?.enabled === true, 'TELEGRAM_DISABLED');
+  assert(typeof message === 'string' && message.length > 0 && message.length <= 3500, 'TELEGRAM_MESSAGE_INVALID');
+  return postTelegramMessage(config, message, options);
+}
+
 export async function notifyTelegramForReport(config, report, options = {}) {
   assert(config?.enabled === true, 'TELEGRAM_DISABLED');
   const checkedAtMs = Number(report?.checkedAtMs);

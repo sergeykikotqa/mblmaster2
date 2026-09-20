@@ -39,7 +39,9 @@ describe('O2.4.3 external monitoring policy', () => {
       .filter((entry) => /\.ya?ml$/i.test(entry))
       .map((entry) => fs.readFileSync(path.join(workflowDirectory, entry), 'utf8'))
       .join('\n');
-    expect(workflows).not.toMatch(/PRODUCTION_MONITOR_|TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID/);
+    expect(workflows).not.toMatch(
+      /PRODUCTION_MONITOR_|TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID|MBL_OWNER_METRICS_TOKEN|MBL_TELEGRAM_ADMIN/
+    );
     expect(workflows).not.toContain('check-production:');
     expect(workflows).not.toContain('check:deployed-runtime');
     expect(workflows).not.toMatch(/\/api\/workers\//);
@@ -86,5 +88,36 @@ describe('O2.4.3 external monitoring policy', () => {
     expect(route).toContain('allowDevBypass: false');
     expect(route).toContain('requireToken: true');
     expect(route).not.toContain('METRICS_ADMIN_TOKEN');
+  });
+
+  test('runs owner commands as one locked consumer on the independent host', () => {
+    const service = fs.readFileSync(
+      path.join(ROOT, 'ops', 'external-monitoring', 'systemd', 'mbl-telegram-admin.service'),
+      'utf8'
+    );
+    const timer = fs.readFileSync(
+      path.join(ROOT, 'ops', 'external-monitoring', 'systemd', 'mbl-telegram-admin.timer'),
+      'utf8'
+    );
+    const source = fs.readFileSync(path.join(ROOT, 'scripts', 'telegram-admin.mjs'), 'utf8');
+    expect(service).toContain('User=mbl-monitor');
+    expect(service).toContain('/usr/bin/flock -n /run/mbl-monitor/telegram-admin.lock');
+    expect(service).toContain('EnvironmentFile=/etc/mbl-monitor/monitor.env');
+    expect(service).toContain('ReadWritePaths=/var/lib/mbl-monitor');
+    expect(timer).toContain('OnUnitActiveSec=10s');
+    expect(source).toContain("message?.chat?.type !== 'private'");
+    expect(source).toContain('message?.from?.id');
+    expect(source).toContain('message?.chat?.id');
+    expect(source).not.toContain('REDIS_URL');
+    expect(source).not.toMatch(/\/api\/(?:admin|workers|leads|contact)/);
+  });
+
+  test('exposes only a dedicated aggregate metrics route', () => {
+    const route = fs.readFileSync(path.join(ROOT, 'src', 'pages', 'api', 'monitoring', 'owner-metrics.ts'), 'utf8');
+    expect(route).toContain('MBL_OWNER_METRICS_TOKEN');
+    expect(route).toContain('allowAllowlist: false');
+    expect(route).toContain('allowDevBypass: false');
+    expect(route).toContain('requireToken: true');
+    expect(route).not.toMatch(/getLeadRecord|listDueLeadIds|name|phone|message/);
   });
 });

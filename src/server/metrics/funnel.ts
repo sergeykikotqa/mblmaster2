@@ -183,6 +183,10 @@ function nowDayBucket(timestampMs: number): string {
   return new Date(timestampMs).toISOString().slice(0, 10);
 }
 
+export function resolveFunnelHourRetentionSec(): number {
+  return parsePositiveInt(process.env.LEAD_METRICS_HOUR_RETENTION_SEC, DEFAULT_HOUR_RETENTION_SEC, 60 * 60);
+}
+
 function normalizeBucket(span: 'hour' | 'day', bucket?: string): string {
   if (!bucket) {
     const now = Date.now();
@@ -669,7 +673,7 @@ export async function recordFunnelMetric(params: FunnelRecordParams): Promise<{ 
   const field = encodeField(params.eventName, dimensions, params.reason);
   const hourKey = keyFor('hour', hourBucket);
   const dayKey = keyFor('day', dayBucket);
-  const hourTtlSec = parsePositiveInt(process.env.LEAD_METRICS_HOUR_RETENTION_SEC, DEFAULT_HOUR_RETENTION_SEC, 60 * 60);
+  const hourTtlSec = resolveFunnelHourRetentionSec();
   const dayTtlSec = parsePositiveInt(process.env.LEAD_METRICS_DAY_RETENTION_SEC, DEFAULT_DAY_RETENTION_SEC, 60 * 60);
 
   if (hasRedisConfig()) {

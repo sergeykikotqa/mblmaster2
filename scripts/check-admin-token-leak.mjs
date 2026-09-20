@@ -8,6 +8,7 @@ const distDir = path.join(repoRoot, 'dist');
 
 const metricsToken = String(process.env.METRICS_ADMIN_TOKEN || '').trim();
 const monitoringToken = String(process.env.MBL_MONITORING_TOKEN || '').trim();
+const ownerMetricsToken = String(process.env.MBL_OWNER_METRICS_TOKEN || '').trim();
 if (!metricsToken) {
   console.error(
     'METRICS_ADMIN_TOKEN is required for the admin token leak check. Set METRICS_ADMIN_TOKEN=__SENTINEL__ when running this check.'
@@ -55,7 +56,11 @@ for (const filePath of files) {
     continue;
   }
 
-  if (contents.includes(metricsToken) || (monitoringToken && contents.includes(monitoringToken))) {
+  if (
+    contents.includes(metricsToken) ||
+    (monitoringToken && contents.includes(monitoringToken)) ||
+    (ownerMetricsToken && contents.includes(ownerMetricsToken))
+  ) {
     violations.push(path.relative(repoRoot, filePath).replace(/\\/g, '/'));
   }
 }
@@ -66,4 +71,4 @@ if (violations.length > 0) {
   process.exit(1);
 }
 
-console.log('Token leak check passed: no admin/monitoring token value found in public dist output.');
+console.log('Token leak check passed: no admin/monitoring/owner-metrics token value found in public dist output.');

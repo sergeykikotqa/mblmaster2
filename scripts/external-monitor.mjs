@@ -8,6 +8,7 @@ import {
   notifyTelegramForReport,
   telegramNotifierErrorCode,
 } from './telegram-monitor-notifier.mjs';
+import { writeMonitorStatusSnapshot } from './monitor-status-snapshot.mjs';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_TLS_WARNING_DAYS = 30;
@@ -161,6 +162,20 @@ function safeIncidentCodes(value) {
   return [...new Set(value.map(String).filter((item) => /^[A-Z][A-Z0-9_]{2,63}$/.test(item)))].slice(0, 25).sort();
 }
 
+function safeOperationalSummary(body) {
+  const checks = body?.checks;
+  const depth = checks?.pipeline?.queueDepth;
+  return {
+    redis: typeof checks?.redis?.ok === 'boolean' ? checks.redis.ok : null,
+    worker: ['healthy', 'degraded', 'unknown'].includes(checks?.worker?.state) ? checks.worker.state : 'unknown',
+    queue: ['healthy', 'degraded', 'unknown'].includes(checks?.pipeline?.state) ? checks.pipeline.state : 'unknown',
+    queueDepth: Number.isSafeInteger(depth) && depth >= 0 && depth <= 1_000_000 ? depth : null,
+    backup: ['fresh', 'missing', 'invalid', 'stale'].includes(checks?.backup?.status)
+      ? checks.backup.status
+      : 'unknown',
+  };
+}
+
 async function checkOperationalHealth(config) {
   const { response, body, latencyMs } = await requestJson(
     new URL('/api/monitoring/health', config.baseUrl),
@@ -174,15 +189,17 @@ async function checkOperationalHealth(config) {
   assert([200, 503].includes(response.status), 'MONITOR_HTTP_ERROR');
   assert(body?.service === 'mbl-production' && Array.isArray(body?.incidents), 'MONITOR_CONTRACT_INVALID');
   const incidents = safeIncidentCodes(body.incidents);
+  const summary = safeOperationalSummary(body);
   if (response.status !== 200 || body.ok !== true || incidents.length > 0) {
     return {
       ok: false,
       status: response.status,
       incidents: incidents.length > 0 ? incidents : ['MONITOR_DEGRADED'],
       latencyMs,
+      summary,
     };
   }
-  return { ok: true, status: response.status, incidents: [], latencyMs };
+  return { ok: true, status: response.status, incidents: [], latencyMs, summary };
 }
 
 async function checkTls(config, nowMs = Date.now()) {
@@ -359,6 +376,13 @@ if (isDirectRun) {
     }
 
     const report = await runExternalMonitor(loadExternalMonitorConfig(), { notificationAdapter });
+    try {
+      await writeMonitorStatusSnapshot(report, process.env.MBL_MONITOR_STATUS_FILE);
+    } catch {
+      // The status cache is for owner read-only commands. It must never stop
+      // the independent incident/dead-man checks.
+      console.warn(JSON.stringify({ code: 'MONITOR_STATUS_CACHE_FAILED' }));
+    }
     console.log(JSON.stringify(report));
     if (!report.ok) process.exitCode = 1;
   } catch (error) {

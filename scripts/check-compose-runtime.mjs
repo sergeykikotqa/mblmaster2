@@ -331,6 +331,7 @@ function makeTempEnvironment({ mockPort, canonicalOrigin, publicPort, projectNam
     `CONTACT_WORKER_TOKEN=${secrets.worker}`,
     `METRICS_ADMIN_TOKEN=${secrets.admin}`,
     `MBL_MONITORING_TOKEN=${secrets.monitoring}`,
+    `MBL_OWNER_METRICS_TOKEN=${secrets.ownerMetrics}`,
     'CONTACT_SMARTCAPTCHA_REQUIRED=false',
     'CONTACT_TRUST_PROXY_HEADERS=true',
     'TRACK_TRUST_PROXY_HEADERS=true',
@@ -621,7 +622,7 @@ function checkBrowserRuntime(baseUrl) {
   };
 }
 
-async function checkCacheAndSecurityHeaders(baseUrl, workerToken) {
+async function checkCacheAndSecurityHeaders(baseUrl, workerToken, ownerMetricsToken) {
   const admin = await fetchWithTimeout(`${baseUrl}/api/admin/health`, { redirect: 'manual' });
   assert([401, 403].includes(admin.status), `Unauthenticated admin API must reject access, got ${admin.status}`);
   assert(/no-store/i.test(admin.headers.get('cache-control') || ''), 'Admin API must use Cache-Control: no-store');
@@ -634,6 +635,27 @@ async function checkCacheAndSecurityHeaders(baseUrl, workerToken) {
   assert(
     /no-store/i.test(monitoring.headers.get('cache-control') || ''),
     'Monitoring API must use Cache-Control: no-store'
+  );
+
+  const ownerMetricsDenied = await fetchWithTimeout(`${baseUrl}/api/monitoring/owner-metrics?period=today`, {
+    redirect: 'manual',
+  });
+  assert(
+    [401, 403].includes(ownerMetricsDenied.status),
+    `Unauthenticated owner metrics API must reject access, got ${ownerMetricsDenied.status}`
+  );
+  assert(/no-store/i.test(ownerMetricsDenied.headers.get('cache-control') || ''), 'Owner metrics API must be no-store');
+
+  const ownerMetrics = await fetchWithTimeout(`${baseUrl}/api/monitoring/owner-metrics?period=today`, {
+    headers: { Authorization: `Bearer ${ownerMetricsToken}` },
+    redirect: 'manual',
+  });
+  const ownerMetricsBody = await readJson(ownerMetrics, 'GET /api/monitoring/owner-metrics');
+  assert(ownerMetrics.status === 200 && ownerMetricsBody?.ok === true, 'Owner metrics authorized smoke failed');
+  assert(ownerMetricsBody?.period?.timeZone === 'Asia/Irkutsk', 'Owner metrics time zone contract failed');
+  assert(
+    !/name|phone|message|leadId/i.test(JSON.stringify(ownerMetricsBody)),
+    'Owner metrics response exposed lead PII'
   );
 
   const adminPage = await fetchWithTimeout(`${baseUrl}/admin`);
@@ -1177,6 +1199,7 @@ async function main() {
     webhook: randomSecret('webhook'),
     alert: randomSecret('alert'),
     monitoring: randomSecret('monitoring'),
+    ownerMetrics: randomSecret('owner-metrics'),
     logQuery: randomSecret('log-query'),
   };
   const secretValues = Object.values(secrets);
@@ -1241,7 +1264,7 @@ async function main() {
     await checkStatusesAndRedirects(baseUrl);
     await checkRobotsAndSitemap(baseUrl);
     const resourcesChecked = await checkResourceIntegrity(resources);
-    await checkCacheAndSecurityHeaders(baseUrl, secrets.worker);
+    await checkCacheAndSecurityHeaders(baseUrl, secrets.worker, secrets.ownerMetrics);
     const browser = checkBrowserRuntime(baseUrl);
     const monitoring = await waitFor('healthy external monitoring contract', async () => {
       const response = await getMonitoringHealth(baseUrl, secrets.monitoring);

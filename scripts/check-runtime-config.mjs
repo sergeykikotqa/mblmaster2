@@ -261,6 +261,7 @@ async function main() {
   const smartCaptchaAllowedHosts = readRequiredEnv('SMARTCAPTCHA_ALLOWED_HOSTS');
   const metricsAdminToken = readOptionalEnv('METRICS_ADMIN_TOKEN');
   const monitoringToken = readRequiredEnv('MBL_MONITORING_TOKEN');
+  const ownerMetricsToken = readRequiredEnv('MBL_OWNER_METRICS_TOKEN');
   const backupStatusDir = readRequiredEnv('MBL_BACKUP_STATUS_DIR');
   const adminAllowlist = readOptionalEnv('ADMIN_ALLOWLIST_IPS');
   const allowDevBypass = parseBoolean(process.env.ALLOW_DEV_BYPASS, false);
@@ -323,6 +324,16 @@ async function main() {
     throw new Error('MBL_MONITORING_TOKEN looks weak or placeholder');
   }
   checks.push('monitoring_token_ok');
+
+  if (
+    ownerMetricsToken.length < 24 ||
+    /replace|example|changeme|placeholder|test/i.test(ownerMetricsToken) ||
+    ownerMetricsToken === metricsAdminToken ||
+    ownerMetricsToken === monitoringToken
+  ) {
+    throw new Error('MBL_OWNER_METRICS_TOKEN must be strong and distinct from admin/monitoring credentials');
+  }
+  checks.push('owner_metrics_token_ok');
 
   if (!backupStatusDir.startsWith('/') || backupStatusDir.split('/').includes('..')) {
     throw new Error('MBL_BACKUP_STATUS_DIR must be an absolute Linux path without traversal');
