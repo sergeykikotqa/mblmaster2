@@ -34,7 +34,7 @@ const metadata = {
   description: `Краткая страница по ${city.name}: выберите кухни, шкафы-купе или гардеробные и перейдите к примерам работ, срокам и расчету стоимости.`,
   canonical: toCanonical(buildCityPath(city.id), Astro.site),
   robots: {
-    index: false,
+    index: true,
     follow: true,
   },
 };
