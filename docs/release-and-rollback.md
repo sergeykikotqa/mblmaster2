@@ -56,6 +56,7 @@ Prepare the production environment file and external Redis volume separately:
 
 ```sh
 sudo install -d -m 0700 /opt/mbl/runtime /opt/mbl/incoming
+sudo install -d -o 1000 -g 1000 -m 0750 /opt/mbl/runtime/backup-status
 sudo install -m 0600 /path/to/prod.env /opt/mbl/runtime/deploy.env
 docker volume create mbl-production-redis-data
 ```
@@ -70,6 +71,7 @@ The environment file must keep the stable volume identity:
 ```dotenv
 MBL_REDIS_VOLUME_NAME=mbl-production-redis-data
 MBL_REDIS_VOLUME_EXTERNAL=true
+MBL_BACKUP_STATUS_DIR=/opt/mbl/runtime/backup-status
 ```
 
 On Linux, the release tool rejects an environment file readable by group or
@@ -100,7 +102,9 @@ The tool performs these bounded steps:
 7. starts the worker and requires a successful cycle timestamp newer than that
    worker container's own start time;
 8. proves the Redis identity is unchanged and records current/previous release
-   state atomically.
+   state atomically;
+9. atomically points `/opt/mbl/runtime/current` at that exact stored release so
+   systemd backup/retention jobs use the same committed Compose bundle.
 
 If a candidate fails, the tool restores the previously recorded application
 images. If that recovery also fails, it stops the entire application layer so
@@ -127,13 +131,15 @@ node /opt/mbl/runtime/releases/<current-sha>/scripts/release-tool.mjs rollback \
 
 Rollback uses the previously verified bundle stored under
 `/opt/mbl/runtime/releases/`. It swaps the current and previous application
-records, enabling an explicit roll-forward if required. It never runs the
-backup container and never calls the Redis restore command.
+records and the stable `current` symlink, enabling an explicit roll-forward if
+required. It never runs the backup container and never calls the Redis restore
+command.
 
 After either operation, verify:
 
 ```sh
 cat /opt/mbl/runtime/release-state.json
+readlink -f /opt/mbl/runtime/current
 docker compose --project-name mbl-production \
   --env-file /opt/mbl/runtime/deploy.env \
   --file /opt/mbl/runtime/releases/<active-sha>/compose.production.yml \

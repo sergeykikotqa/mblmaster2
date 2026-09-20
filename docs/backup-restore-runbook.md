@@ -60,6 +60,13 @@ MBL_BACKUP_RESTORE_DIR=/opt/mbl/runtime/restore
 MBL_BACKUP_S3_REGION=<provider-region>
 ```
 
+Create the checkpoint directory for the pinned Node image's `node` user. The
+backup container writes it; the web container can only read it:
+
+```bash
+sudo install -d -o 1000 -g 1000 -m 0750 /opt/mbl/runtime/backup-status
+```
+
 Plain HTTP S3 endpoints are rejected.
 
 ## First installation
@@ -85,7 +92,9 @@ unset MBL_BACKUP_INIT_CONFIRM
 Initialization must fail if the repository already exists. Do not solve an
 unexpected password/repository error by initializing another repository.
 
-Install the units from `ops/systemd/` and enable the timers:
+Install the units from `ops/systemd/` and enable the timers. Their working
+directory is `/opt/mbl/runtime/current`, an atomic symlink maintained by the
+release tool; do not replace it manually:
 
 ```bash
 systemctl enable --now mbl-redis-backup.timer
@@ -105,6 +114,11 @@ After a backup, verify all of the following:
 3. `list` returns a new snapshot for host `mbl-production`.
 4. No plaintext RDB remains on the host.
 5. The external monitor has not reported a stale backup checkpoint.
+
+The protected `/api/monitoring/health` response must report
+`checks.backup.status` as `fresh`. See
+[`external-monitoring.md`](external-monitoring.md) for the external probe and
+dead-man requirements.
 
 The status JSON contains only technical metadata: snapshot ID, release SHA,
 size and checksum. It contains no lead fields.

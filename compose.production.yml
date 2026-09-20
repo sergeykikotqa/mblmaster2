@@ -67,6 +67,16 @@ services:
       CONTACT_TRUST_PROXY_HEADERS: 'true'
       TRACK_TRUST_PROXY_HEADERS: 'true'
       ADMIN_TRUST_PROXY_HEADERS: 'true'
+      # Backup metadata contains no lead data and is mounted read-only solely
+      # for the protected external monitoring health contract.
+      MBL_BACKUP_STATUS_FILE: /run/mbl-backup-status/last-success.json
+      MBL_BACKUP_MAX_AGE_SEC: ${MBL_BACKUP_MAX_AGE_SEC:-8100}
+      MBL_BACKUP_FUTURE_TOLERANCE_SEC: ${MBL_BACKUP_FUTURE_TOLERANCE_SEC:-300}
+    volumes:
+      - type: bind
+        source: ${MBL_BACKUP_STATUS_DIR:?Set MBL_BACKUP_STATUS_DIR to the host backup-status directory}
+        target: /run/mbl-backup-status
+        read_only: true
     depends_on:
       mbl-redis:
         condition: service_healthy

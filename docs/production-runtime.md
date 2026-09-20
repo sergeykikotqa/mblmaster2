@@ -10,6 +10,7 @@ Keep runtime secrets outside the repository and Docker images:
 
 ```sh
 sudo install -d -m 0700 /opt/mbl/secrets
+sudo install -d -o 1000 -g 1000 -m 0750 /opt/mbl/runtime/backup-status
 sudo install -m 0600 .env.example /opt/mbl/secrets/prod.env
 sudoedit /opt/mbl/secrets/prod.env
 sudo chmod 0600 /opt/mbl/secrets/prod.env
@@ -28,6 +29,7 @@ export MBL_ENV_FILE=/opt/mbl/secrets/prod.env
 export PUBLIC_SITE_URL=https://mebel-irkutsk.ru
 export MBL_BIND_ADDRESS=0.0.0.0
 export MBL_HTTP_PORT=8080
+export MBL_BACKUP_STATUS_DIR=/opt/mbl/runtime/backup-status
 
 docker compose -f compose.production.yml config --quiet
 docker compose -f compose.production.yml build
@@ -66,3 +68,7 @@ The one-shot encrypted off-host backup and isolated restore procedure lives in
 [`backup-restore-runbook.md`](backup-restore-runbook.md). A persistent volume,
 AOF and provider snapshot are still not substitutes for a tested Restic
 restore from separate object storage.
+
+External availability, worker, queue and backup-freshness monitoring is
+described in [`external-monitoring.md`](external-monitoring.md). Its scheduled
+probe and incident receiver must remain outside this VPS.

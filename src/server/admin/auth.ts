@@ -47,6 +47,10 @@ type AdminAuthOptions = {
   allowDevBypass?: boolean;
   clientAddress?: string;
   rateLimitScope?: string;
+  token?: string;
+  tokenConfigName?: string;
+  allowAllowlist?: boolean;
+  requireToken?: boolean;
 };
 
 type FailedAuthState = {
@@ -483,8 +487,14 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
   }
 
   const adminTokenResult = requireAdminToken();
-  const adminToken = adminTokenResult.ok ? adminTokenResult.token : '';
-  const allowlistEntries = resolveAllowlistEntries();
+  const hasTokenOverride = typeof options.token === 'string';
+  const adminToken = hasTokenOverride
+    ? String(options.token || '').trim()
+    : adminTokenResult.ok
+      ? adminTokenResult.token
+      : '';
+  const tokenConfigName = String(options.tokenConfigName || 'METRICS_ADMIN_TOKEN').trim() || 'authentication token';
+  const allowlistEntries = options.allowAllowlist === false ? [] : resolveAllowlistEntries();
   const allowlist = parseAllowlist(allowlistEntries);
   if (allowlist.invalidEntries.length > 0) {
     console.warn('[admin-auth] invalid allowlist entries ignored', {
@@ -493,11 +503,11 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
     });
   }
 
-  const tokenConfigured = adminTokenResult.ok;
+  const tokenConfigured = Boolean(adminToken);
   const allowlistConfigured = allowlist.hasEntries;
 
-  if (isProductionAuthMode() && !tokenConfigured) {
-    console.error('[admin-auth] missing METRICS_ADMIN_TOKEN in production', { scope });
+  if ((isProductionAuthMode() || options.requireToken === true) && !tokenConfigured) {
+    console.error('[admin-auth] missing required token in production', { scope, tokenConfigName });
     return {
       ok: false,
       status: 503,

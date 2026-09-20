@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 const WORKFLOW_PATH = path.join(ROOT, '.github', 'workflows', 'actions.yaml');
+const MONITOR_WORKFLOW_PATH = path.join(ROOT, '.github', 'workflows', 'external-production-monitor.yaml');
 const TARGET_JOB = 'check-production';
 
 function fail(message) {
@@ -54,7 +55,36 @@ function main() {
     fail(`Secrets are referenced before npm ci in "${TARGET_JOB}". Move them to post-install step env scope.`);
   }
 
-  console.log(`Secrets scope guard passed for workflow job "${TARGET_JOB}".`);
+  if (!fs.existsSync(MONITOR_WORKFLOW_PATH)) {
+    fail('Missing .github/workflows/external-production-monitor.yaml');
+  }
+  const monitorSource = fs.readFileSync(MONITOR_WORKFLOW_PATH, 'utf8');
+  const monitorLines = monitorSource.split(/\r?\n/);
+  if (/pull_request(?:_target)?:/.test(monitorSource)) {
+    fail('External production monitor must never run in a pull-request context.');
+  }
+  if (monitorLines.some((line) => /^ {4}env:\s*$/.test(line))) {
+    fail('External production monitor has job-level env. Secrets must stay on the probe step.');
+  }
+  const probeStart = monitorLines.findIndex((line) =>
+    line.includes('- name: Probe production and signal independent monitor')
+  );
+  if (probeStart === -1) fail('External production monitor probe step not found.');
+  let probeEnd = monitorLines.length;
+  for (let index = probeStart + 1; index < monitorLines.length; index += 1) {
+    if (/^ {6}- name:/.test(monitorLines[index])) {
+      probeEnd = index;
+      break;
+    }
+  }
+  const secretLines = monitorLines
+    .map((line, index) => ({ line, index }))
+    .filter((entry) => entry.line.includes('${{ secrets.'));
+  if (secretLines.length !== 3 || secretLines.some((entry) => entry.index < probeStart || entry.index >= probeEnd)) {
+    fail('External monitor secrets must appear only in the bounded probe step.');
+  }
+
+  console.log(`Secrets scope guard passed for "${TARGET_JOB}" and the external production monitor.`);
 }
 
 try {

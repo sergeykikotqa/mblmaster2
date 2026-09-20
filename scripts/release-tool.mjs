@@ -599,6 +599,64 @@ function clearOperationJournal(runtimeRoot) {
   fsyncParentDirectory(journalPath);
 }
 
+function activeReleaseLinkPath(runtimeRoot) {
+  return path.join(runtimeRoot, 'current');
+}
+
+function assertReplaceableActiveReleaseLink(linkPath) {
+  if (!fs.existsSync(linkPath)) return;
+  const stat = fs.lstatSync(linkPath);
+  assert(stat.isSymbolicLink(), `Active release path must be a symbolic link: ${linkPath}`);
+}
+
+export function syncActiveReleaseLink(runtimeRoot, releaseId) {
+  const normalizedReleaseId = normalizeFullSha(releaseId, 'active release ID');
+  const releasesRoot = path.join(runtimeRoot, 'releases');
+  const target = path.join(releasesRoot, normalizedReleaseId);
+  assert(fs.statSync(target).isDirectory(), `Active release bundle is missing: ${target}`);
+
+  const linkPath = activeReleaseLinkPath(runtimeRoot);
+  assertReplaceableActiveReleaseLink(linkPath);
+  const temporary = `${linkPath}.${process.pid}.${randomUUID()}.tmp`;
+  const previous = `${linkPath}.${process.pid}.${randomUUID()}.previous`;
+  const linkTarget = process.platform === 'win32' ? target : path.relative(runtimeRoot, target);
+  fs.symlinkSync(linkTarget, temporary, process.platform === 'win32' ? 'junction' : 'dir');
+
+  try {
+    if (process.platform === 'win32' && fs.existsSync(linkPath)) {
+      fs.renameSync(linkPath, previous);
+      try {
+        fs.renameSync(temporary, linkPath);
+      } catch (error) {
+        fs.renameSync(previous, linkPath);
+        throw error;
+      }
+      fs.rmSync(previous, { force: true });
+    } else {
+      fs.renameSync(temporary, linkPath);
+    }
+    fsyncParentDirectory(linkPath);
+  } finally {
+    fs.rmSync(temporary, { force: true });
+    fs.rmSync(previous, { force: true });
+  }
+
+  const resolved = fs.realpathSync(linkPath);
+  assert(
+    path.resolve(resolved) === path.resolve(target),
+    'Active release link does not resolve to the committed release'
+  );
+  return linkPath;
+}
+
+function clearActiveReleaseLink(runtimeRoot) {
+  const linkPath = activeReleaseLinkPath(runtimeRoot);
+  if (!fs.existsSync(linkPath)) return;
+  assertReplaceableActiveReleaseLink(linkPath);
+  fs.rmSync(linkPath, { force: true });
+  fsyncParentDirectory(linkPath);
+}
+
 export function assertBundleMatchesRecord(bundle, record, label) {
   assert(record?.releaseId === bundle.manifest.releaseId, `${label} release ID does not match its stored bundle`);
   assert(
@@ -999,6 +1057,7 @@ async function reconcileInterruptedOperation({ runtimeRoot, envFile, baseUrl, ti
     containment = recovery.containment;
     redisIdentity = recovery.redisIdentity;
     recoveryError = recovery.recoveryError;
+    syncActiveReleaseLink(runtimeRoot, desiredRecord.releaseId);
   } else {
     const candidateDir = path.join(runtimeRoot, 'releases', journal.candidateReleaseId);
     const candidate = verifyReleaseBundle(candidateDir);
@@ -1006,6 +1065,7 @@ async function reconcileInterruptedOperation({ runtimeRoot, envFile, baseUrl, ti
     redisIdentity = await stopApplicationLayer(candidate, envFile);
     containment = 'application-layer-stopped';
     recoveryError = 'Operation journal and release state did not identify a committed application release';
+    clearActiveReleaseLink(runtimeRoot);
   }
 
   assertRedisIdentityUnchanged(journal.redisIdentityBefore, redisIdentity);
@@ -1047,8 +1107,15 @@ async function containFailedTransition({
       const stable = verifyReleaseBundle(stableDir);
       assertBundleMatchesRecord(stable, stableRecord, 'Stable release');
       recovery = await recoverStableApplication({ stable, envFile, baseUrl, timeoutMs });
+      syncActiveReleaseLink(runtimeRoot, stableRecord.releaseId);
     } catch (recoveryFailure) {
       const redisIdentity = await stopApplicationLayer(candidate, envFile);
+      try {
+        clearActiveReleaseLink(runtimeRoot);
+      } catch {
+        // A missing link fails systemd maintenance safely; never leave a link
+        // that can point at a failed candidate after containment.
+      }
       recovery = {
         containment: 'application-layer-stopped',
         redisIdentity,
@@ -1058,6 +1125,7 @@ async function containFailedTransition({
   } else {
     const redisIdentity = await stopApplicationLayer(candidate, envFile);
     recovery = { containment: 'application-layer-stopped', redisIdentity, recoveryError: '' };
+    clearActiveReleaseLink(runtimeRoot);
   }
 
   assertRedisIdentityUnchanged(redisIdentityBefore, recovery.redisIdentity);
@@ -1097,6 +1165,12 @@ async function applyRelease({ bundleDirectory, runtimeRoot, envFile, baseUrl, ti
       assert(state.value.current.releaseId !== bundle.manifest.releaseId, 'Candidate release is already active');
       const stable = verifyReleaseBundle(path.join(resolvedRuntimeRoot, 'releases', state.value.current.releaseId));
       assertBundleMatchesRecord(stable, state.value.current, 'Current release');
+      syncActiveReleaseLink(resolvedRuntimeRoot, state.value.current.releaseId);
+    } else {
+      assert(
+        !fs.existsSync(activeReleaseLinkPath(resolvedRuntimeRoot)),
+        'Active release link exists without release state'
+      );
     }
     loadBundleImages(bundle, true);
     const preflight = composeController(bundle, privateEnv);
@@ -1138,6 +1212,8 @@ async function applyRelease({ bundleDirectory, runtimeRoot, envFile, baseUrl, ti
     try {
       onPhase('state-committing');
       atomicWriteJson(state.path, nextState);
+      onPhase('active-link-committing');
+      syncActiveReleaseLink(resolvedRuntimeRoot, nextState.current.releaseId);
     } catch (stateError) {
       restoreStateSnapshot(state);
       const recovery = await containFailedTransition({
@@ -1195,6 +1271,7 @@ async function rollbackRelease({ runtimeRoot, envFile, baseUrl, timeoutMs = DEFA
     assertBundleMatchesRecord(target, state.value.previous, 'Rollback target');
     const stable = verifyReleaseBundle(path.join(resolvedRuntimeRoot, 'releases', state.value.current.releaseId));
     assertBundleMatchesRecord(stable, state.value.current, 'Current release');
+    syncActiveReleaseLink(resolvedRuntimeRoot, state.value.current.releaseId);
     loadBundleImages(target, false);
     const compose = composeController(target, privateEnv);
     const redisBefore = captureRedisIdentity(compose, target.policy);
@@ -1233,6 +1310,8 @@ async function rollbackRelease({ runtimeRoot, envFile, baseUrl, timeoutMs = DEFA
     try {
       onPhase('state-committing');
       atomicWriteJson(state.path, nextState);
+      onPhase('active-link-committing');
+      syncActiveReleaseLink(resolvedRuntimeRoot, nextState.current.releaseId);
     } catch (stateError) {
       restoreStateSnapshot(state);
       const recovery = await containFailedTransition({

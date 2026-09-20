@@ -1,0 +1,40 @@
+name: External Production Monitor
+
+on:
+  schedule:
+    # GitHub schedules have a five-minute minimum. The external signal receiver
+    # must also alert when these success pings stop arriving.
+    - cron: '3/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-production-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Probe production and signal independent monitor
+        env:
+          MBL_MONITOR_BASE_URL: ${{ vars.PRODUCTION_MONITOR_BASE_URL }}
+          MBL_MONITOR_TOKEN: ${{ secrets.PRODUCTION_MONITOR_TOKEN }}
+          MBL_MONITOR_SUCCESS_URL: ${{ secrets.PRODUCTION_MONITOR_SUCCESS_URL }}
+          MBL_MONITOR_FAILURE_URL: ${{ secrets.PRODUCTION_MONITOR_FAILURE_URL }}
+          MBL_MONITOR_TIMEOUT_MS: '10000'
+          MBL_MONITOR_TLS_WARNING_DAYS: '30'
+          MBL_MONITOR_TLS_CRITICAL_DAYS: '14'
+        run: node scripts/external-monitor.mjs

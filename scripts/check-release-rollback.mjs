@@ -486,6 +486,15 @@ function readState(runtimeRoot) {
   return JSON.parse(fs.readFileSync(path.join(runtimeRoot, 'release-state.json'), 'utf8'));
 }
 
+function assertActiveRelease(runtimeRoot, releaseId) {
+  const linkPath = path.join(runtimeRoot, 'current');
+  assert(fs.lstatSync(linkPath).isSymbolicLink(), 'Active release path is not a symbolic link');
+  assert(
+    fs.realpathSync(linkPath) === fs.realpathSync(path.join(runtimeRoot, 'releases', releaseId)),
+    `Active release link does not point to ${releaseId}`
+  );
+}
+
 function assertNoBackupContainer() {
   const ids = docker([
     'ps',
@@ -593,6 +602,7 @@ async function main() {
 
     const common = { runtimeRoot, envFile, baseUrl, timeoutMs: 30_000 };
     runRelease('apply', { ...common, bundle: bundleA }, secretMarker);
+    assertActiveRelease(runtimeRoot, RELEASE_A);
     assertApplicationRelease(bundleA, envFile, RELEASE_A, manifestA);
     assertRedisIdentity(redisIdentity(bundleA, envFile, RELEASE_A, volumeName), redisBefore);
     assertQueuedLead(bundleA, envFile, RELEASE_A, queuedLeadId, queuedMarker);
@@ -610,6 +620,7 @@ async function main() {
       assert(!fs.existsSync(path.join(runtimeRoot, 'release-operation.json')), 'Reconciled operation journal remains');
       assert(!fs.existsSync(path.join(runtimeRoot, '.release.lock')), 'Reconciled operation lock remains');
       assertApplicationRelease(bundleA, envFile, RELEASE_A, manifestA);
+      assertActiveRelease(runtimeRoot, RELEASE_A);
       assertRedisIdentity(redisIdentity(bundleA, envFile, RELEASE_A, volumeName), redisBefore);
       assertQueuedLead(bundleA, envFile, RELEASE_A, queuedLeadId, queuedMarker);
       await assertPublicRelease(baseUrl, RELEASE_A);
@@ -617,6 +628,7 @@ async function main() {
     }
 
     runRelease('apply', { ...common, bundle: bundleB }, secretMarker);
+    assertActiveRelease(runtimeRoot, RELEASE_B);
     assertApplicationRelease(bundleB, envFile, RELEASE_B, manifestB);
     assertRedisIdentity(redisIdentity(bundleB, envFile, RELEASE_B, volumeName), redisBefore);
     assertQueuedLead(bundleB, envFile, RELEASE_B, queuedLeadId, queuedMarker);
@@ -639,6 +651,7 @@ async function main() {
     await assertPublicRelease(baseUrl, RELEASE_B);
 
     runRelease('rollback', common, secretMarker);
+    assertActiveRelease(runtimeRoot, RELEASE_A);
     assertApplicationRelease(bundleA, envFile, RELEASE_A, manifestA);
     assertRedisIdentity(redisIdentity(bundleA, envFile, RELEASE_A, volumeName), redisBefore);
     assertQueuedLead(bundleA, envFile, RELEASE_A, queuedLeadId, queuedMarker);
@@ -687,6 +700,7 @@ async function main() {
       interruptedPhasesRecovered: interruptedPhases,
       interruptedRollbackPhasesRecovered: ['nginx-updating'],
       newWorkerCycleRequired: true,
+      activeReleaseLinkVerified: true,
       logsSecretFree: true,
       finalRelease: state.current.releaseId,
     });

@@ -316,6 +316,8 @@ async function main() {
   const redisUrl = readRequiredEnv('REDIS_URL');
   const turnstileSecret = readRequiredEnv('TURNSTILE_SECRET_KEY');
   const metricsAdminToken = readOptionalEnv('METRICS_ADMIN_TOKEN');
+  const monitoringToken = readRequiredEnv('MBL_MONITORING_TOKEN');
+  const backupStatusDir = readRequiredEnv('MBL_BACKUP_STATUS_DIR');
   const adminAllowlist = readOptionalEnv('ADMIN_ALLOWLIST_IPS');
   const allowDevBypass = parseBoolean(process.env.ALLOW_DEV_BYPASS, false);
 
@@ -349,6 +351,16 @@ async function main() {
     throw new Error('METRICS_ADMIN_TOKEN looks weak or placeholder');
   }
   checks.push('metrics_admin_token_ok');
+
+  if (monitoringToken.length < 24 || /replace|example|changeme|placeholder|test/i.test(monitoringToken)) {
+    throw new Error('MBL_MONITORING_TOKEN looks weak or placeholder');
+  }
+  checks.push('monitoring_token_ok');
+
+  if (!backupStatusDir.startsWith('/') || backupStatusDir.split('/').includes('..')) {
+    throw new Error('MBL_BACKUP_STATUS_DIR must be an absolute Linux path without traversal');
+  }
+  checks.push('backup_status_dir_ok');
   if (adminAllowlist) {
     checks.push('admin_allowlist_configured');
   }

@@ -10,6 +10,7 @@ import {
   assertSafeApplicationComposeArgs,
   readReleasePolicy,
   redactReleaseDiagnostic,
+  syncActiveReleaseLink,
   verifyReleaseBundle,
   writeReleaseChecksums,
 } from '../scripts/release-tool.mjs';
@@ -179,5 +180,23 @@ describe('O2.4 application release and rollback policy', () => {
     expect(source).toMatch(/git['"], \['archive'/);
     expect(source).toContain('immutableSource.contextDirectory');
     expect(source).toContain('assertCleanReleaseCheckout(releaseId)');
+  });
+
+  test('keeps a stable active-release link on the exact committed bundle', () => {
+    const runtimeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mbl-active-release-'));
+    const releaseA = 'a'.repeat(40);
+    const releaseB = 'b'.repeat(40);
+    try {
+      fs.mkdirSync(path.join(runtimeRoot, 'releases', releaseA), { recursive: true });
+      fs.mkdirSync(path.join(runtimeRoot, 'releases', releaseB), { recursive: true });
+      const linkPath = syncActiveReleaseLink(runtimeRoot, releaseA);
+      expect(fs.lstatSync(linkPath).isSymbolicLink()).toBe(true);
+      expect(fs.realpathSync(linkPath)).toBe(fs.realpathSync(path.join(runtimeRoot, 'releases', releaseA)));
+
+      syncActiveReleaseLink(runtimeRoot, releaseB);
+      expect(fs.realpathSync(linkPath)).toBe(fs.realpathSync(path.join(runtimeRoot, 'releases', releaseB)));
+    } finally {
+      fs.rmSync(runtimeRoot, { recursive: true, force: true });
+    }
   });
 });

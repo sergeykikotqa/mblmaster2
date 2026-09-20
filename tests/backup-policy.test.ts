@@ -92,5 +92,7 @@ describe('O2.4 encrypted Redis backup policy', () => {
     expect(backupTimer).toMatch(/Persistent=true/);
     expect(retentionTimer).toMatch(/OnCalendar=\*-\*-\* 03:30:00/);
     expect(backupService).toMatch(/flock -n \/run\/lock\/mbl-redis-maintenance\.lock/);
+    expect(backupService).toMatch(/WorkingDirectory=\/opt\/mbl\/runtime\/current/);
+    expect(backupService).not.toContain('/opt/mbl/current');
   });
 });

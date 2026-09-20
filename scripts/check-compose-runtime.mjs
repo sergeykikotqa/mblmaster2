@@ -295,6 +295,25 @@ function locationPath(response, baseUrl) {
 function makeTempEnvironment({ mockPort, canonicalOrigin, publicPort, projectName, imageRevision, secrets }) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mbl-o23-runtime-'));
   const envPath = path.join(tempRoot, 'prod.env');
+  const backupStatusDir = path.join(tempRoot, 'backup-status');
+  const checkpointReleaseSha = /^[a-f0-9]{40}$/i.test(imageRevision)
+    ? imageRevision
+    : run('git', ['rev-parse', 'HEAD']);
+  assert(/^[a-f0-9]{40}$/i.test(checkpointReleaseSha), 'Backup checkpoint fixture requires a full Git SHA');
+  fs.mkdirSync(backupStatusDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(backupStatusDir, 'last-success.json'),
+    `${JSON.stringify({
+      schema: 1,
+      status: 'ok',
+      completedAt: new Date().toISOString(),
+      snapshotId: 'a'.repeat(64),
+      releaseSha: checkpointReleaseSha,
+      rdbBytes: 1024,
+      rdbSha256: 'b'.repeat(64),
+    })}\n`,
+    { encoding: 'utf8', mode: 0o600 }
+  );
   const mockHostname = String(process.env.O23_MOCK_HOSTNAME || 'host.docker.internal').trim();
   const mockUrl = `http://${mockHostname}:${mockPort}/webhook`;
   const redisPrefix = `${projectName}:lead`;
@@ -311,6 +330,7 @@ function makeTempEnvironment({ mockPort, canonicalOrigin, publicPort, projectNam
     `CONTACT_ALERT_WEBHOOK_TOKEN=${secrets.alert}`,
     `CONTACT_WORKER_TOKEN=${secrets.worker}`,
     `METRICS_ADMIN_TOKEN=${secrets.admin}`,
+    `MBL_MONITORING_TOKEN=${secrets.monitoring}`,
     'CONTACT_TURNSTILE_REQUIRED=false',
     'CONTACT_TURNSTILE_FAILURE_MODE=closed',
     'CONTACT_TRUST_PROXY_HEADERS=true',
@@ -324,9 +344,9 @@ function makeTempEnvironment({ mockPort, canonicalOrigin, publicPort, projectNam
     'CONTACT_ALERT_TIMEOUT_MS=1000',
     'CONTACT_ALERT_MAX_RETRIES=0',
     'CONTACT_WORKER_HEARTBEAT_STALE_SEC=4',
-    'CONTACT_QUEUE_OLDEST_NORMAL_SEC=1',
-    'CONTACT_QUEUE_OLDEST_WARNING_SEC=2',
-    'CONTACT_QUEUE_OLDEST_CRITICAL_SEC=10',
+    'CONTACT_QUEUE_OLDEST_NORMAL_SEC=5',
+    'CONTACT_QUEUE_OLDEST_WARNING_SEC=10',
+    'CONTACT_QUEUE_OLDEST_CRITICAL_SEC=30',
     'WORKER_TRIGGER_INTERVAL_MS=1000',
     'WORKER_TRIGGER_TIMEOUT_MS=3000',
     'WORKER_TRIGGER_BATCH_LIMIT=20',
@@ -347,6 +367,7 @@ function makeTempEnvironment({ mockPort, canonicalOrigin, publicPort, projectNam
       MBL_IMAGE_TAG: imageRevision,
       MBL_REDIS_VOLUME_NAME: `${projectName}_mbl-redis-data`,
       MBL_REDIS_VOLUME_EXTERNAL: 'false',
+      MBL_BACKUP_STATUS_DIR: backupStatusDir,
       PUBLIC_SITE_URL: canonicalOrigin,
       WORKER_TRIGGER_INTERVAL_MS: '1000',
       WORKER_TRIGGER_TIMEOUT_MS: '3000',
@@ -606,6 +627,16 @@ async function checkCacheAndSecurityHeaders(baseUrl, workerToken) {
   assert([401, 403].includes(admin.status), `Unauthenticated admin API must reject access, got ${admin.status}`);
   assert(/no-store/i.test(admin.headers.get('cache-control') || ''), 'Admin API must use Cache-Control: no-store');
 
+  const monitoring = await fetchWithTimeout(`${baseUrl}/api/monitoring/health`, { redirect: 'manual' });
+  assert(
+    [401, 403].includes(monitoring.status),
+    `Unauthenticated monitoring API must reject access, got ${monitoring.status}`
+  );
+  assert(
+    /no-store/i.test(monitoring.headers.get('cache-control') || ''),
+    'Monitoring API must use Cache-Control: no-store'
+  );
+
   const adminPage = await fetchWithTimeout(`${baseUrl}/admin`);
   assert(adminPage.status === 200, `GET /admin must return 200, got ${adminPage.status}`);
   await adminPage.arrayBuffer();
@@ -668,6 +699,24 @@ async function getReady(baseUrl, expectedStatus) {
   assert(/no-store/i.test(response.headers.get('cache-control') || ''), 'Readiness must be no-store');
   const serialized = JSON.stringify(body);
   assert(!/redis:\/\/|mbl-redis|REDIS_URL|password|token/i.test(serialized), 'Readiness leaks infrastructure details');
+  return body;
+}
+
+async function getMonitoringHealth(baseUrl, monitoringToken) {
+  const response = await fetchWithTimeout(`${baseUrl}/api/monitoring/health`, {
+    headers: { Authorization: `Bearer ${monitoringToken}` },
+    redirect: 'manual',
+  });
+  const body = await readJson(response, 'GET /api/monitoring/health');
+  assert([200, 503].includes(response.status), `Monitoring health returned unexpected status ${response.status}`);
+  assert(body?.ok === (response.status === 200), 'Monitoring health response contract is invalid');
+  assert(Array.isArray(body?.incidents), 'Monitoring health incidents must be an array');
+  assert(/no-store/i.test(response.headers.get('cache-control') || ''), 'Monitoring health must be no-store');
+  const serialized = JSON.stringify(body);
+  assert(
+    !/redis:\/\/|mbl-redis|password|token|snapshotId|rdbSha256/i.test(serialized),
+    'Monitoring health leaks infrastructure or backup identifiers'
+  );
   return body;
 }
 
@@ -773,7 +822,14 @@ function checkContainerEnvelope(compose, projectName) {
     const tmpfs = inspections.get(service)?.HostConfig?.Tmpfs || {};
     assert(Object.keys(tmpfs).length === 0, `${service} has an unexpected tmpfs mount`);
   }
-  assert((inspections.get('mbl-web')?.Mounts || []).length === 0, 'mbl-web has an unexpected writable mount');
+  const webMounts = inspections.get('mbl-web')?.Mounts || [];
+  assert(webMounts.length === 1, `mbl-web must have exactly one read-only monitoring mount, got ${webMounts.length}`);
+  assert(
+    webMounts[0]?.Type === 'bind' &&
+      webMounts[0]?.Destination === '/run/mbl-backup-status' &&
+      webMounts[0]?.RW === false,
+    'mbl-web monitoring mount must be the read-only backup status directory'
+  );
   assert(
     (inspections.get('mbl-worker-trigger')?.Mounts || []).length === 0,
     'mbl-worker-trigger has an unexpected writable mount'
@@ -1018,12 +1074,12 @@ async function runRuntimeScenarios({ compose, baseUrl, mock, secrets, redisPrefi
     'Queued lead is not reflected in oldestPendingAge'
   );
   const pendingSinceKey = `${redisPrefix}:delivery:pending-since`;
-  const queueThresholds = { normal: 1000, warning: 2000, critical: 10_000 };
+  const queueThresholds = { normal: 5000, warning: 10_000, critical: 30_000 };
   compose.redis('ZADD', pendingSinceKey, Date.now() - 500, retryLead.body.leadId);
   await checkOldestPendingState(baseUrl, secrets.admin, 'normal', queueThresholds);
-  compose.redis('ZADD', pendingSinceKey, Date.now() - 3000, retryLead.body.leadId);
+  compose.redis('ZADD', pendingSinceKey, Date.now() - 15_000, retryLead.body.leadId);
   await checkOldestPendingState(baseUrl, secrets.admin, 'warning', queueThresholds);
-  compose.redis('ZADD', pendingSinceKey, Date.now() - 11_000, retryLead.body.leadId);
+  compose.redis('ZADD', pendingSinceKey, Date.now() - 35_000, retryLead.body.leadId);
   await checkOldestPendingState(baseUrl, secrets.admin, 'critical', queueThresholds);
 
   const webIdBeforeRestart = compose.containerId('mbl-web');
@@ -1121,6 +1177,7 @@ async function main() {
     admin: randomSecret('admin'),
     webhook: randomSecret('webhook'),
     alert: randomSecret('alert'),
+    monitoring: randomSecret('monitoring'),
     logQuery: randomSecret('log-query'),
   };
   const secretValues = Object.values(secrets);
@@ -1187,6 +1244,13 @@ async function main() {
     const resourcesChecked = await checkResourceIntegrity(resources);
     await checkCacheAndSecurityHeaders(baseUrl, secrets.worker);
     const browser = checkBrowserRuntime(baseUrl);
+    const monitoring = await waitFor('healthy external monitoring contract', async () => {
+      const response = await getMonitoringHealth(baseUrl, secrets.monitoring);
+      if (!response.ok) {
+        throw new Error(`Monitoring incidents: ${(response.incidents || []).join(',') || 'UNKNOWN'}`);
+      }
+      return response;
+    });
     const scenarios = await runRuntimeScenarios({
       compose,
       baseUrl,
@@ -1219,6 +1283,10 @@ async function main() {
           browser,
           redis: { appendonly: true, appendfsync: 'everysec', maxmemoryPolicy: 'noeviction', persistenceRestart: true },
           health: { live: true, ready: true, outageRecoveryWithoutWebRestart: true, workerStaleDetected: true },
+          monitoring: {
+            healthy: monitoring.ok === true,
+            backupFresh: monitoring.checks?.backup?.status === 'fresh',
+          },
           leadCanary: scenarios,
           logs,
         },
