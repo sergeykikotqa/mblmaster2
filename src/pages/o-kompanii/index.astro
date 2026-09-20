@@ -294,6 +294,15 @@ const portfolioItems = await getPortfolioItems(6);
   .about-stats-card span {
     color: #5f544b;
     font-size: 0.82rem;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+  }
+
+  @media (max-width: 720px) {
+    .about-story-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .about-principles-grid {
