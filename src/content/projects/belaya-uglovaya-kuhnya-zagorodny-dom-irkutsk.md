@@ -1,6 +1,6 @@
 ---
 title: Белая угловая кухня на заказ в Иркутске (Байкальский тракт)
-slug: kuhnya-baykalskiy-trakt
+slug: belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk
 description: Угловая кухня в светлых фасадах с графитовым фартуком и встроенной техникой для загородного дома.
 publishDate: 2026-03-12T00:00:00.000Z
 city: irkutsk

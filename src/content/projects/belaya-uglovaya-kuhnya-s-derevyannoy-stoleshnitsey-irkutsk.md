@@ -1,6 +1,6 @@
 ---
 title: Белая угловая кухня на заказ в Иркутске (ул. Трилиссера)
-slug: kuhnya-trilissera
+slug: belaya-uglovaya-kuhnya-s-derevyannoy-stoleshnitsey-irkutsk
 description: Светлая угловая кухня с матовыми фасадами, встроенной техникой и тёплой деревянной столешницей.
 publishDate: 2026-03-12T00:00:00.000Z
 city: irkutsk

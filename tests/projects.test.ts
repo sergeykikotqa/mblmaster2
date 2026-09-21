@@ -14,7 +14,73 @@ type ProjectFrontmatter = {
   materials?: Record<string, string>;
 };
 
+const APPROVED_PROJECT_MIGRATION_MAP: Record<string, string> = {
+  'garderobnaya-angarsk-29-mikrorayon': 'garderobnaya-v-spalne-angarsk',
+  'garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion': 'p-obraznaya-garderobnaya-shelekhov',
+  'garderobnaya-sovetskaya': 'garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk',
+  'kuhnya-baykalskiy-trakt': 'belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk',
+  'kuhnya-bogdana': 'biruzovaya-uglovaya-kuhnya-irkutsk',
+  'kuhnya-dzerzhinskogo': 'belaya-uglovaya-kuhnya-s-barnoy-stoykoy-irkutsk',
+  'kuhnya-krasnokazachya': 'bezhevaya-uglovaya-kuhnya-irkutsk',
+  'kuhnya-piskunova': 'uglovaya-kuhnya-s-podsvetkoy-irkutsk',
+  'kuhnya-trilissera': 'belaya-uglovaya-kuhnya-s-derevyannoy-stoleshnitsey-irkutsk',
+  'kuhnya-verkhnyaya-naberezhnaya': 'pryamaya-kuhnya-s-vysokimi-penalami-irkutsk',
+  'shkaf-vstroennyi-angarsk-84-i-kvartal': 'vstroennyi-shkaf-kupe-v-prikhozhuyu-angarsk',
+  'shkaf-deputatskaya': 'vstroennyi-shkaf-s-rabochey-zonoy-irkutsk',
+};
+
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function parseRedirectRules(): Array<{ source: string; target: string; status: string }> {
+  const file = path.join(process.cwd(), 'config', 'redirects.rules');
+  const text = fs.readFileSync(file, 'utf8');
+  const parsed: Array<{ source: string; target: string; status: string }> = [];
+
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/^\s*(\S+)\s+(\S+)\s+(\d{3})\s*$/);
+    if (match) {
+      parsed.push({ source: match[1], target: match[2], status: match[3] });
+    }
+  }
+
+  return parsed;
+}
+
+function normalizeUrl(value: string): string {
+  if (!value) return '/';
+  let candidate = value.trim();
+  if (candidate.includes('://')) {
+    candidate = new URL(candidate).pathname;
+  }
+  if (!candidate.startsWith('/')) {
+    candidate = `/${candidate}`;
+  }
+  candidate = candidate.split('#')[0].split('?')[0];
+  candidate = candidate.replace(/\\/g, '/');
+  while (candidate.includes('//')) {
+    candidate = candidate.replace(/\/\//g, '/');
+  }
+  return candidate === '' ? '/' : candidate;
+}
+
+function readSitemapUrls(): Set<string> {
+  const sitemapPaths = [
+    path.join(process.cwd(), 'public', 'sitemap.xml'),
+    path.join(process.cwd(), 'dist', 'sitemap.xml'),
+  ];
+  const urls = new Set<string>();
+
+  for (const filePath of sitemapPaths) {
+    if (!fs.existsSync(filePath)) continue;
+    const text = fs.readFileSync(filePath, 'utf8');
+    const matches = text.matchAll(/<loc>(.*?)<\/loc>/gi);
+    for (const match of matches) {
+      urls.add(normalizeUrl(match[1]));
+    }
+  }
+
+  return urls;
+}
 
 function readFrontmatter(filePath: string): ProjectFrontmatter {
   const raw = fs.readFileSync(filePath, 'utf8');
@@ -71,5 +137,55 @@ test('projects content files have valid seo-critical structure', () => {
     expect(finalSlug).toMatch(SLUG_PATTERN);
     expect(seenSlugs.has(finalSlug)).toBe(false);
     seenSlugs.add(finalSlug);
+  }
+});
+
+test('approved project slug migration map is present in redirect policy', () => {
+  const redirects = fs.readFileSync(path.join(process.cwd(), 'config', 'redirects.rules'), 'utf8');
+
+  for (const [oldSlug, newSlug] of Object.entries(APPROVED_PROJECT_MIGRATION_MAP)) {
+    const from = `/projects/${oldSlug}`;
+    const to = `/projects/${newSlug}`;
+    expect(redirects).toContain(`${from} ${to} 301`);
+  }
+});
+
+test('approved semantic project migration has no chains and canonical HTML semantics', () => {
+  const rules = parseRedirectRules();
+  const sitemapUrls = readSitemapUrls();
+
+  for (const [oldSlug, newSlug] of Object.entries(APPROVED_PROJECT_MIGRATION_MAP)) {
+    const oldPath = `/projects/${oldSlug}`;
+    const newPath = `/projects/${newSlug}`;
+    const direct = rules.filter((rule) => rule.source === oldPath && rule.target === newPath && rule.status === '301');
+    const incoming = rules.filter((rule) => rule.target === oldPath && rule.status === '301');
+
+    expect(direct).toHaveLength(1);
+    expect(incoming).toHaveLength(0);
+
+    const htmlPath = path.join(process.cwd(), 'dist', 'projects', newSlug, 'index.html');
+    expect(fs.existsSync(htmlPath)).toBe(true);
+
+    const html = fs.readFileSync(htmlPath, 'utf8');
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    expect(titleMatch).not.toBeNull();
+    expect(titleMatch![1].replace(/<[^>]+>/g, '').trim().length).toBeGreaterThan(0);
+
+    const h1Matches = html.match(/<h1\b/gi) || [];
+    expect(h1Matches).toHaveLength(1);
+
+    const robotsMatch = html.match(/<meta\s+[^>]*name=["']robots["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+    expect(robotsMatch).not.toBeNull();
+    expect(robotsMatch![1].toLowerCase()).toContain('index');
+    expect(robotsMatch![1].toLowerCase()).toContain('follow');
+
+    const canonicalMatch = html.match(/<link\s+[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/i);
+    expect(canonicalMatch).not.toBeNull();
+    expect(canonicalMatch![1].trim()).toBe(`https://example.com${newPath}`);
+
+    const hrefs = [...html.matchAll(/href=["']([^"']+)["']/gi)].map((match) => normalizeUrl(match[1]));
+    expect(hrefs.some((href) => href === oldPath)).toBe(false);
+    expect(sitemapUrls.has(newPath)).toBe(true);
+    expect(sitemapUrls.has(oldPath)).toBe(false);
   }
 });

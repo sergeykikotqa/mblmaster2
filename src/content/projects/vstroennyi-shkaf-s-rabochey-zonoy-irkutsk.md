@@ -1,6 +1,6 @@
 ---
 title: Встроенная система хранения с рабочей зоной в Иркутске (ул. Депутатская)
-slug: shkaf-deputatskaya
+slug: vstroennyi-shkaf-s-rabochey-zonoy-irkutsk
 description: Встроенный шкаф с рабочим местом у окна, закрытым хранением и открытыми полками в светлом древесном декоре.
 publishDate: 2026-03-12T00:00:00.000Z
 city: irkutsk

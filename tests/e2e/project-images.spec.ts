@@ -1,10 +1,10 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const AFFECTED_PROJECTS = [
-  'garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion',
-  'shkaf-vstroennyi-angarsk-84-i-kvartal',
-  'garderobnaya-sovetskaya',
-  'garderobnaya-angarsk-29-mikrorayon',
+  'p-obraznaya-garderobnaya-shelekhov',
+  'vstroennyi-shkaf-kupe-v-prikhozhuyu-angarsk',
+  'garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk',
+  'garderobnaya-v-spalne-angarsk',
 ];
 
 const PREVIOUSLY_BROKEN_PATHS = AFFECTED_PROJECTS.map(

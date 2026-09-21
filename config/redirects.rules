@@ -92,15 +92,29 @@ https://www.mebelirkutsk.ru/* https://example.com/:splat 301
 /projects/kuhnya-irkutsk-baykalskaya /projects/mebel-pod-lestnitsey 301
 /projects/kuhnya-baykalskaya /projects/mebel-pod-lestnitsey 301
 /projects/kuhnya-irkutsk-grafitovaya-dalnevostochnaya /projects/kuhnya-grafitovaya 301
-/projects/kuhnya-irkutsk-uglovaya-piskunova /projects/kuhnya-piskunova 301
-/projects/kuhnya-irkutsk-belaya-uglovaya-trilissera /projects/kuhnya-trilissera 301
-/projects/kuhnya-irkutsk-uglovaya-krasnokazachya /projects/kuhnya-krasnokazachya 301
-/projects/kuhnya-irkutsk-belaya-uglovaya-baykalskiy-trakt /projects/kuhnya-baykalskiy-trakt 301
-/projects/kuhnya-irkutsk-biryuzovaya-uglovaya-bogdana /projects/kuhnya-bogdana 301
-/projects/kuhnya-irkutsk-belaya-s-barom-dzerzhinskogo /projects/kuhnya-dzerzhinskogo 301
-/projects/shkaf-irkutsk-rabochaya-zona-deputatskaya /projects/shkaf-deputatskaya 301
-/projects/kuhnya-irkutsk-verkhnyaya-naberezhnaya /projects/kuhnya-verkhnyaya-naberezhnaya 301
+/projects/kuhnya-irkutsk-uglovaya-piskunova /projects/uglovaya-kuhnya-s-podsvetkoy-irkutsk 301
+/projects/kuhnya-irkutsk-belaya-uglovaya-trilissera /projects/belaya-uglovaya-kuhnya-s-derevyannoy-stoleshnitsey-irkutsk 301
+/projects/kuhnya-irkutsk-uglovaya-krasnokazachya /projects/bezhevaya-uglovaya-kuhnya-irkutsk 301
+/projects/kuhnya-irkutsk-belaya-uglovaya-baykalskiy-trakt /projects/belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk 301
+/projects/kuhnya-irkutsk-biryuzovaya-uglovaya-bogdana /projects/biruzovaya-uglovaya-kuhnya-irkutsk 301
+/projects/kuhnya-irkutsk-belaya-s-barom-dzerzhinskogo /projects/belaya-uglovaya-kuhnya-s-barnoy-stoykoy-irkutsk 301
+/projects/shkaf-irkutsk-rabochaya-zona-deputatskaya /projects/vstroennyi-shkaf-s-rabochey-zonoy-irkutsk 301
+/projects/kuhnya-irkutsk-verkhnyaya-naberezhnaya /projects/pryamaya-kuhnya-s-vysokimi-penalami-irkutsk 301
 /projects/rabochaya-zona-pod-skatom-irkutsk /projects/mansardnaya-rabochaya-zona-pod-skatom-irkutsk 301
+
+# Semantic project URL migration: street/district-based IDs -> descriptive subject-based IDs
+/projects/garderobnaya-angarsk-29-mikrorayon /projects/garderobnaya-v-spalne-angarsk 301
+/projects/garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion /projects/p-obraznaya-garderobnaya-shelekhov 301
+/projects/garderobnaya-sovetskaya /projects/garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk 301
+/projects/kuhnya-baykalskiy-trakt /projects/belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk 301
+/projects/kuhnya-bogdana /projects/biruzovaya-uglovaya-kuhnya-irkutsk 301
+/projects/kuhnya-dzerzhinskogo /projects/belaya-uglovaya-kuhnya-s-barnoy-stoykoy-irkutsk 301
+/projects/kuhnya-krasnokazachya /projects/bezhevaya-uglovaya-kuhnya-irkutsk 301
+/projects/kuhnya-piskunova /projects/uglovaya-kuhnya-s-podsvetkoy-irkutsk 301
+/projects/kuhnya-trilissera /projects/belaya-uglovaya-kuhnya-s-derevyannoy-stoleshnitsey-irkutsk 301
+/projects/kuhnya-verkhnyaya-naberezhnaya /projects/pryamaya-kuhnya-s-vysokimi-penalami-irkutsk 301
+/projects/shkaf-vstroennyi-angarsk-84-i-kvartal /projects/vstroennyi-shkaf-kupe-v-prikhozhuyu-angarsk 301
+/projects/shkaf-deputatskaya /projects/vstroennyi-shkaf-s-rabochey-zonoy-irkutsk 301
 
 # District legacy is deprecated and removed (District OFF hard)
 /raiony /410 410

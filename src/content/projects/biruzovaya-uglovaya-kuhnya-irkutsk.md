@@ -1,6 +1,6 @@
 ---
 title: Бирюзовая угловая кухня на заказ в Иркутске (ул. Богдана Хмельницкого)
-slug: kuhnya-bogdana
+slug: biruzovaya-uglovaya-kuhnya-irkutsk
 description: Яркая угловая кухня с бирюзовыми фасадами, встроенной техникой и белыми верхними модулями.
 publishDate: 2026-03-12T00:00:00.000Z
 city: irkutsk

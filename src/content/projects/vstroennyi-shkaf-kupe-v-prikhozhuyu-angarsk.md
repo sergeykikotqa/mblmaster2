@@ -1,6 +1,6 @@
 ---
 title: Встроенный шкаф-купе в прихожую на заказ в Ангарске
-slug: shkaf-vstroennyi-angarsk-84-i-kvartal
+slug: vstroennyi-shkaf-kupe-v-prikhozhuyu-angarsk
 description: Встроили шкаф-купе в нишу прихожей и собрали наполнение под сезонное хранение.
 publishDate: 2025-10-03T00:00:00.000Z
 city: angarsk

@@ -14,7 +14,7 @@
           "image": "/images/projects/kuhnya-bogdana/01.jpg",
           "photos": ["/images/projects/kuhnya-bogdana/02.jpg", "/images/projects/kuhnya-bogdana/01.jpg"],
           "alt": "Кухня на заказ в Иркутске, ул. Богдана Хмельницкого",
-          "projectSlug": "kuhnya-bogdana"
+          "projectSlug": "biruzovaya-uglovaya-kuhnya-irkutsk"
         },
         {
           "title": "Прямая кухня с высокими пеналами",
@@ -30,7 +30,7 @@
             "/images/projects/kuhnya-verkhnyaya-naberezhnaya/03.jpg"
           ],
           "alt": "Кухня на заказ в Иркутске, Верхняя Набережная",
-          "projectSlug": "kuhnya-verkhnyaya-naberezhnaya"
+          "projectSlug": "pryamaya-kuhnya-s-vysokimi-penalami-irkutsk"
         },
         {
           "title": "Угловая кухня с подсветкой",
@@ -43,7 +43,7 @@
           "image": "/images/projects/kuhnya-piskunova/01.jpg",
           "photos": ["/images/projects/kuhnya-piskunova/02.jpg", "/images/projects/kuhnya-piskunova/03.jpg"],
           "alt": "Кухня на заказ в Иркутске, улица Пискунова",
-          "projectSlug": "kuhnya-piskunova"
+          "projectSlug": "uglovaya-kuhnya-s-podsvetkoy-irkutsk"
         },
         {
           "title": "Белая угловая кухня с тёплой столешницей",
@@ -56,7 +56,7 @@
           "image": "/images/projects/kuhnya-trilissera/01.jpg",
           "photos": ["/images/projects/kuhnya-trilissera/02.jpg", "/images/projects/kuhnya-trilissera/03.jpg"],
           "alt": "Кухня на заказ в Иркутске, улица Трилиссера",
-          "projectSlug": "kuhnya-trilissera"
+          "projectSlug": "belaya-uglovaya-kuhnya-s-derevyannoy-stoleshnitsey-irkutsk"
         },
         {
           "title": "Бежевая угловая кухня с фартуком под бетон",
@@ -69,7 +69,7 @@
           "image": "/images/projects/kuhnya-krasnokazachya/01.jpg",
           "photos": ["/images/projects/kuhnya-krasnokazachya/02.jpg", "/images/projects/kuhnya-krasnokazachya/03.jpg"],
           "alt": "Кухня на заказ в Иркутске, улица Красноказачья",
-          "projectSlug": "kuhnya-krasnokazachya"
+          "projectSlug": "bezhevaya-uglovaya-kuhnya-irkutsk"
         },
         {
           "title": "Белая угловая кухня для загородного дома",
@@ -85,7 +85,7 @@
             "/images/projects/kuhnya-baykalskiy-trakt/01.jpg"
           ],
           "alt": "Кухня на заказ в Иркутске, Байкальский тракт",
-          "projectSlug": "kuhnya-baykalskiy-trakt"
+          "projectSlug": "belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk"
         }
       ],
       "reviews": [
@@ -432,7 +432,7 @@
           "image": "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg",
           "photos": ["/images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg", "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg"],
           "alt": "Гардеробная на заказ в Иркутске, улица Советская",
-          "projectSlug": "garderobnaya-sovetskaya"
+          "projectSlug": "garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk"
         },
         {
           "title": "Компактная гардеробная в нише",
@@ -492,7 +492,7 @@
           "image": "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg",
           "photos": ["/images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg", "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg"],
           "alt": "Гардеробная на заказ в Ангарске, 29 микрорайон",
-          "projectSlug": "garderobnaya-angarsk-29-mikrorayon"
+          "projectSlug": "garderobnaya-v-spalne-angarsk"
         },
         {
           "title": "Система хранения для семьи",
@@ -564,7 +564,7 @@
           "image": "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg",
           "photos": ["/images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg", "/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg"],
           "alt": "Гардеробная на заказ в Шелехове, 5 микрорайон",
-          "projectSlug": "garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion"
+          "projectSlug": "p-obraznaya-garderobnaya-shelekhov"
         }
       ],
       "reviews": [

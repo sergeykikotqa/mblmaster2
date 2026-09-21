@@ -1,6 +1,6 @@
 ---
 title: Угловая кухня на заказ в Иркутске (ул. Пискунова)
-slug: kuhnya-piskunova
+slug: uglovaya-kuhnya-s-podsvetkoy-irkutsk
 description: Лаконичная угловая кухня с матовыми фасадами, подсветкой фартука и встроенной посудомоечной машиной.
 publishDate: 2026-03-12T00:00:00.000Z
 city: irkutsk

@@ -1,6 +1,6 @@
 ---
 title: Прямая кухня на заказ в Иркутске (Верхняя Набережная)
-slug: kuhnya-verkhnyaya-naberezhnaya
+slug: pryamaya-kuhnya-s-vysokimi-penalami-irkutsk
 description: Реализовали светлую кухню в современном стиле с линейной компоновкой и высокими пеналами под технику.
 publishDate: 2025-11-18T00:00:00.000Z
 city: irkutsk

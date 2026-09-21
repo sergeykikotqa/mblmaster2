@@ -1,6 +1,6 @@
 ---
 title: Бежевая угловая кухня на заказ в Иркутске (ул. Красноказачья)
-slug: kuhnya-krasnokazachya
+slug: bezhevaya-uglovaya-kuhnya-irkutsk
 description: Светлая угловая кухня с матовыми фасадами, фартуком под бетон и встроенной техникой в колонне.
 publishDate: 2026-03-12T00:00:00.000Z
 city: irkutsk

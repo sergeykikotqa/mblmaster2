@@ -1,6 +1,6 @@
 ---
 title: Гардеробная в спальне на заказ в Ангарске
-slug: garderobnaya-angarsk-29-mikrorayon
+slug: garderobnaya-v-spalne-angarsk
 description: Собрали гардеробную в спальне с единым блоком хранения одежды и обуви, сохранив проход и доступ к окну.
 publishDate: 2025-07-04T00:00:00.000Z
 city: angarsk

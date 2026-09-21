@@ -1,6 +1,6 @@
 ---
 title: Белая угловая кухня на заказ в Иркутске (ул. Дзержинского)
-slug: kuhnya-dzerzhinskogo
+slug: belaya-uglovaya-kuhnya-s-barnoy-stoykoy-irkutsk
 description: Угловая кухня в белых фасадах с древесными акцентами, барной стойкой и встроенной техникой.
 publishDate: 2026-03-12T00:00:00.000Z
 city: irkutsk

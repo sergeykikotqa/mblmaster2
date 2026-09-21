@@ -7,16 +7,18 @@ const PROJECTS_DIR = path.join(ROOT, 'src', 'content', 'projects');
 const VALID_STATUSES = new Set([301, 302, 308]);
 
 const LEGACY_PROJECT_REDIRECTS = [
-  { from: '/projects/kuhnya-irkutsk-baykalskaya', to: '/projects/mebel-pod-lestnitsey' },
-  { from: '/projects/kuhnya-irkutsk-grafitovaya-dalnevostochnaya', to: '/projects/kuhnya-grafitovaya' },
-  { from: '/projects/kuhnya-irkutsk-uglovaya-piskunova', to: '/projects/kuhnya-piskunova' },
-  { from: '/projects/kuhnya-irkutsk-belaya-uglovaya-trilissera', to: '/projects/kuhnya-trilissera' },
-  { from: '/projects/kuhnya-irkutsk-uglovaya-krasnokazachya', to: '/projects/kuhnya-krasnokazachya' },
-  { from: '/projects/kuhnya-irkutsk-belaya-uglovaya-baykalskiy-trakt', to: '/projects/kuhnya-baykalskiy-trakt' },
-  { from: '/projects/kuhnya-irkutsk-biryuzovaya-uglovaya-bogdana', to: '/projects/kuhnya-bogdana' },
-  { from: '/projects/kuhnya-irkutsk-belaya-s-barom-dzerzhinskogo', to: '/projects/kuhnya-dzerzhinskogo' },
-  { from: '/projects/shkaf-irkutsk-rabochaya-zona-deputatskaya', to: '/projects/shkaf-deputatskaya' },
-  { from: '/projects/kuhnya-irkutsk-verkhnyaya-naberezhnaya', to: '/projects/kuhnya-verkhnyaya-naberezhnaya' },
+  { from: '/projects/garderobnaya-angarsk-29-mikrorayon', to: '/projects/garderobnaya-v-spalne-angarsk' },
+  { from: '/projects/garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion', to: '/projects/p-obraznaya-garderobnaya-shelekhov' },
+  { from: '/projects/garderobnaya-sovetskaya', to: '/projects/garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk' },
+  { from: '/projects/kuhnya-baykalskiy-trakt', to: '/projects/belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk' },
+  { from: '/projects/kuhnya-bogdana', to: '/projects/biruzovaya-uglovaya-kuhnya-irkutsk' },
+  { from: '/projects/kuhnya-dzerzhinskogo', to: '/projects/belaya-uglovaya-kuhnya-s-barnoy-stoykoy-irkutsk' },
+  { from: '/projects/kuhnya-krasnokazachya', to: '/projects/bezhevaya-uglovaya-kuhnya-irkutsk' },
+  { from: '/projects/kuhnya-piskunova', to: '/projects/uglovaya-kuhnya-s-podsvetkoy-irkutsk' },
+  { from: '/projects/kuhnya-trilissera', to: '/projects/belaya-uglovaya-kuhnya-s-derevyannoy-stoleshnitsey-irkutsk' },
+  { from: '/projects/kuhnya-verkhnyaya-naberezhnaya', to: '/projects/pryamaya-kuhnya-s-vysokimi-penalami-irkutsk' },
+  { from: '/projects/shkaf-vstroennyi-angarsk-84-i-kvartal', to: '/projects/vstroennyi-shkaf-kupe-v-prikhozhuyu-angarsk' },
+  { from: '/projects/shkaf-deputatskaya', to: '/projects/vstroennyi-shkaf-s-rabochey-zonoy-irkutsk' },
 ];
 
 function fail(message) {
