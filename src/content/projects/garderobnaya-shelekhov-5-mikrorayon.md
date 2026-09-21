@@ -1,5 +1,5 @@
 ---
-title: Гардеробная на заказ в Шелехове (5-й микрорайон)
+title: П-образная гардеробная для семьи на заказ в Шелехове
 slug: garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion
 description: Собрали семейную гардеробную с раздельными модулями и запасом по сезонному хранению.
 publishDate: 2025-11-14T00:00:00.000Z
@@ -21,7 +21,7 @@ images:
   - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
 blocks:
   - type: hero
-    title: Гардеробная на заказ в Шелехове (5-й микрорайон)
+    title: П-образная гардеробная для семьи на заказ в Шелехове
     image: /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
   - type: materials
     items:

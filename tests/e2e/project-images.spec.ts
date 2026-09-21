@@ -4,7 +4,6 @@ const AFFECTED_PROJECTS = [
   'garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion',
   'shkaf-vstroennyi-angarsk-84-i-kvartal',
   'garderobnaya-sovetskaya',
-  'kuhnya-uglovaya-irkutsk-lermontova',
   'garderobnaya-angarsk-29-mikrorayon',
 ];
 

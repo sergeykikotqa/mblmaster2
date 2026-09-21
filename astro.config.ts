@@ -21,9 +21,9 @@ import {
 import { autoInternalLinksRehypePlugin } from './src/utils/auto-internal-links';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PUBLIC_SITE_URL = String(process.env.PUBLIC_SITE_URL || '').trim();
+const PUBLIC_SITE_URL = String(process.env.PUBLIC_SITE_URL || 'https://example.com').trim();
 const IS_E2E = String(process.env.PUBLIC_E2E || '').trim() === '1';
-const RUNTIME_SITE_URL = new URL(PUBLIC_SITE_URL || 'https://mebel-irkutsk.ru');
+const RUNTIME_SITE_URL = new URL(PUBLIC_SITE_URL);
 
 const hasExternalScripts = false;
 const whenExternalScripts = (items: (() => AstroIntegration) | (() => AstroIntegration)[] = []) =>

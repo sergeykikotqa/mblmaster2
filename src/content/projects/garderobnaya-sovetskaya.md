@@ -1,5 +1,5 @@
 ---
-title: Гардеробная на заказ в Иркутске (ул. Советская)
+title: Гардеробная с мужской и женской зонами на заказ в Иркутске
 slug: garderobnaya-sovetskaya
 description: Организовали гардеробную в отдельной комнате с разделением на мужскую и женскую зоны и запасом под сезонное хранение.
 publishDate: 2025-09-18T00:00:00.000Z
@@ -17,7 +17,7 @@ images:
   - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg
 blocks:
   - type: hero
-    title: Гардеробная на заказ в Иркутске (ул. Советская)
+    title: Гардеробная с мужской и женской зонами на заказ в Иркутске
     image: /images/projects/uglovaya-garderobnaya-kupe-irkutsk/02.jpg
   - type: task
     text: |-

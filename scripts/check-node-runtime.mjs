@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const entryPath = path.join(projectRoot, '.output', 'server', 'entry.mjs');
 const publicRoot = path.join(projectRoot, 'dist');
-const runtimeSite = new URL(process.env.PUBLIC_SITE_URL || 'https://mebel-irkutsk.ru');
+const runtimeSite = new URL(process.env.PUBLIC_SITE_URL || 'https://example.com');
 
 function countHtml(directory) {
   let count = 0;

@@ -21,10 +21,10 @@ describe('resolveProjectImage', () => {
 
   it('maps legacy Figma case references to real MBL project images', () => {
     expect(
-      resolveProjectImage('kuhnya-uglovaya-irkutsk-lermontova', '/images/figma/portfolio-modern-light.jpg', undefined, 0)
+      resolveProjectImage('kuhnya-legacy-demo', '/images/figma/portfolio-modern-light.jpg', undefined, 0)
     ).toBe('/images/projects/kuhnya-trilissera/01.jpg');
     expect(
-      resolveProjectImage('kuhnya-uglovaya-irkutsk-lermontova', '/images/figma/portfolio-detail-wood.png', undefined, 1)
+      resolveProjectImage('kuhnya-legacy-demo', '/images/figma/portfolio-detail-wood.png', undefined, 1)
     ).toBe('/images/projects/kuhnya-trilissera/02.jpg');
     expect(
       resolveProjectImage(

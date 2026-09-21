@@ -1,5 +1,5 @@
 ---
-title: Гардеробная на заказ в Ангарске (29-й микрорайон)
+title: Гардеробная в спальне на заказ в Ангарске
 slug: garderobnaya-angarsk-29-mikrorayon
 description: Собрали гардеробную в спальне с единым блоком хранения одежды и обуви, сохранив проход и доступ к окну.
 publishDate: 2025-07-04T00:00:00.000Z
@@ -17,7 +17,7 @@ images:
   - /images/projects/uglovaya-garderobnaya-kupe-irkutsk/03.jpg
 blocks:
   - type: hero
-    title: Гардеробная на заказ в Ангарске (29-й микрорайон)
+    title: Гардеробная в спальне на заказ в Ангарске
     image: /images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg
   - type: task
     text: |-

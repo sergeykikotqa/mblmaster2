@@ -89,25 +89,27 @@ const cityNotes = [
       </p>
     </div>
 
-    <ul class="city-services-grid">
-      {
-        services.map((service) => (
-          <li class="city-service-card ds-card ds-card-interactive">
-            <h3>{service.name}</h3>
-            <p>{service.summary}</p>
-            <div class="city-service-meta">
-              <span>
-                {service.priceRange.from.toLocaleString('ru-RU')} - {service.priceRange.to.toLocaleString('ru-RU')} ₽
-              </span>
-              <small>{service.offer.title}</small>
-            </div>
-            <a class="city-service-btn ds-action-primary" href={service.href} data-anchor-spam="ignore">
-              Перейти к услуге
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+    <nav data-city-commercial-nav aria-label="Основные услуги по городу">
+      <ul class="city-services-grid">
+        {
+          services.map((service) => (
+            <li class="city-service-card ds-card ds-card-interactive">
+              <h3>{service.name}</h3>
+              <p>{service.summary}</p>
+              <div class="city-service-meta">
+                <span>
+                  {service.priceRange.from.toLocaleString('ru-RU')} - {service.priceRange.to.toLocaleString('ru-RU')} ₽
+                </span>
+                <small>{service.offer.title}</small>
+              </div>
+              <a class="city-service-btn ds-action-primary" href={service.href} data-anchor-spam="ignore">
+                Перейти к услуге
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
   </section>
 
   <Contact

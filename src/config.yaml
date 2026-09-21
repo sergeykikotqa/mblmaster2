@@ -1,6 +1,6 @@
 site:
   name: мбл мастер
-  site: 'https://mebel-irkutsk.ru'
+  site: 'https://example.com'
   base: '/'
   trailingSlash: false
 

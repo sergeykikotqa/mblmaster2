@@ -61,7 +61,6 @@ const LEGACY_PROJECT_IMAGE_BASE_DIRS: Record<string, string> = {
   'garderobnaya-angarsk-29-mikrorayon': 'uglovaya-garderobnaya-kupe-irkutsk',
   'garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion': 'uglovaya-garderobnaya-kupe-irkutsk',
   'garderobnaya-sovetskaya': 'uglovaya-garderobnaya-kupe-irkutsk',
-  'kuhnya-uglovaya-irkutsk-lermontova': 'kuhnya-trilissera',
   'shkaf-vstroennyi-angarsk-84-i-kvartal': 'shkaf-kupe-na-vsyu-stenu-irkutsk',
 };
 

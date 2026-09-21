@@ -10,7 +10,7 @@ const outputs = {
   paths: path.join(root, 'nginx', 'generated', 'redirect-paths.conf'),
 };
 const validStatuses = new Set([301, 307, 404, 410]);
-const canonicalOrigin = 'https://mebel-irkutsk.ru';
+const canonicalOrigin = 'https://example.com';
 
 function fail(message) {
   throw new Error(`[redirect-generator] ${message}`);

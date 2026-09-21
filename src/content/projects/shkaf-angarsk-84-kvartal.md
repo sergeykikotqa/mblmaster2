@@ -1,5 +1,5 @@
 ---
-title: Шкаф-купе на заказ в Ангарске (84-й квартал)
+title: Встроенный шкаф-купе в прихожую на заказ в Ангарске
 slug: shkaf-vstroennyi-angarsk-84-i-kvartal
 description: Встроили шкаф-купе в нишу прихожей и собрали наполнение под сезонное хранение.
 publishDate: 2025-10-03T00:00:00.000Z
@@ -22,7 +22,7 @@ images:
   - /images/projects/shkaf-kupe-na-vsyu-stenu-irkutsk/02.jpg
 blocks:
   - type: hero
-    title: Шкаф-купе на заказ в Ангарске (84-й квартал)
+    title: Встроенный шкаф-купе в прихожую на заказ в Ангарске
     image: /images/projects/shkaf-kupe-na-vsyu-stenu-irkutsk/01.jpg
   - type: materials
     items:
