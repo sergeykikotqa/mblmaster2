@@ -10,9 +10,9 @@ import { buildProjectCards } from '~/lib/projects/project-adapters';
 import { toCanonical } from '~/lib/url-builder';
 
 const metadata = {
-  title: 'Кухня 3 метра на заказ в Иркутске — цена, планировки, примеры',
+  title: 'Кухня 3 метра на заказ в Иркутске — планировка и примеры',
   description:
-    'Кухня 3 метра на заказ в Иркутске: планировка, что помещается, примеры и ориентир по цене. Рассчитаем планировку и стоимость за 1 день.',
+    'Планировка кухни 3 метра в Иркутске: что помещается, как распределить технику и хранение, и какие варианты подходят для небольших помещений.',
   canonical: toCanonical('/kuhni-3-metra', Astro.site),
 };
 
@@ -34,10 +34,10 @@ const heroActions = [
 ];
 const heroMobileProof =
   totalKitchenProjects > 0
-    ? `${totalKitchenProjects} кейсов по кухням • от 120 000 ₽`
-    : 'Планировка за 1 день • от 120 000 ₽';
-const midCtaTitle = 'Рассчитаем кухню 3 метра под ваш размер за 1 день';
-const midCtaSubtitle = 'Покажем 2–3 варианта планировки, материалы и реальный бюджет до заказа.';
+    ? `${totalKitchenProjects} кейсов по кухням • варианты под размер`
+    : 'Планировка под размер • уточнение по задаче';
+const midCtaTitle = 'Рассчитаем кухню 3 метра под ваш размер';
+const midCtaSubtitle = 'Покажем варианты планировки, материалы и удобное наполнение до согласования проекта.';
 
 const leadContext = {
   city: 'irkutsk',
@@ -52,25 +52,25 @@ const leadContext = {
 
   <HeroModern
     title="Кухня 3 метра на заказ в Иркутске"
-    subtitle="Оптимальная планировка для небольших помещений. Рассчитаем стоимость и покажем варианты за 1 день."
+    subtitle="Оптимальная планировка для небольших помещений. Подберём удобное наполнение и покажем, как использовать каждый метр без потери функциональности."
     actions={heroActions}
     primaryCtaId="service_hero_primary"
     secondaryCtaIds={['service_hero_secondary']}
     mobileProof={heroMobileProof}
     badge="Кухни под размер"
-    trustItems={['Уместим технику даже на 3 метрах', 'Проект до старта производства', 'Цена фиксируется в договоре']}
+    trustItems={['Уместим технику даже на 3 метрах', 'Проект до старта производства', 'Стоимость фиксируется по итогам замера']}
     stats={[
       { value: '3 м', label: 'длина кухни' },
-      { value: '1 день', label: 'расчет и планировка' },
-      { value: 'от 120 тыс. ₽', label: 'базовый бюджет' },
+      { value: 'под задачу', label: 'планировка' },
+      { value: 'по замеру', label: 'итоговая стоимость' },
     ]}
     slides={[
       {
         src: '/images/projects/kuhnya-baykalskaya/01.jpg',
         alt: 'Кухня 3 метра на заказ',
         title: 'Кухня 3 метра на заказ в Иркутске',
-        subtitle: 'Оптимальная планировка и расчет за 1 день.',
-        kicker: 'Иркутск, Ангарск, Шелехов',
+        subtitle: 'Планировка под реальные размеры и тип помещения.',
+        kicker: 'Иркутск',
       },
     ]}
   />
@@ -78,21 +78,21 @@ const leadContext = {
   <section id="price-quick" class="section section-inner cv-auto price-block">
     <div class="money-head ds-section-head left">
       <div class="money-pill ds-pill">БЫСТРЫЙ ОТВЕТ</div>
-      <h2>Сколько стоит кухня 3 метра?</h2>
-      <p>Ориентиры по бюджету для небольших помещений.</p>
+      <h2>Как формируется стоимость кухни 3 метра?</h2>
+      <p>Точная цена зависит от материалов, глубины, количества техники и логики хранения. Сначала разбираем планировку, потом фиксируем бюджет по вашему проекту.</p>
     </div>
     <div class="price-grid">
       <div class="price-card ds-card">
-        <strong>Базовая</strong>
-        <span>от 120 000 ₽</span>
+        <strong>Материалы</strong>
+        <span>ЛДСП, МДФ, фасады и столешница</span>
       </div>
       <div class="price-card ds-card">
-        <strong>Средний сегмент</strong>
-        <span>150 000 – 250 000 ₽</span>
+        <strong>Наполнение</strong>
+        <span>ящики, ширина модулей, хранение</span>
       </div>
       <div class="price-card ds-card">
-        <strong>С техникой</strong>
-        <span>от 250 000 ₽</span>
+        <strong>Техника</strong>
+        <span>встраиваемая и хозяйственная</span>
       </div>
     </div>
   </section>
@@ -213,26 +213,26 @@ const leadContext = {
   <section class="section section-inner cv-auto">
     <div class="money-head ds-section-head left">
       <div class="money-pill ds-pill">ЦЕНЫ</div>
-      <h2>Сколько стоит кухня 3 метра в Иркутске</h2>
-      <p>Цена зависит от материалов, комплектации и техники.</p>
+      <h2>Как понять реальный бюджет кухни 3 метра</h2>
+      <p>Точная стоимость зависит от размеров, выбора материалов, техники и логики хранения.</p>
     </div>
     <ul class="compact-list">
-      <li>До 150 000 ₽ — ЛДСП, базовая фурнитура.</li>
-      <li>150–250 тыс. ₽ — МДФ, доводчики, более удобная система хранения.</li>
-      <li>От 250 тыс. ₽ — эмаль/шпон, сложные решения и техника.</li>
+      <li>Базовый проект обычно обходится дешевле, если нужна простая и компактная конфигурация.</li>
+      <li>Угловые модули, встроенная техника и подсветка повышают стоимость и усложняют проект.</li>
+      <li>Окончательный бюджет формируется после замера и согласования наполнения.</li>
     </ul>
     <div class="price-extra">
       <div>
         <strong>Что входит:</strong>
-        <p>корпуса, фасады, фурнитура.</p>
+        <p>корпуса, фасады, фурнитура, проект, монтаж.</p>
       </div>
       <div>
         <strong>От чего зависит цена:</strong>
-        <p>материалы, размер, техника.</p>
+        <p>материалы, размер, техника, глубина и высота мебели.</p>
       </div>
     </div>
-    <p class="section-note">Точный расчет зависит от планировки — покажем ниже на примерах.</p>
-    <a class="price-next" href="/articles/skolko-stoit-kuhnya-v-irkutske">Сколько стоит кухня →</a>
+    <p class="section-note">Подходы и ориентиры обсуждаем на замере, без подмены фактической цены проекта обобщённым «средним диапазоном».</p>
+    <a class="price-next" href="/articles/planirovka-kuhni-3-metra-irkutsk">Планировка кухни 3 метра →</a>
   </section>
 
   <MoneyPageReentryCta title={midCtaTitle} subtitle={midCtaSubtitle} />
@@ -263,7 +263,7 @@ const leadContext = {
     <Contact
       id="contact"
       title="Оставить заявку на кухню 3 метра"
-      subtitle="Опишите задачу — рассчитаем планировку и стоимость за 1 день."
+      subtitle="Опишите задачу — покажем, как лучше распределить модули и что понадобится для вашего пространства."
       tagline="Форма расчета"
       inputs={[
         { type: 'text', name: 'name', label: 'Имя', required: true },

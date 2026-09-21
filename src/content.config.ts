@@ -256,7 +256,7 @@ const projectsCollection = defineCollection({
     publishDate: z.coerce.date().optional(),
     updateDate: z.coerce.date().optional(),
 
-      city: z.enum(['irkutsk', 'angarsk', 'shelekhov']),
+      city: z.literal('irkutsk'),
       service: z.enum(['kuhni', 'shkafy', 'garderobnye']),
       relatedServices: z.array(z.enum(['kuhni', 'shkafy', 'garderobnye'])).optional(),
       serviceLabelOverride: z

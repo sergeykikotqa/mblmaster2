@@ -4,7 +4,7 @@ import path from 'node:path';
 const ROOT = process.cwd();
 const DIST_DIR = path.join(ROOT, 'dist');
 const GENERATED_PAGES_PATH = path.join(ROOT, 'data', 'generated-pages.json');
-const REQUIRED_CITY_BLOCKS = ['irkutsk', 'angarsk', 'shelekhov'];
+const REQUIRED_CITY_BLOCKS = ['irkutsk'];
 
 function fail(message) {
   throw new Error(message);

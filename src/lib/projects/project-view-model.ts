@@ -892,8 +892,6 @@ export async function buildProjectViewModel({
   const areaServedName =
     {
       Иркутск: 'Irkutsk',
-      Ангарск: 'Angarsk',
-      Шелехов: 'Shelekhov',
     }[cityLabels.base] || cityLabels.base;
   const creativeWorkSchema = {
     '@context': 'https://schema.org',

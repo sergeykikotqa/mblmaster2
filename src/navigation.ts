@@ -35,8 +35,6 @@ export const footerData = {
       title: 'Города',
       links: [
         { text: 'Иркутск', href: getPermalink('/irkutsk') },
-        { text: 'Ангарск', href: getPermalink('/angarsk') },
-        { text: 'Шелехов', href: getPermalink('/shelekhov') },
       ],
     },
     {

@@ -5,11 +5,7 @@ const ROOT = process.cwd();
 const DIST_DIR = path.join(ROOT, 'dist');
 const GENERATED_PAGES_PATH = path.join(ROOT, 'data', 'generated-pages.json');
 const LOCAL_CITY_BLOCKS_PATH = path.join(ROOT, 'data', 'local-city-blocks.json');
-const REQUIRED_CITIES = [
-  { id: 'irkutsk', label: 'Иркутск', href: '/irkutsk', minCases: 2 },
-  { id: 'angarsk', label: 'Ангарск', href: '/angarsk', minCases: 1 },
-  { id: 'shelekhov', label: 'Шелехов', href: '/shelekhov', minCases: 1 },
-];
+const REQUIRED_CITIES = [{ id: 'irkutsk', label: 'Иркутск', href: '/irkutsk', minCases: 2 }];
 const REQUIRED_CITY_IDS = new Set(REQUIRED_CITIES.map((city) => city.id));
 const REQUIRED_CITY_HREFS = new Set(REQUIRED_CITIES.map((city) => city.href));
 const REQUIRED_CITY_LABELS = new Set(REQUIRED_CITIES.map((city) => city.label));
@@ -192,8 +188,11 @@ function validateMoneyPages(pages, localCityBlocks) {
       errors.push(`- ${page.pageSlug}: missing section.geo-anchor-block`);
     } else {
       const anchors = extractAnchorTags(geoAnchorHtml);
-      if (anchors.length !== 3) {
-        errors.push(`- ${page.pageSlug}: geo-anchor-block must contain exactly 3 links, found ${anchors.length}`);
+      const expectedAnchorCount = REQUIRED_CITIES.length;
+      if (anchors.length !== expectedAnchorCount) {
+        errors.push(
+          `- ${page.pageSlug}: geo-anchor-block must contain exactly ${expectedAnchorCount} link(s), found ${anchors.length}`
+        );
       }
 
       const hrefs = new Set(anchors.map((anchor) => anchor.href));
@@ -260,8 +259,11 @@ function validateMoneyPages(pages, localCityBlocks) {
         errors.push(`- ${page.pageSlug}: missing KitchenCabinetStore JSON-LD node`);
       } else {
         const areaServed = getField(businessNode, 'areaServed');
-        if (!Array.isArray(areaServed) || areaServed.length < 3) {
-          errors.push(`- ${page.pageSlug}: KitchenCabinetStore.areaServed must contain 3 городa`);
+        const expectedAreaCount = REQUIRED_CITIES.length;
+        if (!Array.isArray(areaServed) || areaServed.length < expectedAreaCount) {
+          errors.push(
+            `- ${page.pageSlug}: KitchenCabinetStore.areaServed must contain at least ${expectedAreaCount} city entry(ies)`
+          );
         } else {
           const areaNames = new Set(areaServed.map((item) => normalizeAreaLabel(item)).filter(Boolean));
           const missingNames = [...REQUIRED_CITY_LABELS].filter((name) => !areaNames.has(name));

@@ -29,59 +29,23 @@ https://www.mebelirkutsk.ru/* https://example.com/:splat 301
 
 # Legacy reverse geo permutations -> service money pages
 /kuhni/irkutsk /kuhni 301
-/kuhni/angarsk /kuhni 301
-/kuhni/shelekhov /kuhni 301
-/kuhni/shelehov /kuhni 301
 /shkafy/irkutsk /shkafy 301
-/shkafy/angarsk /shkafy 301
-/shkafy/shelekhov /shkafy 301
-/shkafy/shelehov /shkafy 301
 /garderobnye/irkutsk /garderobnye 301
-/garderobnye/angarsk /garderobnye 301
-/garderobnye/shelekhov /garderobnye 301
-/garderobnye/shelehov /garderobnye 301
 
 # Geo service routes -> service money pages
 /irkutsk/kuhni /kuhni 301
-/angarsk/kuhni /kuhni 301
-/shelekhov/kuhni /kuhni 301
-/shelehov/kuhni /kuhni 301
 /irkutsk/shkafy /shkafy 301
-/angarsk/shkafy /shkafy 301
-/shelekhov/shkafy /shkafy 301
-/shelehov/shkafy /shkafy 301
 /irkutsk/garderobnye /garderobnye 301
-/angarsk/garderobnye /garderobnye 301
-/shelekhov/garderobnye /garderobnye 301
-/shelehov/garderobnye /garderobnye 301
 
 # Geo service legacy aliases -> service money pages
 /irkutsk/kuhni-na-zakaz /kuhni 301
-/angarsk/kuhni-na-zakaz /kuhni 301
-/shelekhov/kuhni-na-zakaz /kuhni 301
-/shelehov/kuhni-na-zakaz /kuhni 301
 /irkutsk/shkafy-kupe /shkafy 301
-/angarsk/shkafy-kupe /shkafy 301
-/shelekhov/shkafy-kupe /shkafy 301
-/shelehov/shkafy-kupe /shkafy 301
 /irkutsk/vstroennye-shkafy /shkafy 301
-/angarsk/vstroennye-shkafy /shkafy 301
-/shelekhov/vstroennye-shkafy /shkafy 301
-/shelehov/vstroennye-shkafy /shkafy 301
 
 # Flat legacy geo aliases -> service money pages
 /irkutsk-kuhni-na-zakaz /kuhni 301
-/angarsk-kuhni-na-zakaz /kuhni 301
-/shelekhov-kuhni-na-zakaz /kuhni 301
-/shelehov-kuhni-na-zakaz /kuhni 301
 /irkutsk-shkafy-kupe /shkafy 301
-/angarsk-shkafy-kupe /shkafy 301
-/shelekhov-shkafy-kupe /shkafy 301
-/shelehov-shkafy-kupe /shkafy 301
 /irkutsk-garderobnye /garderobnye 301
-/angarsk-garderobnye /garderobnye 301
-/shelekhov-garderobnye /garderobnye 301
-/shelehov-garderobnye /garderobnye 301
 
 # Legacy kitchen intent aliases -> /kuhni
 /irkutsk/mebel-v-novostroyke /kuhni 301
@@ -103,8 +67,6 @@ https://www.mebelirkutsk.ru/* https://example.com/:splat 301
 /projects/rabochaya-zona-pod-skatom-irkutsk /projects/mansardnaya-rabochaya-zona-pod-skatom-irkutsk 301
 
 # Semantic project URL migration: street/district-based IDs -> descriptive subject-based IDs
-/projects/garderobnaya-angarsk-29-mikrorayon /projects/garderobnaya-v-spalne-angarsk 301
-/projects/garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion /projects/p-obraznaya-garderobnaya-shelekhov 301
 /projects/garderobnaya-sovetskaya /projects/garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk 301
 /projects/kuhnya-baykalskiy-trakt /projects/belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk 301
 /projects/kuhnya-bogdana /projects/biruzovaya-uglovaya-kuhnya-irkutsk 301
@@ -113,7 +75,6 @@ https://www.mebelirkutsk.ru/* https://example.com/:splat 301
 /projects/kuhnya-piskunova /projects/uglovaya-kuhnya-s-podsvetkoy-irkutsk 301
 /projects/kuhnya-trilissera /projects/belaya-uglovaya-kuhnya-s-derevyannoy-stoleshnitsey-irkutsk 301
 /projects/kuhnya-verkhnyaya-naberezhnaya /projects/pryamaya-kuhnya-s-vysokimi-penalami-irkutsk 301
-/projects/shkaf-vstroennyi-angarsk-84-i-kvartal /projects/vstroennyi-shkaf-kupe-v-prikhozhuyu-angarsk 301
 /projects/shkaf-deputatskaya /projects/vstroennyi-shkaf-s-rabochey-zonoy-irkutsk 301
 
 # District legacy is deprecated and removed (District OFF hard)
@@ -129,6 +90,3 @@ https://www.mebelirkutsk.ru/* https://example.com/:splat 301
 /irkutsk/:district/kuhni/* /410 410
 /irkutsk/:district/shkafy /410 410
 /irkutsk/:district/shkafy/* /410 410
-
-# Common typo for city hub
-/shelehov /shelekhov 301

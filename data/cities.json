@@ -6,21 +6,5 @@
     "nameGenitive": "Иркутска",
     "hasDistricts": true,
     "priority": 1
-  },
-  {
-    "id": "angarsk",
-    "name": "Ангарск",
-    "nameIn": "Ангарске",
-    "nameGenitive": "Ангарска",
-    "hasDistricts": false,
-    "priority": 2
-  },
-  {
-    "id": "shelekhov",
-    "name": "Шелехов",
-    "nameIn": "Шелехове",
-    "nameGenitive": "Шелехова",
-    "hasDistricts": false,
-    "priority": 3
   }
 ]

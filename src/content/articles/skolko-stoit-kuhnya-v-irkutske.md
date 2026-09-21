@@ -68,7 +68,7 @@ metadata:
 - фурнитура (доводчики, системы хранения)
 - техника и встроенные элементы
 
-Для компактных помещений смотрите подробнее: [кухня 3 метра](/articles/kuhnya-3-metra-irkutsk).
+Для компактных помещений смотрите подробнее: [планировка кухни 3 метра](/articles/planirovka-kuhni-3-metra-irkutsk).
 
 ## Сколько стоит кухня 5 метров в Иркутске
 
@@ -253,7 +253,7 @@ metadata:
 
 ## Смотрите также
 
-- [Кухня 3 метра](/articles/kuhnya-3-metra-irkutsk)
+- [Планировка кухни 3 метра](/articles/planirovka-kuhni-3-metra-irkutsk)
 - [Маленькая кухня](/articles/malenkaya-kuhnya-na-zakaz-irkutsk)
 - [Как выбрать кухню](/articles/kak-vybrat-kuhnyu-na-zakaz)
 

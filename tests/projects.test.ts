@@ -15,8 +15,6 @@ type ProjectFrontmatter = {
 };
 
 const APPROVED_PROJECT_MIGRATION_MAP: Record<string, string> = {
-  'garderobnaya-angarsk-29-mikrorayon': 'garderobnaya-v-spalne-angarsk',
-  'garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion': 'p-obraznaya-garderobnaya-shelekhov',
   'garderobnaya-sovetskaya': 'garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk',
   'kuhnya-baykalskiy-trakt': 'belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk',
   'kuhnya-bogdana': 'biruzovaya-uglovaya-kuhnya-irkutsk',
@@ -25,7 +23,6 @@ const APPROVED_PROJECT_MIGRATION_MAP: Record<string, string> = {
   'kuhnya-piskunova': 'uglovaya-kuhnya-s-podsvetkoy-irkutsk',
   'kuhnya-trilissera': 'belaya-uglovaya-kuhnya-s-derevyannoy-stoleshnitsey-irkutsk',
   'kuhnya-verkhnyaya-naberezhnaya': 'pryamaya-kuhnya-s-vysokimi-penalami-irkutsk',
-  'shkaf-vstroennyi-angarsk-84-i-kvartal': 'vstroennyi-shkaf-kupe-v-prikhozhuyu-angarsk',
   'shkaf-deputatskaya': 'vstroennyi-shkaf-s-rabochey-zonoy-irkutsk',
 };
 
@@ -99,7 +96,7 @@ function normalizeSlug(value: string | undefined): string {
 test('projects content files have valid seo-critical structure', () => {
   const projectsDir = path.join(process.cwd(), 'src/content/projects');
   const files = fs.readdirSync(projectsDir).filter((name) => name.endsWith('.md') || name.endsWith('.mdx'));
-  expect(files.length).toBeGreaterThan(0);
+  expect(files.length).toBe(27);
 
   const seenSlugs = new Set<string>();
 
@@ -107,7 +104,7 @@ test('projects content files have valid seo-critical structure', () => {
     const fullPath = path.join(projectsDir, file);
     const data = readFrontmatter(fullPath);
 
-    expect(data.city).toMatch(/^(irkutsk|angarsk|shelekhov)$/);
+    expect(data.city).toBe('irkutsk');
     expect(data.service).toMatch(/^(kuhni|shkafy|garderobnye)$/);
     if (typeof data.street !== 'undefined') {
       expect(typeof data.street).toBe('string');
@@ -138,6 +135,14 @@ test('projects content files have valid seo-critical structure', () => {
     expect(seenSlugs.has(finalSlug)).toBe(false);
     seenSlugs.add(finalSlug);
   }
+});
+
+test('public SEO geography is Irkutsk-only', () => {
+  const policy = fs.readFileSync(path.join(process.cwd(), 'src', 'config', 'indexability-policy.ts'), 'utf8');
+
+  expect(policy).toContain("'/irkutsk'");
+  expect(policy).not.toContain("'/angarsk'");
+  expect(policy).not.toContain("'/shelekhov'");
 });
 
 test('approved project slug migration map is present in redirect policy', () => {

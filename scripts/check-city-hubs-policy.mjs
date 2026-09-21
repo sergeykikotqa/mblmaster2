@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = process.cwd();
 const DIST_DIR = path.join(ROOT, 'dist');
-const CITY_HUBS = ['/irkutsk', '/angarsk', '/shelekhov'];
+const CITY_HUBS = ['/irkutsk'];
 const ALLOWED_MAIN_LINKS = new Set(['/kuhni', '/shkafy', '/garderobnye']);
 const SITE_URL = String(process.env.PUBLIC_SITE_URL || 'https://example.com').replace(/\/$/, '');
 

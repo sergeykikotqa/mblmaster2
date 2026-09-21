@@ -1,10 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const AFFECTED_PROJECTS = [
-  'p-obraznaya-garderobnaya-shelekhov',
-  'vstroennyi-shkaf-kupe-v-prikhozhuyu-angarsk',
   'garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk',
-  'garderobnaya-v-spalne-angarsk',
+  'shkaf-kupe-na-vsyu-stenu-irkutsk',
 ];
 
 const PREVIOUSLY_BROKEN_PATHS = AFFECTED_PROJECTS.map(

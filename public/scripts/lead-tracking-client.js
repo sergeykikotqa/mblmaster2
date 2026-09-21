@@ -135,7 +135,7 @@
         .replace(/\/+$/, '') || '/';
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     const moneyPaths = new Set(['/kuhni', '/shkafy', '/garderobnye', '/kuhni-3-metra']);
-    const cityHubPaths = new Set(['/irkutsk', '/angarsk', '/shelekhov']);
+    const cityHubPaths = new Set(['/irkutsk']);
 
     if (normalizedPath === '/') return 'home';
     if (moneyPaths.has(normalizedPath)) return 'service-money';

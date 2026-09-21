@@ -14,7 +14,7 @@ const SITEMAP_ROUTE_PATTERN = /^\/sitemap(?:-(?:index|\d+))?\.xml$/i;
 const TRACKABLE_PREFIXES = ['/_astro', '/.netlify', '/images', '/scripts', '/fonts'];
 const TRACKABLE_FILE_EXTENSION_PATTERN =
   /\.(?:avif|bmp|css|csv|gif|ico|jpeg|jpg|js|json|map|mp4|pdf|png|svg|txt|webm|webp|woff2?|xml)$/i;
-const ALLOWED_NOINDEX_TARGETS = new Set(['/irkutsk', '/angarsk', '/shelekhov', '/privacy']);
+const ALLOWED_NOINDEX_TARGETS = new Set(['/irkutsk', '/privacy']);
 const SUPPORT_WIDGET_PATTERN = /data-support-links|support-widget|support-links|contact-city-links|city-links/i;
 
 function normalizeRoutePath(routePath) {

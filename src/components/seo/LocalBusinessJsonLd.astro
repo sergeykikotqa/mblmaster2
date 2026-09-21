@@ -12,7 +12,7 @@ const siteUrl = Astro.site ? new URL(Astro.site).toString().replace(/\/$/, '') :
 const companyName = process.env.SITE_NAME || 'мбл мастер';
 const businessInfo = getBusinessInfo(siteUrl);
 const addressRegion = businessInfo.addressRegion || 'Иркутская область';
-const areaServed = ['Иркутск', 'Ангарск', 'Шелехов'];
+const areaServed = ['Иркутск'];
 
 const businessId = siteUrl ? `${siteUrl}/#business` : '#business';
 

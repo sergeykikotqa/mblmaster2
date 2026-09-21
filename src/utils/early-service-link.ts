@@ -32,8 +32,6 @@ const MAX_EXISTING_SERVICE_LINKS = 2;
 
 const CITY_CASES: Record<string, { name: string; in: string }> = {
   иркутск: { name: 'Иркутск', in: 'Иркутске' },
-  ангарск: { name: 'Ангарск', in: 'Ангарске' },
-  шелехов: { name: 'Шелехов', in: 'Шелехове' },
 };
 
 const SERVICE_TEMPLATES: Record<string, Record<AnchorType, string[]>> = {

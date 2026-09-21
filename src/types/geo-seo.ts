@@ -6,7 +6,7 @@ export type LegacyIndexabilityPolicy = 'noindex';
 export type PersistedIndexabilityPolicy = IndexabilityPolicy | LegacyIndexabilityPolicy;
 export type ReleaseStage = 'draft' | 'noindex_live' | 'index_trial' | 'index_stable' | 'rollback_noindex';
 export type PriorityTier = 'A' | 'B' | 'C';
-export type LocalCityId = 'irkutsk' | 'angarsk' | 'shelekhov';
+export type LocalCityId = 'irkutsk';
 
 export interface CityModel {
   id: string;
@@ -127,20 +127,6 @@ export interface LocalReview {
   rating: number;
 }
 
-export interface LocalPriceRange {
-  from: number;
-  to: number;
-  currency: string;
-  note: string;
-}
-
-export interface LocalDeliverySla {
-  measurementDays: number;
-  productionDays: number;
-  installationDays: number;
-  note: string;
-}
-
 export interface LocalOffer {
   title: string;
   description: string;
@@ -150,8 +136,6 @@ export interface LocalCityBlock {
   city: LocalCityId;
   cases: LocalCase[];
   reviews: LocalReview[];
-  priceRange: LocalPriceRange;
-  sla: LocalDeliverySla;
   offer: LocalOffer;
 }
 
