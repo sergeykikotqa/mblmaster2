@@ -13,7 +13,9 @@ const DEFAULT_TIMEOUT_MS = 12_000;
 const DEFAULT_WAIT_MS = 60_000;
 const SERVICE_NAMES = ['mbl-nginx', 'mbl-web', 'mbl-worker-trigger', 'mbl-redis'];
 const PROJECT_PREFIX = 'mbl-o23-gate-';
-const CANONICAL_ORIGIN = String(process.env.O23_CANONICAL_ORIGIN || 'https://mebel-irkutsk.ru').replace(/\/+$/, '');
+const CANONICAL_ORIGIN = String(
+  process.env.O23_CANONICAL_ORIGIN || process.env.PUBLIC_SITE_URL || 'https://example.com'
+).replace(/\/+$/, '');
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -314,6 +316,24 @@ function makeTempEnvironment({ mockPort, canonicalOrigin, publicPort, projectNam
     })}\n`,
     { encoding: 'utf8', mode: 0o600 }
   );
+  fs.writeFileSync(
+    path.join(backupStatusDir, 'smartcaptcha-fetch-mock.cjs'),
+    `'use strict';
+const originalFetch = globalThis.fetch.bind(globalThis);
+const verifyUrl = 'https://smartcaptcha.cloud.yandex.ru/validate';
+globalThis.fetch = async (input, init = {}) => {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+  if (url !== verifyUrl) return originalFetch(input, init);
+  const params = new URLSearchParams(typeof init.body === 'string' ? init.body : '');
+  const accepted = params.get('token') === process.env.O23_SMARTCAPTCHA_TEST_TOKEN;
+  return new Response(JSON.stringify({ status: accepted ? 'ok' : 'failed', host: 'example.com' }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+};
+`,
+    { encoding: 'utf8', mode: 0o600 }
+  );
   const mockHostname = String(process.env.O23_MOCK_HOSTNAME || 'host.docker.internal').trim();
   const mockUrl = `http://${mockHostname}:${mockPort}/webhook`;
   const redisPrefix = `${projectName}:lead`;
@@ -332,7 +352,11 @@ function makeTempEnvironment({ mockPort, canonicalOrigin, publicPort, projectNam
     `METRICS_ADMIN_TOKEN=${secrets.admin}`,
     `MBL_MONITORING_TOKEN=${secrets.monitoring}`,
     `MBL_OWNER_METRICS_TOKEN=${secrets.ownerMetrics}`,
-    'CONTACT_SMARTCAPTCHA_REQUIRED=false',
+    'CONTACT_SMARTCAPTCHA_REQUIRED=true',
+    `SMARTCAPTCHA_CLIENT_KEY=${secrets.smartCaptchaClient}`,
+    `SMARTCAPTCHA_SERVER_KEY=${secrets.smartCaptchaServer}`,
+    'SMARTCAPTCHA_ALLOWED_HOSTS=example.com',
+    `O23_SMARTCAPTCHA_TEST_TOKEN=${secrets.smartCaptchaToken}`,
     'CONTACT_TRUST_PROXY_HEADERS=true',
     'TRACK_TRUST_PROXY_HEADERS=true',
     'ADMIN_TRUST_PROXY_HEADERS=true',
@@ -436,7 +460,7 @@ async function checkPublicRoutes(baseUrl) {
     '/',
     '/kuhni',
     '/projects',
-    '/projects/kuhnya-bogdana',
+    '/projects/biruzovaya-uglovaya-kuhnya-irkutsk',
     '/articles',
     '/articles/cveta-kuhni-trendy',
     '/contacts',
@@ -601,6 +625,7 @@ function checkBrowserRuntime(baseUrl) {
       playwrightCli,
       'test',
       '--config=playwright.config.ts',
+      '--workers=4',
       'tests/e2e/header-navigation.spec.ts',
       'tests/e2e/seo-invariants.spec.ts',
       'tests/e2e/project-images.spec.ts',
@@ -608,10 +633,14 @@ function checkBrowserRuntime(baseUrl) {
     ],
     { env, timeoutMs: 720_000 }
   );
-  run(process.execPath, [playwrightCli, 'test', '--config=playwright.a11y.config.ts', 'tests/e2e/a11y-smoke.spec.ts'], {
-    env,
-    timeoutMs: 480_000,
-  });
+  run(
+    process.execPath,
+    [playwrightCli, 'test', '--config=playwright.a11y.config.ts', '--workers=4', 'tests/e2e/a11y-smoke.spec.ts'],
+    {
+      env,
+      timeoutMs: 480_000,
+    }
+  );
 
   return {
     chromium: true,
@@ -759,7 +788,7 @@ function oldestPendingFrom(body) {
   return body?.runtime?.oldestPending || body?.oldestPending || null;
 }
 
-async function postLead(baseUrl, marker, extraHeaders = {}) {
+async function postLead(baseUrl, marker, extraHeaders = {}, smartCaptchaToken = '') {
   const response = await fetchWithTimeout(`${baseUrl}/api/leads`, {
     method: 'POST',
     headers: {
@@ -775,6 +804,7 @@ async function postLead(baseUrl, marker, extraHeaders = {}) {
       message: `[o23-${marker}]`,
       consent: true,
       website: '',
+      smartCaptchaToken,
       formContext: { pageType: 'runtime-gate', pageSlug: '/contacts' },
     }),
   });
@@ -1029,8 +1059,8 @@ async function checkOldestPendingState(baseUrl, adminToken, expectedState, expec
   );
 }
 
-async function checkLeadFailClosed(baseUrl) {
-  const result = await postLead(baseUrl, 'redis-outage');
+async function checkLeadFailClosed(baseUrl, smartCaptchaToken) {
+  const result = await postLead(baseUrl, 'redis-outage', {}, smartCaptchaToken);
   assert(result.response.status === 503, `Lead during Redis outage must return 503, got ${result.response.status}`);
   assert(result.body?.success === false, 'Lead during Redis outage must not be accepted');
   assert(result.body?.code === 'LEAD_STORE_UNAVAILABLE', `Unexpected Redis outage code: ${result.body?.code}`);
@@ -1050,15 +1080,20 @@ async function runRuntimeScenarios({ compose, baseUrl, mock, secrets, redisPrefi
     '203.0.113.76',
     '203.0.113.77',
   ]);
-  const canary = await postLead(baseUrl, 'canary', {
-    'CF-Connecting-IP': '203.0.113.71',
-    'X-NF-Client-Connection-IP': '203.0.113.72',
-    'True-Client-IP': '203.0.113.73',
-    'X-Real-IP': '203.0.113.74',
-    'X-Vercel-Forwarded-For': '203.0.113.75',
-    'X-Forwarded-For': '203.0.113.76',
-    Forwarded: 'for=203.0.113.77',
-  });
+  const canary = await postLead(
+    baseUrl,
+    'canary',
+    {
+      'CF-Connecting-IP': '203.0.113.71',
+      'X-NF-Client-Connection-IP': '203.0.113.72',
+      'True-Client-IP': '203.0.113.73',
+      'X-Real-IP': '203.0.113.74',
+      'X-Vercel-Forwarded-For': '203.0.113.75',
+      'X-Forwarded-For': '203.0.113.76',
+      Forwarded: 'for=203.0.113.77',
+    },
+    secrets.smartCaptchaToken
+  );
   assert(canary.response.status === 200 && canary.body?.success === true, 'Full lead canary was not accepted');
   const canaryDelivery = await waitForDeliveredAttempt(mock, canary.body.leadId);
   const deliveredClientIp = canaryDelivery.payload?.technical?.ip;
@@ -1072,7 +1107,7 @@ async function runRuntimeScenarios({ compose, baseUrl, mock, secrets, redisPrefi
   await getLive(baseUrl);
 
   mock.setMode('failure');
-  const retryLead = await postLead(baseUrl, 'webhook-outage');
+  const retryLead = await postLead(baseUrl, 'webhook-outage', {}, secrets.smartCaptchaToken);
   assert(retryLead.response.status === 200 && retryLead.body?.success === true, 'Retry canary was not queued');
   await waitFor(
     'failed webhook attempt',
@@ -1142,7 +1177,7 @@ async function runRuntimeScenarios({ compose, baseUrl, mock, secrets, redisPrefi
   });
   await getLive(baseUrl);
   await getReady(baseUrl, 503);
-  await checkLeadFailClosed(baseUrl);
+  await checkLeadFailClosed(baseUrl, secrets.smartCaptchaToken);
   await delay(1_500);
   const directWebhookBypassCount =
     mock.attempts.filter((attempt) => attempt.payload?.lead?.message === redisOutageMarker).length -
@@ -1159,7 +1194,7 @@ async function runRuntimeScenarios({ compose, baseUrl, mock, secrets, redisPrefi
   });
   assert(compose.containerId('mbl-web') === webIdBeforeOutage, 'Redis recovery required replacing the web container');
   await getReady(baseUrl, 200);
-  const recoveredLead = await postLead(baseUrl, 'redis-recovered');
+  const recoveredLead = await postLead(baseUrl, 'redis-recovered', {}, secrets.smartCaptchaToken);
   assert(
     recoveredLead.response.status === 200 && recoveredLead.body?.success === true,
     'New lead was not accepted after Redis recovered'
@@ -1193,6 +1228,7 @@ async function main() {
   const revision = resolveImageRevision();
   const projectName = `${PROJECT_PREFIX}${randomBytes(4).toString('hex')}`;
   const publicPort = parsePositiveInt(process.env.O23_HTTP_PORT, await reservePort(), 1024);
+  const smartCaptchaKeyId = randomBytes(10).toString('hex');
   const secrets = {
     worker: randomSecret('worker'),
     admin: randomSecret('admin'),
@@ -1201,6 +1237,9 @@ async function main() {
     monitoring: randomSecret('monitoring'),
     ownerMetrics: randomSecret('owner-metrics'),
     logQuery: randomSecret('log-query'),
+    smartCaptchaClient: `ysc1_${smartCaptchaKeyId}_${randomBytes(12).toString('hex')}`,
+    smartCaptchaServer: `ysc2_${smartCaptchaKeyId}_${randomBytes(12).toString('hex')}`,
+    smartCaptchaToken: randomSecret('smartcaptcha-token'),
   };
   const secretValues = Object.values(secrets);
   const mock = await startMockReceiver(secrets.webhook);

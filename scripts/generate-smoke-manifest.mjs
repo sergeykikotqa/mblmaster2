@@ -7,7 +7,7 @@ const ROOT = process.cwd();
 const OUTPUT_PATH = path.join(ROOT, 'artifacts', 'smoke-manifest.json');
 const ARTICLE_SEO_STATE_PATH = path.join(ROOT, 'data', 'article-seo-state.json');
 
-const PROJECT_ANCHOR_ROUTE = '/projects/kuhnya-bogdana';
+const PROJECT_ANCHOR_ROUTE = '/projects/biruzovaya-uglovaya-kuhnya-irkutsk';
 
 const CONTENT_MAP = [
   { dir: path.join('src', 'content', 'articles'), prefix: '/articles' },
@@ -57,7 +57,14 @@ function resolveReadyArticleRoute() {
 const READY_ARTICLE_ROUTE = resolveReadyArticleRoute();
 const SEO_DEFAULT_ROUTES = ['/', '/kuhni', READY_ARTICLE_ROUTE];
 const LH_ANCHOR_ROUTES = ['/', '/kuhni', PROJECT_ANCHOR_ROUTE, READY_ARTICLE_ROUTE];
-const LH_GLOBAL_ROUTES = ['/', '/kuhni', PROJECT_ANCHOR_ROUTE, READY_ARTICLE_ROUTE, '/guides/process-izgotovleniya-kuhni', '/contacts'];
+const LH_GLOBAL_ROUTES = [
+  '/',
+  '/kuhni',
+  PROJECT_ANCHOR_ROUTE,
+  READY_ARTICLE_ROUTE,
+  '/guides/process-izgotovleniya-kuhni',
+  '/contacts',
+];
 
 const PAGE_SAMPLE_MAP = [
   { match: /src[\\/]+pages[\\/]+projects[\\/]+\[slug\]\.astro$/i, routes: [PROJECT_ANCHOR_ROUTE] },

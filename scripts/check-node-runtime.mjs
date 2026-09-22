@@ -91,7 +91,7 @@ assert.ok(fs.existsSync(path.join(publicRoot, 'index.html')), 'Homepage was not 
 assert.ok(fs.existsSync(path.join(publicRoot, 'projects', 'index.html')), 'Projects listing was not prerendered');
 assert.ok(fs.existsSync(path.join(publicRoot, 'articles', 'index.html')), 'Articles listing was not prerendered');
 assert.ok(
-  fs.existsSync(path.join(publicRoot, 'projects', 'kuhnya-bogdana', 'index.html')),
+  fs.existsSync(path.join(publicRoot, 'projects', 'biruzovaya-uglovaya-kuhnya-irkutsk', 'index.html')),
   'Project detail was not prerendered'
 );
 const htmlCount = countHtml(publicRoot);
@@ -131,7 +131,13 @@ try {
   assert.match(home.headers.get('content-type') || '', /text\/html/i);
   assert.match(await home.text(), /<!doctype html/i);
 
-  for (const route of ['/kuhni', '/projects', '/projects/kuhnya-bogdana', '/articles/kak-vybrat-kuhnyu', '/contacts']) {
+  for (const route of [
+    '/kuhni',
+    '/projects',
+    '/projects/biruzovaya-uglovaya-kuhnya-irkutsk',
+    '/articles/kak-vybrat-kuhnyu',
+    '/contacts',
+  ]) {
     const response = await runtimeFetch(baseUrl, route);
     assert.equal(response.status, 200, `Expected prerendered ${route} to respond with 200`);
     assert.match(response.headers.get('content-type') || '', /text\/html/i);

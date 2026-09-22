@@ -7,7 +7,7 @@ const routes = [
   { name: 'article', path: '/articles/kak-splanirovat-garderobnuyu' },
   { name: 'service', path: '/kuhni' },
   { name: 'projects', path: '/projects' },
-  { name: 'project', path: '/projects/kuhnya-bogdana' },
+  { name: 'project', path: '/projects/biruzovaya-uglovaya-kuhnya-irkutsk' },
   { name: 'contacts', path: '/contacts' },
   { name: 'guides', path: '/guides?q=кухня' },
 ];

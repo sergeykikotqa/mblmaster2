@@ -4,7 +4,7 @@ const ROUTES = [
   '/',
   '/kuhni',
   '/projects',
-  '/projects/kuhnya-bogdana',
+  '/projects/biruzovaya-uglovaya-kuhnya-irkutsk',
   '/articles',
   '/articles/cveta-kuhni-trendy',
   '/contacts',
