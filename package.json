@@ -93,6 +93,7 @@
     "generate:runtime-redirects": "node scripts/generate-runtime-redirects.mjs",
     "check:runtime-redirects": "node scripts/generate-runtime-redirects.mjs --check",
     "check:public-origin-contract": "node scripts/check-public-origin-contract.mjs",
+    "check:nginx-clean-build": "node scripts/check-clean-nginx-build.mjs",
     "check:compose-runtime": "node scripts/check-compose-runtime.mjs",
     "check:backup-policy": "vitest run tests/backup-policy.test.ts",
     "check:backup-restore": "node scripts/check-backup-restore.mjs",

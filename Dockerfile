@@ -76,9 +76,9 @@ ARG MBL_BUILD_REVISION=unknown
 LABEL org.opencontainers.image.title="MBL Nginx edge" \
       org.opencontainers.image.revision="${MBL_BUILD_REVISION}"
 RUN rm -f /etc/nginx/conf.d/default.conf
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
-COPY nginx/security-headers.conf /etc/nginx/security-headers.conf
-COPY nginx/generated /etc/nginx/generated
+COPY --from=build --chown=nginx:nginx /app/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY --from=build --chown=nginx:nginx /app/nginx/security-headers.conf /etc/nginx/security-headers.conf
+COPY --from=build --chown=nginx:nginx /app/nginx/generated /etc/nginx/generated
 COPY --from=build --chown=nginx:nginx /app/dist /usr/share/nginx/html
 USER nginx
 EXPOSE 8080
