@@ -70,6 +70,11 @@ npm run check:audit
 - Full visual, SEO, accessibility, runtime, and security-heavy audits belong in nightly or `main` workflows.
 - Do not duplicate `npm run lint` in workflows that already run `npm run check`.
 - GitHub must not hold production monitoring/Telegram credentials or invoke production worker APIs.
-- Run `npm run check:prod-runtime` on a trusted release host and
-  `npm run check:deployed-runtime` only from the authorised release/monitoring
-  perimeter with an explicit target URL. They are not GitHub workflow jobs.
+- `npm run check:dev-runtime` is a development-server smoke only. Its result is
+  reported as `DEV_SMOKE_PASS` and must never be used as production evidence.
+- Run `npm run check:prod-runtime` on a trusted release host with Docker. It
+  executes the built-image, Redis-backed Compose gate and is the only local
+  result reported as `PRODUCTION_RUNTIME_PASS`.
+- Run `npm run check:deployed-runtime` only from the authorised
+  release/monitoring perimeter with an explicit target URL. Production runtime
+  and deployed checks are not GitHub workflow jobs.

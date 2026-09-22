@@ -7,46 +7,167 @@ const ARTIFACT_DIR = path.join(ROOT, 'artifacts', 'pre-launch-audit', 'latest');
 const AUTO_RESULTS_PATH = path.join(ARTIFACT_DIR, 'auto-results.json');
 const SUMMARY_PATH = path.join(ARTIFACT_DIR, 'summary.md');
 
-const REQUIRED_Q22_ROUTES = ['/', '/kuhni', '/shkafy', '/garderobnye', '/kuhni-3-metra', '/projects/kuhnya-bogdana'];
+const REQUIRED_Q22_ROUTES = [
+  '/',
+  '/kuhni',
+  '/shkafy',
+  '/garderobnye',
+  '/kuhni-3-metra',
+  '/projects/biruzovaya-uglovaya-kuhnya-irkutsk',
+];
 const Q39_BLOCKER_IDS = ['Q1', 'Q2', 'Q4', 'Q5', 'Q6', 'Q9', 'Q10', 'Q19', 'Q20', 'Q22', 'Q24', 'Q32'];
 
 const QUESTION_DEFINITIONS = [
   { id: 'Q1', block: 1, type: 'auto', blocker: true, question: 'Все базовые гейты зелёные?' },
-  { id: 'Q2', block: 1, type: 'auto', blocker: true, question: '`npm run audit:pre-release` выдаёт GO без красных блокеров?' },
+  {
+    id: 'Q2',
+    block: 1,
+    type: 'auto',
+    blocker: true,
+    question: '`npm run audit:pre-release` выдаёт GO без красных блокеров?',
+  },
   { id: 'Q3', block: 1, type: 'auto', blocker: false, question: 'Нет `any|unknown|as` в project-слое?' },
-  { id: 'Q4', block: 1, type: 'auto', blocker: true, question: 'Image-пайплайн без сырых `/images/projects/...` в шаблонах/dist?' },
-  { id: 'Q5', block: 1, type: 'auto', blocker: true, question: 'LCP smoke и hero-LCP check для money/project pages проходят?' },
+  {
+    id: 'Q4',
+    block: 1,
+    type: 'auto',
+    blocker: true,
+    question: 'Image-пайплайн без сырых `/images/projects/...` в шаблонах/dist?',
+  },
+  {
+    id: 'Q5',
+    block: 1,
+    type: 'auto',
+    blocker: true,
+    question: 'LCP smoke и hero-LCP check для money/project pages проходят?',
+  },
   { id: 'Q6', block: 1, type: 'auto', blocker: true, question: 'Нет duplicate slug/id в content collections?' },
-  { id: 'Q7', block: 1, type: 'auto', blocker: false, question: 'Build устойчив при альтернативном `PUBLIC_SITE_URL`?' },
+  {
+    id: 'Q7',
+    block: 1,
+    type: 'auto',
+    blocker: false,
+    question: 'Build устойчив при альтернативном `PUBLIC_SITE_URL`?',
+  },
   { id: 'Q8', block: 1, type: 'auto', blocker: false, question: 'Атомы блоков покрыты интеграционными тестами?' },
   { id: 'Q9', block: 1, type: 'auto', blocker: true, question: 'Legacy-режимы полностью отключены?' },
-  { id: 'Q10', block: 1, type: 'auto', blocker: true, question: 'Единый путь рендера через `ProjectRenderer/BlockRenderer`?' },
+  {
+    id: 'Q10',
+    block: 1,
+    type: 'auto',
+    blocker: true,
+    question: 'Единый путь рендера через `ProjectRenderer/BlockRenderer`?',
+  },
 
-  { id: 'Q11', block: 2, type: 'manual', blocker: false, question: 'Money pages имеют evidence-based trust-блок в первых экранах?' },
-  { id: 'Q12', block: 2, type: 'auto', blocker: false, question: 'Есть профильная связка `data-service-projects` + «Наши работы»?' },
-  { id: 'Q13', block: 2, type: 'auto', blocker: false, question: 'Есть re-entry CTA (`service_reentry_primary`, `service_reentry_call`)?' },
+  {
+    id: 'Q11',
+    block: 2,
+    type: 'manual',
+    blocker: false,
+    question: 'Money pages имеют evidence-based trust-блок в первых экранах?',
+  },
+  {
+    id: 'Q12',
+    block: 2,
+    type: 'auto',
+    blocker: false,
+    question: 'Есть профильная связка `data-service-projects` + «Наши работы»?',
+  },
+  {
+    id: 'Q13',
+    block: 2,
+    type: 'auto',
+    blocker: false,
+    question: 'Есть re-entry CTA (`service_reentry_primary`, `service_reentry_call`)?',
+  },
   { id: 'Q14', block: 2, type: 'manual', blocker: false, question: 'E-E-A-T по Claude >= 8/10 на money pages?' },
   { id: 'Q15', block: 2, type: 'manual', blocker: false, question: 'Семантическая полнота money-кластера >= 8/10?' },
-  { id: 'Q16', block: 2, type: 'auto', blocker: false, question: 'Indexable-link coverage и внутренняя перелинковка в норме?' },
-  { id: 'Q17', block: 2, type: 'auto', blocker: false, question: 'Schema coverage (`LocalBusiness/Offer/Review/BreadcrumbList`) в норме?' },
-  { id: 'Q18', block: 2, type: 'ops', blocker: false, question: 'Google Rich Results Test подтверждает валидный JSON-LD?' },
+  {
+    id: 'Q16',
+    block: 2,
+    type: 'auto',
+    blocker: false,
+    question: 'Indexable-link coverage и внутренняя перелинковка в норме?',
+  },
+  {
+    id: 'Q17',
+    block: 2,
+    type: 'auto',
+    blocker: false,
+    question: 'Schema coverage (`LocalBusiness/Offer/Review/BreadcrumbList`) в норме?',
+  },
+  {
+    id: 'Q18',
+    block: 2,
+    type: 'ops',
+    blocker: false,
+    question: 'Google Rich Results Test подтверждает валидный JSON-LD?',
+  },
   { id: 'Q19', block: 2, type: 'auto', blocker: true, question: 'Sitemap/robots/indexability инварианты зелёные?' },
   { id: 'Q20', block: 2, type: 'auto', blocker: true, question: 'Нет thin-content в индексируемых страницах?' },
   { id: 'Q21', block: 2, type: 'manual', blocker: false, question: 'Topical authority кластеров подтверждён?' },
-  { id: 'Q22', block: 2, type: 'auto', blocker: true, question: 'CWV smoke на обязательном наборе money routes проходит?' },
-  { id: 'Q23', block: 2, type: 'auto', blocker: false, question: 'Mobile adaptation audit проходит без критичных дефектов?' },
-  { id: 'Q24', block: 2, type: 'auto', blocker: true, question: 'Local SEO/NAP сигналы подтверждены в контенте и schema?' },
+  {
+    id: 'Q22',
+    block: 2,
+    type: 'auto',
+    blocker: true,
+    question: 'CWV smoke на обязательном наборе money routes проходит?',
+  },
+  {
+    id: 'Q23',
+    block: 2,
+    type: 'auto',
+    blocker: false,
+    question: 'Mobile adaptation audit проходит без критичных дефектов?',
+  },
+  {
+    id: 'Q24',
+    block: 2,
+    type: 'auto',
+    blocker: true,
+    question: 'Local SEO/NAP сигналы подтверждены в контенте и schema?',
+  },
 
-  { id: 'Q25', block: 3, type: 'manual', blocker: false, question: 'Новый проект добавляется в минимальное число мест?' },
+  {
+    id: 'Q25',
+    block: 3,
+    type: 'manual',
+    blocker: false,
+    question: 'Новый проект добавляется в минимальное число мест?',
+  },
   { id: 'Q26', block: 3, type: 'auto', blocker: false, question: 'Registry блоков остаётся декларативным?' },
-  { id: 'Q27', block: 3, type: 'auto', blocker: false, question: '`NormalizedProjectContent` остаётся единым источником правды?' },
-  { id: 'Q28', block: 3, type: 'manual', blocker: false, question: 'Нет дублирования orchestration-логики между рендерами?' },
+  {
+    id: 'Q27',
+    block: 3,
+    type: 'auto',
+    blocker: false,
+    question: '`NormalizedProjectContent` остаётся единым источником правды?',
+  },
+  {
+    id: 'Q28',
+    block: 3,
+    type: 'manual',
+    blocker: false,
+    question: 'Нет дублирования orchestration-логики между рендерами?',
+  },
   { id: 'Q29', block: 3, type: 'manual', blocker: false, question: 'Компоненты блоков атомарны и переиспользуемы?' },
   { id: 'Q30', block: 3, type: 'manual', blocker: false, question: '`ARCHITECTURE.md` отражает текущий data flow?' },
   { id: 'Q31', block: 3, type: 'auto', blocker: false, question: 'Нет `TODO: legacy` и `temporary fix` в коде?' },
-  { id: 'Q32', block: 3, type: 'auto', blocker: true, question: 'CI/CD quality gates покрывают release-контур, включая lead runtime smoke?' },
+  {
+    id: 'Q32',
+    block: 3,
+    type: 'auto',
+    blocker: true,
+    question: 'CI/CD quality gates покрывают release-контур, включая lead runtime smoke?',
+  },
 
-  { id: 'Q33', block: 4, type: 'manual', blocker: false, question: 'CTA в длинных money pages видимы и доступны на mobile?' },
+  {
+    id: 'Q33',
+    block: 4,
+    type: 'manual',
+    blocker: false,
+    question: 'CTA в длинных money pages видимы и доступны на mobile?',
+  },
   { id: 'Q34', block: 4, type: 'manual', blocker: false, question: 'CTA-кнопки унифицированы по тексту и стилю?' },
   { id: 'Q35', block: 4, type: 'auto', blocker: false, question: 'A11y smoke (WCAG AA baseline) проходит?' },
   { id: 'Q36', block: 4, type: 'manual', blocker: false, question: 'Hero содержит оффер + локальную привязку?' },
@@ -55,8 +176,20 @@ const QUESTION_DEFINITIONS = [
 
   { id: 'Q39', block: 5, type: 'auto', blocker: true, question: 'Нет P1-блокеров по технике/SEO/runtime?' },
   { id: 'Q40', block: 5, type: 'manual', blocker: false, question: 'Content moat достаточен для целевых запросов?' },
-  { id: 'Q41', block: 5, type: 'manual', blocker: false, question: 'После публикации можно ограничиться контентным насыщением?' },
-  { id: 'Q42', block: 5, type: 'auto', blocker: false, question: 'Итоговый dual score и финальный verdict зафиксированы?' },
+  {
+    id: 'Q41',
+    block: 5,
+    type: 'manual',
+    blocker: false,
+    question: 'После публикации можно ограничиться контентным насыщением?',
+  },
+  {
+    id: 'Q42',
+    block: 5,
+    type: 'auto',
+    blocker: false,
+    question: 'Итоговый dual score и финальный verdict зафиксированы?',
+  },
 ];
 
 const env = {
@@ -93,7 +226,12 @@ const questions = Object.fromEntries(
       block: def.block,
       status: def.type === 'manual' ? 'MANUAL' : def.type === 'ops' ? 'NA/ops' : 'NA/ops',
       evidence: [],
-      comment: def.type === 'manual' ? 'Manual review required.' : def.type === 'ops' ? 'Operational evidence required.' : 'Pending execution.',
+      comment:
+        def.type === 'manual'
+          ? 'Manual review required.'
+          : def.type === 'ops'
+            ? 'Operational evidence required.'
+            : 'Pending execution.',
     },
   ])
 );
@@ -101,7 +239,12 @@ const questions = Object.fromEntries(
 let failFastTriggered = false;
 let failFastAt = null;
 const runtimeSmoke = {
-  local: {
+  dev: {
+    status: 'PENDING',
+    evidence: [],
+    comment: 'Pending execution.',
+  },
+  production: {
     status: 'PENDING',
     evidence: [],
     comment: 'Pending execution.',
@@ -150,12 +293,7 @@ function withFailFast(id, fn) {
   const meta = QUESTION_DEFINITIONS.find((item) => item.id === id);
   const isBlocker = Boolean(meta?.blocker);
   if (failFastTriggered) {
-    setQuestionStatus(
-      id,
-      'NA/ops',
-      [],
-      `Blocked by fail-fast after ${failFastAt}.`
-    );
+    setQuestionStatus(id, 'NA/ops', [], `Blocked by fail-fast after ${failFastAt}.`);
     return;
   }
 
@@ -283,17 +421,13 @@ function run() {
       for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
         const line = lines[lineNumber];
         if (/\bas\s+(?!const\b)/.test(line) || /\bany\b/.test(line)) {
-          strictViolations.push(
-            `${path.relative(ROOT, filePath).replace(/\\/g, '/')}:${lineNumber + 1}`
-          );
+          strictViolations.push(`${path.relative(ROOT, filePath).replace(/\\/g, '/')}:${lineNumber + 1}`);
         }
       }
     }
 
     if (strictViolations.length > 0) {
-      throw new Error(
-        `Unsafe type tokens in render pipeline. Sample: ${strictViolations.slice(0, 20).join(', ')}`
-      );
+      throw new Error(`Unsafe type tokens in render pipeline. Sample: ${strictViolations.slice(0, 20).join(', ')}`);
     }
 
     const extensionSet = new Set(['.ts', '.tsx', '.astro', '.js', '.mjs']);
@@ -322,7 +456,11 @@ function run() {
   withFailFast('Q4', () => {
     runNpm('check:image-policy');
     const srcExt = new Set(['.astro', '.ts', '.tsx', '.js', '.mjs']);
-    const srcRoots = [path.join(ROOT, 'src', 'pages'), path.join(ROOT, 'src', 'components'), path.join(ROOT, 'src', 'layouts')];
+    const srcRoots = [
+      path.join(ROOT, 'src', 'pages'),
+      path.join(ROOT, 'src', 'components'),
+      path.join(ROOT, 'src', 'layouts'),
+    ];
     const srcFiles = srcRoots.flatMap((dir) => walkFiles(dir, srcExt));
     const srcMatches = findPatternMatches(srcFiles, /\/images\/projects\//g);
 
@@ -334,7 +472,12 @@ function run() {
       throw new Error(`Raw /images/projects/ paths detected. Sample: ${sample.join(', ')}`);
     }
 
-    setQuestionStatus('Q4', 'PASS', ['npm run check:image-policy', 'src/pages|components|layouts scan', 'dist/**/*.html scan'], 'No raw /images/projects/ leakage in templates/dist.');
+    setQuestionStatus(
+      'Q4',
+      'PASS',
+      ['npm run check:image-policy', 'src/pages|components|layouts scan', 'dist/**/*.html scan'],
+      'No raw /images/projects/ leakage in templates/dist.'
+    );
   });
 
   withFailFast('Q5', () => {
@@ -353,13 +496,23 @@ function run() {
     if (!hasService || !hasProject) {
       throw new Error('lighthouse summary is missing service/project evidence for LCP smoke.');
     }
-    setQuestionStatus('Q5', 'PASS', ['artifacts/lighthouse-summary.json', '.lighthouseci/lhr-*.json'], 'Lighthouse smoke + hero-LCP contract evidence is present.');
+    setQuestionStatus(
+      'Q5',
+      'PASS',
+      ['artifacts/lighthouse-summary.json', '.lighthouseci/lhr-*.json'],
+      'Lighthouse smoke + hero-LCP contract evidence is present.'
+    );
   });
 
   withFailFast('Q6', () => {
     runNpm('check:slugs');
     runNpm('check:content-duplicates');
-    setQuestionStatus('Q6', 'PASS', ['npm run check:slugs', 'npm run check:content-duplicates'], 'No duplicate slug/id collisions detected.');
+    setQuestionStatus(
+      'Q6',
+      'PASS',
+      ['npm run check:slugs', 'npm run check:content-duplicates'],
+      'No duplicate slug/id collisions detected.'
+    );
   });
 
   withFailFast('Q7', () => {
@@ -370,7 +523,11 @@ function run() {
     setQuestionStatus(
       'Q7',
       'PASS',
-      ['PUBLIC_SITE_URL=https://prelaunch-alt.example.com npm run build', 'npm run check:canonical-absolute', 'npm run check:sitemap-coverage'],
+      [
+        'PUBLIC_SITE_URL=https://prelaunch-alt.example.com npm run build',
+        'npm run check:canonical-absolute',
+        'npm run check:sitemap-coverage',
+      ],
       'Build and core URL invariants are stable under alternative PUBLIC_SITE_URL.'
     );
   });
@@ -383,7 +540,12 @@ function run() {
     if (missing.length > 0) {
       throw new Error(`Missing integration test evidence for tokens: ${missing.join(', ')}`);
     }
-    setQuestionStatus('Q8', 'PASS', ['tests/project-block-registry.test.ts', 'tests/project-render-plan.test.ts', 'tests/project-video.test.ts'], 'Integration coverage references all key block atoms.');
+    setQuestionStatus(
+      'Q8',
+      'PASS',
+      ['tests/project-block-registry.test.ts', 'tests/project-render-plan.test.ts', 'tests/project-video.test.ts'],
+      'Integration coverage references all key block atoms.'
+    );
   });
 
   withFailFast('Q9', () => {
@@ -393,7 +555,12 @@ function run() {
     if (matches.length > 0) {
       throw new Error(`Legacy markers found: ${matches.slice(0, 20).join(', ')}`);
     }
-    setQuestionStatus('Q9', 'PASS', ['npm run check:no-legacy-project-fields', 'src/**/* legacy marker scan'], 'No legacy-mode path remains.');
+    setQuestionStatus(
+      'Q9',
+      'PASS',
+      ['npm run check:no-legacy-project-fields', 'src/**/* legacy marker scan'],
+      'No legacy-mode path remains.'
+    );
   });
 
   withFailFast('Q10', () => {
@@ -408,7 +575,10 @@ function run() {
       }
     }
 
-    const blocksFacade = fs.readFileSync(path.join(ROOT, 'src', 'components', 'projects', 'ProjectBlocks.astro'), 'utf8');
+    const blocksFacade = fs.readFileSync(
+      path.join(ROOT, 'src', 'components', 'projects', 'ProjectBlocks.astro'),
+      'utf8'
+    );
     if (!blocksFacade.includes('ProjectRenderer')) {
       throw new Error('ProjectBlocks.astro is expected to delegate to ProjectRenderer.');
     }
@@ -418,7 +588,16 @@ function run() {
       throw new Error('project-render-plan.ts is missing buildProjectRenderPlan.');
     }
 
-    setQuestionStatus('Q10', 'PASS', ['src/components/projects/ProjectRenderer.astro', 'src/components/projects/BlockRenderer.astro', 'src/lib/projects/project-render-plan.ts'], 'Single renderer orchestration path is in place.');
+    setQuestionStatus(
+      'Q10',
+      'PASS',
+      [
+        'src/components/projects/ProjectRenderer.astro',
+        'src/components/projects/BlockRenderer.astro',
+        'src/lib/projects/project-render-plan.ts',
+      ],
+      'Single renderer orchestration path is in place.'
+    );
   });
 
   withFailFast('Q12', () => {
@@ -437,7 +616,12 @@ function run() {
     if (missing.length > 0) {
       throw new Error(`Service-project linkage gaps: ${missing.join(', ')}`);
     }
-    setQuestionStatus('Q12', 'PASS', routes.map((route) => `dist${route}/index.html`), 'All money pages include service-project binding markers.');
+    setQuestionStatus(
+      'Q12',
+      'PASS',
+      routes.map((route) => `dist${route}/index.html`),
+      'All money pages include service-project binding markers.'
+    );
   });
 
   withFailFast('Q13', () => {
@@ -456,12 +640,22 @@ function run() {
     if (missing.length > 0) {
       throw new Error(`Re-entry CTA coverage gaps: ${missing.join(', ')}`);
     }
-    setQuestionStatus('Q13', 'PASS', routes.map((route) => `dist${route}/index.html`), 'Re-entry conversion CTAs are present.');
+    setQuestionStatus(
+      'Q13',
+      'PASS',
+      routes.map((route) => `dist${route}/index.html`),
+      'Re-entry conversion CTAs are present.'
+    );
   });
 
   withFailFast('Q16', () => {
     runNpm('check:indexable-link-coverage');
-    setQuestionStatus('Q16', 'PASS', ['npm run check:indexable-link-coverage'], 'Indexable internal-link baseline is green.');
+    setQuestionStatus(
+      'Q16',
+      'PASS',
+      ['npm run check:indexable-link-coverage'],
+      'Indexable internal-link baseline is green.'
+    );
   });
 
   withFailFast('Q17', () => {
@@ -477,14 +671,24 @@ function run() {
     setQuestionStatus(
       'Q19',
       'PASS',
-      ['npm run check:sitemap-coverage', 'npm run check:indexable-coverage', 'npm run check:no-admin-in-sitemap', 'npm run check:indexability-runtime-consistency'],
+      [
+        'npm run check:sitemap-coverage',
+        'npm run check:indexable-coverage',
+        'npm run check:no-admin-in-sitemap',
+        'npm run check:indexability-runtime-consistency',
+      ],
       'Sitemap/robots/indexability constraints are green.'
     );
   });
 
   withFailFast('Q20', () => {
     runNpm('check:content-length');
-    setQuestionStatus('Q20', 'PASS', ['npm run check:content-length'], 'Thin-content gate is green for current indexable set.');
+    setQuestionStatus(
+      'Q20',
+      'PASS',
+      ['npm run check:content-length'],
+      'Thin-content gate is green for current indexable set.'
+    );
   });
 
   withFailFast('Q22', () => {
@@ -538,7 +742,12 @@ function run() {
     if (!fs.existsSync(reportPath)) {
       throw new Error('.tmp/mobile-audit/report.md was not generated.');
     }
-    setQuestionStatus('Q23', 'PASS', ['tests/e2e/mobile-adaptation-audit.spec.ts', '.tmp/mobile-audit/report.md'], 'Mobile adaptation smoke audit passed.');
+    setQuestionStatus(
+      'Q23',
+      'PASS',
+      ['tests/e2e/mobile-adaptation-audit.spec.ts', '.tmp/mobile-audit/report.md'],
+      'Mobile adaptation smoke audit passed.'
+    );
   });
 
   withFailFast('Q24', () => {
@@ -582,7 +791,12 @@ function run() {
     if (!registry.includes('resolveProjectBlockComponent')) {
       throw new Error('resolveProjectBlockComponent helper is missing.');
     }
-    setQuestionStatus('Q26', 'PASS', ['src/components/projects/block-registry.ts'], 'Block registry stays declarative.');
+    setQuestionStatus(
+      'Q26',
+      'PASS',
+      ['src/components/projects/block-registry.ts'],
+      'Block registry stays declarative.'
+    );
   });
 
   withFailFast('Q27', () => {
@@ -594,12 +808,12 @@ function run() {
     ];
     const missing = files.filter((filePath) => !fs.existsSync(filePath));
     if (missing.length > 0) {
-      throw new Error(`Missing normalization contract files: ${missing.map((item) => path.relative(ROOT, item)).join(', ')}`);
+      throw new Error(
+        `Missing normalization contract files: ${missing.map((item) => path.relative(ROOT, item)).join(', ')}`
+      );
     }
 
-    const references = files
-      .map((filePath) => fs.readFileSync(filePath, 'utf8'))
-      .join('\n');
+    const references = files.map((filePath) => fs.readFileSync(filePath, 'utf8')).join('\n');
     if (!references.includes('NormalizedProjectContent') || !references.includes('normalizeProjectContent')) {
       throw new Error('NormalizedProjectContent/normalizeProjectContent references are incomplete.');
     }
@@ -607,7 +821,12 @@ function run() {
     setQuestionStatus(
       'Q27',
       'PASS',
-      ['src/lib/projects/normalized-project-content.ts', 'src/lib/projects/project-adapters.ts', 'src/lib/projects/project-view-model.ts', 'src/components/projects/ProjectRenderer.astro'],
+      [
+        'src/lib/projects/normalized-project-content.ts',
+        'src/lib/projects/project-adapters.ts',
+        'src/lib/projects/project-view-model.ts',
+        'src/components/projects/ProjectRenderer.astro',
+      ],
       'Normalization contract remains the canonical project-data path.'
     );
   });
@@ -618,7 +837,12 @@ function run() {
     if (matches.length > 0) {
       throw new Error(`Legacy temporary markers found: ${matches.slice(0, 20).join(', ')}`);
     }
-    setQuestionStatus('Q31', 'PASS', ['src/**/* scan for TODO: legacy|temporary fix'], 'No legacy temporary markers found.');
+    setQuestionStatus(
+      'Q31',
+      'PASS',
+      ['src/**/* scan for TODO: legacy|temporary fix'],
+      'No legacy temporary markers found.'
+    );
   });
 
   withFailFast('Q32', () => {
@@ -630,6 +854,7 @@ function run() {
     const pkg = readJson(pkgPath);
     if (!pkg?.scripts?.['audit:pre-release']) throw new Error('audit:pre-release script is missing.');
     if (!pkg?.scripts?.['audit:pre-launch']) throw new Error('audit:pre-launch script is missing.');
+    if (!pkg?.scripts?.['check:dev-runtime']) throw new Error('check:dev-runtime script is missing.');
     if (!pkg?.scripts?.['check:prod-runtime']) throw new Error('check:prod-runtime script is missing.');
     if (!pkg?.scripts?.['check:deployed-runtime']) throw new Error('check:deployed-runtime script is missing.');
 
@@ -637,12 +862,22 @@ function run() {
     if (workflow.includes('npm run check:deployed-runtime') || workflow.includes('check-production:')) {
       throw new Error('GitHub must not execute deployed production runtime checks or hold production secrets.');
     }
+    if (!workflow.includes('codex/o2-4-reliability') || !workflow.includes('npm run check:nginx-clean-build')) {
+      throw new Error('Working-branch CI must run the clean Nginx image gate.');
+    }
 
-    runNpm('check:prod-runtime');
-    runtimeSmoke.local = {
-      status: 'PASS',
-      evidence: ['npm run check:prod-runtime'],
-      comment: 'Local production-like lead runtime smoke passed.',
+    runNpm('check:dev-runtime');
+    runtimeSmoke.dev = {
+      status: 'DEV_SMOKE_PASS',
+      evidence: ['npm run check:dev-runtime'],
+      comment: 'Development-server smoke passed; this is not production runtime evidence.',
+    };
+
+    runNpm('check:prod-runtime', [], { O23_CANONICAL_ORIGIN: env.PUBLIC_SITE_URL });
+    runtimeSmoke.production = {
+      status: 'PRODUCTION_RUNTIME_PASS',
+      evidence: ['npm run check:prod-runtime', 'compose.production.yml', 'compose.runtime-test.yml'],
+      comment: 'Built production images passed the Redis-backed Compose runtime gate.',
     };
 
     if ((env.DEPLOY_SMOKE_BASE_URL || '').trim()) {
@@ -656,7 +891,8 @@ function run() {
       runtimeSmoke.deployed = {
         status: 'NA/ops',
         evidence: ['docs/external-monitoring.md', 'docs/release-and-rollback.md'],
-        comment: 'Deployed runtime smoke requires DEPLOY_SMOKE_BASE_URL and must run from the release/monitoring perimeter, not GitHub.',
+        comment:
+          'Deployed runtime smoke requires DEPLOY_SMOKE_BASE_URL and must run from the release/monitoring perimeter, not GitHub.',
       };
     }
 
@@ -666,12 +902,11 @@ function run() {
       [
         'docs/QUALITY_GATES.md',
         'package.json scripts',
+        'npm run check:dev-runtime',
         'npm run check:prod-runtime',
-        runtimeSmoke.deployed.status === 'PASS'
-          ? 'npm run check:deployed-runtime'
-          : 'docs/external-monitoring.md',
+        runtimeSmoke.deployed.status === 'PASS' ? 'npm run check:deployed-runtime' : 'docs/external-monitoring.md',
       ],
-      `Release runtime gates are wired. Local smoke=${runtimeSmoke.local.status}; deployed smoke=${runtimeSmoke.deployed.status}. ${runtimeSmoke.deployed.comment}`
+      `Release runtime gates are wired. Dev smoke=${runtimeSmoke.dev.status}; production runtime=${runtimeSmoke.production.status}; deployed smoke=${runtimeSmoke.deployed.status}. ${runtimeSmoke.deployed.comment}`
     );
   });
 
@@ -690,12 +925,19 @@ function run() {
   if (failedBlockers.length > 0) {
     setQuestionStatus('Q39', 'FAIL', failedBlockers, 'At least one P1 auto-blocker failed.');
   } else {
-    setQuestionStatus('Q39', 'PASS', Q39_BLOCKER_IDS.map((id) => `${id}:${questions[id]?.status}`), 'No P1 auto-blockers detected in auto run.');
+    setQuestionStatus(
+      'Q39',
+      'PASS',
+      Q39_BLOCKER_IDS.map((id) => `${id}:${questions[id]?.status}`),
+      'No P1 auto-blockers detected in auto run.'
+    );
   }
 
   const blockScores = {};
   for (let block = 1; block <= 5; block += 1) {
-    const inBlock = QUESTION_DEFINITIONS.filter((item) => item.block === block && item.type === 'auto' && item.id !== 'Q42');
+    const inBlock = QUESTION_DEFINITIONS.filter(
+      (item) => item.block === block && item.type === 'auto' && item.id !== 'Q42'
+    );
     const passCount = inBlock.filter((item) => questions[item.id]?.status === 'PASS').length;
     const total = inBlock.length;
     blockScores[`block${block}`] = {
@@ -708,7 +950,10 @@ function run() {
   const scoreValues = Object.values(blockScores)
     .map((item) => item.score)
     .filter((score) => typeof score === 'number');
-  const autoScore = scoreValues.length > 0 ? Number((scoreValues.reduce((sum, score) => sum + score, 0) / scoreValues.length).toFixed(2)) : null;
+  const autoScore =
+    scoreValues.length > 0
+      ? Number((scoreValues.reduce((sum, score) => sum + score, 0) / scoreValues.length).toFixed(2))
+      : null;
   const finalScore = null;
   const verdict = blockerState.hasBlockingFailure ? 'NO-GO' : 'GO';
 
@@ -750,7 +995,9 @@ function run() {
     '',
     '| Block | Pass | Total | Score |',
     '| --- | ---: | ---: | ---: |',
-    ...Object.entries(blockScores).map(([block, stats]) => `| ${block} | ${stats.pass} | ${stats.total} | ${stats.score ?? 'n/a'} |`),
+    ...Object.entries(blockScores).map(
+      ([block, stats]) => `| ${block} | ${stats.pass} | ${stats.total} | ${stats.score ?? 'n/a'} |`
+    ),
     '',
     '## Blocker State',
     '',
@@ -760,7 +1007,8 @@ function run() {
     '',
     '## Lead Runtime Smoke',
     '',
-    `- local: ${runtimeSmoke.local.status} — ${runtimeSmoke.local.comment}`,
+    `- dev: ${runtimeSmoke.dev.status} — ${runtimeSmoke.dev.comment}`,
+    `- production: ${runtimeSmoke.production.status} — ${runtimeSmoke.production.comment}`,
     `- deployed: ${runtimeSmoke.deployed.status} — ${runtimeSmoke.deployed.comment}`,
     '',
     '## Question Status',

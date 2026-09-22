@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - main
+      - codex/o2-4-reliability
 
 jobs:
   build:
@@ -27,6 +28,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Check clean Nginx production image
+        if: matrix.node-version == 22
+        run: npm run check:nginx-clean-build
       # - run: npm test
 
   pr-gate:

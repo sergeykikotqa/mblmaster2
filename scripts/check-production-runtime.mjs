@@ -18,10 +18,12 @@ const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const retryBaseDelaySec = Number(process.env.PROD_RUNTIME_RETRY_BASE_DELAY_SEC || 1);
 const webhookTimeoutMs = Number(process.env.PROD_RUNTIME_WEBHOOK_TIMEOUT_MS || 1000);
 const simulatedTimeoutDelayMs = Number(process.env.PROD_RUNTIME_WEBHOOK_SIMULATED_TIMEOUT_DELAY_MS || 1800);
-const requestedLocalMode = String(process.env.PROD_RUNTIME_LOCAL_MODE || 'dev')
+const modeArgument = process.argv.find((argument) => argument.startsWith('--mode='));
+const requestedLocalMode = String(modeArgument?.slice('--mode='.length) || process.env.PROD_RUNTIME_LOCAL_MODE || '')
   .trim()
   .toLowerCase();
-const localMode = ['node', 'preview'].includes(requestedLocalMode) ? requestedLocalMode : 'dev';
+const allowedLocalModes = new Set(['dev', 'node', 'preview']);
+const localMode = requestedLocalMode;
 
 const serverLogs = [];
 
@@ -490,6 +492,12 @@ async function waitForWebhookLeadAttempts(mockWebhook, leadId, expectedAttempts)
 }
 
 function ensureProductionEnv() {
+  if (!allowedLocalModes.has(localMode)) {
+    throw new Error(
+      'Runtime smoke mode must be explicit: use --mode=dev for DEV_SMOKE or --mode=node/preview for a built artifact.'
+    );
+  }
+
   const artifactExists = localMode === 'node' ? fs.existsSync('.output/server/entry.mjs') : fs.existsSync('dist');
   if (['node', 'preview'].includes(localMode) && !artifactExists) {
     throw new Error('Production artifact is missing. Run `npm run build` before production runtime smoke check.');

@@ -80,25 +80,47 @@ try {
   run('docker', [
     'build',
     '--pull=false',
-    '--target', 'nginx-runtime',
-    '--build-arg', 'PUBLIC_SITE_URL=https://example.com',
-    '--tag', imageTag,
+    '--target',
+    'nginx-runtime',
+    '--build-arg',
+    'PUBLIC_SITE_URL=https://example.com',
+    '--tag',
+    imageTag,
     sourceRoot,
   ]);
 
-  const fileCheckOutput = run('docker', ['run', '--rm', '--entrypoint', 'sh', imageTag, '-lc', 'ls -l /etc/nginx/generated && test -f /etc/nginx/generated/public-origin.conf && echo PUBLIC_ORIGIN_PRESENT && test -f /etc/nginx/generated/proxy-common.conf && echo PROXY_COMMON_PRESENT']);
-  if (!/PUBLIC_ORIGIN_PRESENT/.test(String(fileCheckOutput || '')) || !/PROXY_COMMON_PRESENT/.test(String(fileCheckOutput || ''))) {
+  const fileCheckOutput = run('docker', [
+    'run',
+    '--rm',
+    '--entrypoint',
+    'sh',
+    imageTag,
+    '-lc',
+    'ls -l /etc/nginx/generated && test -f /etc/nginx/generated/public-origin.conf && echo PUBLIC_ORIGIN_PRESENT && test -f /etc/nginx/generated/proxy-common.conf && echo PROXY_COMMON_PRESENT',
+  ]);
+  if (
+    !/PUBLIC_ORIGIN_PRESENT/.test(String(fileCheckOutput || '')) ||
+    !/PROXY_COMMON_PRESENT/.test(String(fileCheckOutput || ''))
+  ) {
     fail('required generated edge files were not present in the built nginx image', String(fileCheckOutput || ''));
   }
 
-  const nginxTestOutput = run('docker', ['run', '--rm', '--entrypoint', 'sh', imageTag, '-lc', 'nginx -t -c /etc/nginx/nginx.conf > /tmp/nginx-test.log 2>&1; status=$?; cat /tmp/nginx-test.log; exit $status']);
+  const nginxTestOutput = run('docker', [
+    'run',
+    '--rm',
+    '--entrypoint',
+    'sh',
+    imageTag,
+    '-lc',
+    'nginx -t -c /etc/nginx/nginx.conf > /tmp/nginx-test.log 2>&1; status=$?; cat /tmp/nginx-test.log; exit $status',
+  ]);
   if (nginxTestOutput && /test is successful|syntax is okay/i.test(String(nginxTestOutput))) {
     console.log(nginxTestOutput.trim());
   } else {
     fail('nginx -t exited non-zero in the built image', String(nginxTestOutput || ''));
   }
 
-  const containerId = String(run('docker', ['run', '-d', '--rm', '--name', containerName, '-p', '127.0.0.1:0:8080', imageTag])).trim();
+  run('docker', ['run', '-d', '--rm', '--name', containerName, '-p', '127.0.0.1:0:8080', imageTag]);
   try {
     const portOutput = String(run('docker', ['port', containerName, '8080'])).trim();
     const hostPort = Number((portOutput.match(/:(\d+)$/) || [])[1]);
@@ -106,18 +128,46 @@ try {
       fail('failed to determine the ephemeral host port for the temporary nginx container', portOutput || '');
     }
 
-    const assetOutput = run('docker', ['run', '--rm', '--entrypoint', 'sh', imageTag, '-lc', 'find /usr/share/nginx/html -type f | sed "s#^/usr/share/nginx/html/##" | grep -E "\\.(svg|png|jpg|jpeg|gif|webp|avif|css|js)(\\?.*)?$" | head -n 1']);
+    const assetOutput = run('docker', [
+      'run',
+      '--rm',
+      '--entrypoint',
+      'sh',
+      imageTag,
+      '-lc',
+      'find /usr/share/nginx/html -type f | sed "s#^/usr/share/nginx/html/##" | grep -E "\\.(svg|png|jpg|jpeg|gif|webp|avif|css|js)(\\?.*)?$" | head -n 1',
+    ]);
     const asset = String(assetOutput || '').trim();
     if (!asset) {
       fail('could not locate a static asset inside the built nginx image');
     }
 
-    const allowedHttp = run('docker', ['exec', containerName, 'sh', '-lc', `wget -S -O /dev/null --header="Host: localhost" "http://127.0.0.1:8080/${asset}" 2>&1`], { allowFailure: true });
+    const allowedHttp = run(
+      'docker',
+      [
+        'exec',
+        containerName,
+        'sh',
+        '-lc',
+        `wget -S -O /dev/null --header="Host: localhost" "http://127.0.0.1:8080/${asset}" 2>&1`,
+      ],
+      { allowFailure: true }
+    );
     if (!/HTTP\/1\.1\s+200\s+OK|HTTP\/1\.1\s+200/i.test(String(allowedHttp || ''))) {
       fail('expected allowed local Host to serve a static file over HTTP', String(allowedHttp || ''));
     }
 
-    const blockedHttp = run('docker', ['exec', containerName, 'sh', '-lc', `wget -S -O /dev/null --header="Host: evil.example" "http://127.0.0.1:8080/${asset}" 2>&1 || true`], { allowFailure: true });
+    const blockedHttp = run(
+      'docker',
+      [
+        'exec',
+        containerName,
+        'sh',
+        '-lc',
+        `wget -S -O /dev/null --header="Host: evil.example" "http://127.0.0.1:8080/${asset}" 2>&1 || true`,
+      ],
+      { allowFailure: true }
+    );
     if (!/HTTP\/1\.1\s+421/i.test(String(blockedHttp || ''))) {
       fail('expected unknown Host to be rejected with HTTP 421', String(blockedHttp || ''));
     }
