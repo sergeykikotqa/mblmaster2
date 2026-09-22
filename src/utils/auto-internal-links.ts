@@ -125,10 +125,6 @@ const AUTO_LINK_RULES: AutoLinkRule[] = [
     ],
   },
   {
-    href: '/irkutsk',
-    anchors: ['мебель в иркутске', 'мебель на заказ в иркутске', 'изготовление мебели в иркутске'],
-  },
-  {
     href: '/projects/biruzovaya-uglovaya-kuhnya-irkutsk',
     anchors: ['кухня на богдана хмельницкого', 'кухня богдана хмельницкого'],
   },
@@ -246,14 +242,13 @@ const inferCityTarget = (frontmatter: FrontmatterLike | undefined): string | nul
     ].join(' ')
   );
   if (!raw) return null;
-  if (raw.includes('иркутск')) return '/irkutsk';
+  if (raw.includes('иркутск')) return '/contacts';
   return null;
 };
 
 const CLUSTER_TARGETS: Record<string, string[]> = {
   kitchen: [
     '/kuhni',
-    '/irkutsk',
     '/projects/biruzovaya-uglovaya-kuhnya-irkutsk',
     '/projects/belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk',
     '/projects/bezhevaya-uglovaya-kuhnya-irkutsk',
@@ -262,7 +257,7 @@ const CLUSTER_TARGETS: Record<string, string[]> = {
   ],
   storage: ['/shkafy', '/projects/vstroennyi-shkaf-s-rabochey-zonoy-irkutsk', '/projects/shkaf-kupe-na-vsyu-stenu-irkutsk'],
   wardrobe: ['/garderobnye', '/projects/uglovaya-garderobnaya-kupe-irkutsk'],
-  local: ['/irkutsk'],
+  local: [],
 };
 
 const CLUSTER_LIMITS: Record<string, { total: number; perTarget: number }> = {

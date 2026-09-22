@@ -14,7 +14,6 @@ const CANONICAL_ROUTES = new Set([
   '/contacts',
   '/guides',
   '/faq',
-  '/irkutsk',
   '/privacy',
 ]);
 const LEGACY_ALIASES = new Set([

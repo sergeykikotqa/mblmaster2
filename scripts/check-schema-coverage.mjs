@@ -127,7 +127,7 @@ function getField(record, fieldName) {
 function validateTypeNode(typeName, node) {
   const missing = [];
 
-  if (typeName === 'KitchenCabinetStore') {
+  if (typeName === 'LocalBusiness') {
     if (!isNonEmptyString(getField(node, 'name'))) missing.push('name');
     if (!isNonEmptyString(getField(node, 'url'))) missing.push('url');
     if (!isNonEmptyString(getField(node, 'telephone'))) missing.push('telephone');
@@ -181,7 +181,7 @@ function validateTypeNode(typeName, node) {
 }
 
 function expectedTypesForRoute(routePath) {
-  const expected = ['KitchenCabinetStore', 'BreadcrumbList'];
+  const expected = ['LocalBusiness', 'BreadcrumbList'];
   if (MONEY_SERVICE_ROUTES.has(routePath)) {
     expected.push('FAQPage');
   }
@@ -190,10 +190,10 @@ function expectedTypesForRoute(routePath) {
 
 function validateMoneyPageBusinessNodes(routePath, typedNodes) {
   const businessNodes = typedNodes
-    .filter((typed) => typed.typeNames.includes('KitchenCabinetStore'))
+    .filter((typed) => typed.typeNames.includes('LocalBusiness'))
     .map((typed) => typed.node);
   if (businessNodes.length === 0) {
-    return [`[${routePath}] money page must expose a KitchenCabinetStore JSON-LD node`];
+    return [`[${routePath}] money page must expose a LocalBusiness JSON-LD node`];
   }
 
   const hasCatalogNode = businessNodes.some((node) => {
@@ -207,7 +207,7 @@ function validateMoneyPageBusinessNodes(routePath, typedNodes) {
 
   if (!hasCatalogNode) {
     return [
-      `[${routePath}] KitchenCabinetStore JSON-LD on money pages must expose hasOfferCatalog.itemListElement with 3 services`,
+      `[${routePath}] LocalBusiness JSON-LD on money pages must expose hasOfferCatalog.itemListElement with 3 services`,
     ];
   }
 

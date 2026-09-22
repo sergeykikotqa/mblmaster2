@@ -12,7 +12,6 @@ const TARGET_ROUTES = new Set([
   '/kuhni',
   '/shkafy',
   '/garderobnye',
-  '/irkutsk',
 ]);
 const FORBIDDEN_PATTERNS = [
   /\b(?:для\s+)?SEO\b/gi,

@@ -321,10 +321,34 @@ function removeImmutableBuildContext(temporaryRoot) {
   fs.rmSync(resolved, { recursive: true, force: true });
 }
 
+export function assertProductionPublicSiteUrl(publicSiteUrl, label = 'PUBLIC_SITE_URL') {
+  const value = String(publicSiteUrl || '').replace(/\/+$/, '');
+  assert(value, `${label} is required`);
+  assert(/^https:\/\//i.test(value), `${label} must be the canonical HTTPS origin`);
+  try {
+    const parsed = new URL(value);
+    assert(parsed.origin === `${parsed.protocol}//${parsed.host}`, `${label} must be a bare origin without a path, query or hash`);
+    assert(parsed.pathname === '/', `${label} must not include a pathname`);
+    assert(parsed.search === '', `${label} must not include a query string`);
+    assert(parsed.hash === '', `${label} must not include a hash`);
+    const hostname = parsed.hostname.toLowerCase();
+    assert(!['example.com', 'example.org', 'example.net', 'localhost', '127.0.0.1', '0.0.0.0'].includes(hostname), `${label} cannot use placeholder or local host (${hostname})`);
+    return parsed.origin;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes(`${label} must be a bare origin`)) throw error;
+    if (error instanceof Error && /Invalid URL/.test(error.message)) {
+      throw new Error(`${label} must be a valid HTTPS origin`);
+    }
+    throw error;
+  }
+}
+
 export function createReleaseBundle(options = {}) {
   const releaseId = assertCleanReleaseCheckout();
-  const publicSiteUrl = String(options.publicSiteUrl || process.env.PUBLIC_SITE_URL || '').replace(/\/+$/, '');
-  assert(/^https:\/\//i.test(publicSiteUrl), 'PUBLIC_SITE_URL must be the canonical HTTPS origin');
+  const publicSiteUrl = assertProductionPublicSiteUrl(
+    String(options.publicSiteUrl || process.env.PUBLIC_SITE_URL || '').replace(/\/+$/, ''),
+    'PUBLIC_SITE_URL'
+  );
   const policyRelative = String(options.policyPath || 'config/release-policy.json').replaceAll('\\', '/');
   assert(
     !path.isAbsolute(policyRelative) && !policyRelative.split('/').includes('..'),

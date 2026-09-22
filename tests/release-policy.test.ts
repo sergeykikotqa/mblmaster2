@@ -6,6 +6,7 @@ import { describe, expect, test } from 'vitest';
 
 import {
   assertBundleMatchesRecord,
+  assertProductionPublicSiteUrl,
   assertRedisIdentityUnchanged,
   assertSafeApplicationComposeArgs,
   readReleasePolicy,
@@ -66,6 +67,17 @@ function createBundle() {
 }
 
 describe('O2.4 application release and rollback policy', () => {
+  test('validates the production origin without running a deploy', () => {
+    expect(() => assertProductionPublicSiteUrl('')).toThrow(/required/i);
+    expect(() => assertProductionPublicSiteUrl('https://example.com')).toThrow(/placeholder or local host/i);
+    expect(() => assertProductionPublicSiteUrl('http://mebel-irkutsk.ru')).toThrow(/canonical HTTPS origin/i);
+    expect(() => assertProductionPublicSiteUrl('https://localhost')).toThrow(/placeholder or local host/i);
+    expect(() => assertProductionPublicSiteUrl('https://mebel-irkutsk.ru/path')).toThrow(/pathname|bare origin/i);
+    expect(() => assertProductionPublicSiteUrl('https://mebel-irkutsk.ru?x=1')).toThrow(/query|string|bare origin/i);
+    expect(() => assertProductionPublicSiteUrl('https://mebel-irkutsk.ru#top')).toThrow(/hash|bare origin/i);
+    expect(assertProductionPublicSiteUrl('https://mebel-irkutsk.ru')).toBe('https://mebel-irkutsk.ru');
+  });
+
   test('limits the mutable release layer to web, worker and Nginx', () => {
     const policy = readReleasePolicy(path.join(ROOT, 'config', 'release-policy.json'));
     expect(policy.applicationServices).toEqual(['mbl-web', 'mbl-worker-trigger', 'mbl-nginx']);

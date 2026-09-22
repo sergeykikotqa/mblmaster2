@@ -16,7 +16,6 @@ const INDEX_PATHS = Object.freeze([
   '/guides/*',
   '/faq',
   '/faq/*',
-  '/irkutsk',
 ]);
 
 const TEMP_NOINDEX_PATHS = Object.freeze(['/articles', '/articles/*']);

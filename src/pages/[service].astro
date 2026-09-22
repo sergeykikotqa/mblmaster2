@@ -406,10 +406,6 @@ const localBlocks = getLocalCityBlocksForService(service.id).map((block) => {
 });
 const cityNameById = new Map(cities.map((city) => [city.id, city.name]));
 const cityNameInByName = new Map(cities.map((city) => [city.name, city.nameIn || city.name]));
-const geoAnchorLinks = localBlocks.map((block) => ({
-  href: buildCityPath(block.cityModel.id),
-  label: `${block.cityModel.name} — ${service.name}`,
-}));
 const serviceAreas = cities.map((city) => buildAdministrativeArea(city.name));
 
 function buildGeoMentionText(block: LocalCityBlock & { cityModel: (typeof cities)[number] }): string {
@@ -735,27 +731,6 @@ const leadContext = {
     </div>
   </section>
 
-  <section class="section section-inner geo-anchor-block cv-auto" data-support-links>
-    <div class="money-head ds-section-head left">
-      <div class="money-pill ds-pill">ГЕОГРАФИЯ РАБОТЫ</div>
-      <h2>Работаем в Иркутске</h2>
-      <p>
-        На странице Иркутска собраны основные направления и переходы к примерам работ.
-      </p>
-    </div>
-    <ul class="geo-anchor-list">
-      {
-        geoAnchorLinks.map((item) => (
-          <li>
-            <a href={item.href} class="geo-anchor-link">
-              {item.label}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-  </section>
-
   <section class="section section-inner cv-auto">
     <div class="money-head ds-section-head left">
       <div class="money-pill ds-pill">ДО ЗАПУСКА ПРОЕКТА</div>
@@ -783,7 +758,7 @@ const leadContext = {
     <div class="city-blocks-grid">
       {
         localBlocks.map((block) => (
-          <article class="city-block ds-card" data-local-city-block={block.city}>
+          <article class="city-block ds-card">
             <header class="city-block-head">
               <div>
                 <p class="city-block-kicker">{block.cityModel.name}</p>

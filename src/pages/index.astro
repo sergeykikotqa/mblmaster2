@@ -125,9 +125,7 @@ const faqItems = [
 ];
 
 const districts = ['Октябрьский', 'Свердловский', 'Ленинский', 'Правобережный', 'Ново-Ленино', 'Солнечный'];
-const cityLinks = [
-  { label: 'Иркутск', href: '/irkutsk' },
-];
+const cityLinks = [];
 
 const projectEntries = (await getCollection('projects', ({ data }) => !data.draft)).sort((a, b) => {
   const dateDiff = Number(b.data.publishDate || 0) - Number(a.data.publishDate || 0);

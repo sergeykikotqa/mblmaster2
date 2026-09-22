@@ -14,7 +14,7 @@ test('projects routes exist', () => {
 });
 
 test('money pages routes exist', () => {
-  expect(exists('src/pages/irkutsk.astro')).toBe(true);
+  expect(exists('src/pages/irkutsk.astro')).toBe(false);
   expect(exists('src/pages/[service].astro')).toBe(true);
   expect(exists('src/pages/[city]/index.astro')).toBe(false);
   expect(exists('src/pages/[city]/[service].astro')).toBe(false);

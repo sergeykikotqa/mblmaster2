@@ -137,10 +137,10 @@ test('projects content files have valid seo-critical structure', () => {
   }
 });
 
-test('public SEO geography is Irkutsk-only', () => {
+test('public SEO geography is Irkutsk-only without a standalone /irkutsk hub', () => {
   const policy = fs.readFileSync(path.join(process.cwd(), 'src', 'config', 'indexability-policy.ts'), 'utf8');
 
-  expect(policy).toContain("'/irkutsk'");
+  expect(policy).not.toContain("'/irkutsk'");
   expect(policy).not.toContain("'/angarsk'");
   expect(policy).not.toContain("'/shelekhov'");
 });
