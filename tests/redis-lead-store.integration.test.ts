@@ -162,6 +162,22 @@ redisDescribe('native Redis lead pipeline integration', () => {
     expect(results.find((result) => result.duplicate)).toMatchObject({
       response: { leadId, duplicate: true },
     });
+
+    const conflictingLeadId = randomUUID();
+    const conflictingLead = {
+      ...createLead(conflictingLeadId),
+      idempotencyHash: leadRecord.idempotencyHash,
+      payloadFingerprint: 'different-payload-fingerprint',
+    };
+    expect(
+      await store.enqueueLeadWithIdempotency({
+        ...params,
+        successResponse: successResponse(conflictingLeadId),
+        leadRecord: conflictingLead,
+      })
+    ).toEqual({ duplicate: false, conflict: true });
+    expect(await store.getLeadRecord(conflictingLeadId)).toBeNull();
+
     expect((await store.getLeadRecord(leadId))?.leadId).toBe(leadId);
     expect(await store.listDueLeadIds(Date.now(), 10)).toContain(leadId);
     expect(await redisCommand<number>('PTTL', `${prefix}:record:${leadId}`)).toBeGreaterThan(0);

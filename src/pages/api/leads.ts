@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'crypto';
 
 import { getLeadStore, hasRedisLeadStoreConfig, isRedisRuntimeError } from '~/server/leads/store';
-import type { ContactSuccessResponse, LeadRecord } from '~/server/leads/types';
+import type { ContactSuccessResponse, EnqueueLeadResult, LeadRecord } from '~/server/leads/types';
 import { notifyBotProtectionDegraded, notifyLeadStoreDegraded } from '~/server/leads/alerts';
 import { hasWebhookSecretConfig, isWebhookConfigured } from '~/server/leads/webhook';
 import { appendLeadBackup } from '~/server/leads/backup-log';
@@ -462,10 +462,34 @@ function triggerLeadDeliveryWorker(request: Request) {
     .finally(() => clearTimeout(timeout));
 }
 
+function asContactRequestBody(value: unknown): ContactRequestBody {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('INVALID_PAYLOAD');
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) {
+    throw new Error('INVALID_PAYLOAD');
+  }
+
+  return value as ContactRequestBody;
+}
+
+function parseJsonRequestBody(raw: string): ContactRequestBody {
+  if (!raw.trim()) throw new Error('INVALID_PAYLOAD');
+
+  try {
+    return asContactRequestBody(JSON.parse(raw));
+  } catch (error) {
+    if (error instanceof Error && error.message === 'INVALID_PAYLOAD') throw error;
+    throw new Error('INVALID_PAYLOAD');
+  }
+}
+
 async function readRequestBody(request: Request): Promise<ContactRequestBody> {
   const contentType = (request.headers.get('content-type') || '').toLowerCase();
   if (contentType.includes('application/json')) {
-    return (await request.json()) as ContactRequestBody;
+    return parseJsonRequestBody(await request.text());
   }
 
   if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
@@ -479,12 +503,7 @@ async function readRequestBody(request: Request): Promise<ContactRequestBody> {
 
   const raw = await request.text();
   if (!raw.trim()) return {};
-
-  try {
-    return JSON.parse(raw) as ContactRequestBody;
-  } catch {
-    throw new Error('INVALID_PAYLOAD');
-  }
+  return parseJsonRequestBody(raw);
 }
 
 export async function post({ request, clientAddress }: ContactRouteContext) {
@@ -735,14 +754,7 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
       updatedAt: receivedAt,
     };
 
-    let enqueueResult:
-      | {
-          duplicate: false;
-        }
-      | {
-          duplicate: true;
-          response: ContactSuccessResponse;
-        };
+    let enqueueResult: EnqueueLeadResult;
     try {
       enqueueResult = await leadStore.enqueueLeadWithIdempotency({
         idempotencyHash,
@@ -761,6 +773,14 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
         return fail(503, 'LEAD_STORE_UNAVAILABLE', 'Lead queue is temporarily unavailable');
       }
       throw queueError;
+    }
+
+    if (enqueueResult.conflict) {
+      return fail(
+        409,
+        'IDEMPOTENCY_CONFLICT',
+        'This submission key was already used for different request data. Please retry the form.'
+      );
     }
 
     if (enqueueResult.duplicate) {

@@ -73,10 +73,16 @@ export type RateLimitResult = {
 export type EnqueueLeadResult =
   | {
       duplicate: false;
+      conflict?: false;
     }
   | {
       duplicate: true;
+      conflict?: false;
       response: ContactSuccessResponse;
+    }
+  | {
+      duplicate: false;
+      conflict: true;
     };
 
 export type DeliveryCommitResult = {

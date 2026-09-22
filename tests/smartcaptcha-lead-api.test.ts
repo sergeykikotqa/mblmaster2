@@ -90,3 +90,31 @@ test('missing, expired, reused and unavailable SmartCaptcha tokens never enqueue
   expect(noConsent).toMatchObject({ status: 400, body: { success: false, code: 'CONSENT_REQUIRED' } });
   expect(await store.getQueueDepth()).toBe(initialDepth + 1);
 });
+
+test('same idempotency key with changed business payload returns a conflict', async () => {
+  const store = getLeadStore();
+  const initialDepth = await store.getQueueDepth();
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => Response.json({ status: 'ok', host: TEST_HOST }))
+  );
+  const idempotencyKey = `payload-conflict-${crypto.randomUUID()}`;
+
+  const accepted = await submit({ ...BASE_PAYLOAD, smartCaptchaToken: `first-${crypto.randomUUID()}` }, idempotencyKey);
+  expect(accepted).toMatchObject({ status: 200, body: { success: true } });
+
+  const conflict = await submit(
+    {
+      ...BASE_PAYLOAD,
+      phone: '+7 (950) 555-01-02',
+      message: 'Изменённое содержание заявки',
+      smartCaptchaToken: `second-${crypto.randomUUID()}`,
+    },
+    idempotencyKey
+  );
+  expect(conflict).toMatchObject({
+    status: 409,
+    body: { success: false, code: 'IDEMPOTENCY_CONFLICT' },
+  });
+  expect(await store.getQueueDepth()).toBe(initialDepth + 1);
+});

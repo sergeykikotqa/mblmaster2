@@ -4,7 +4,10 @@ const state = vi.hoisted(() => ({
   redisAvailable: false,
   enqueueCalls: 0,
   webhookCalls: 0,
-  acceptedByIdempotency: new Set<string>(),
+  acceptedByIdempotency: new Map<
+    string,
+    { response: { success: true; leadId: string; receivedAt: string }; payloadFingerprint: string }
+  >(),
 }));
 
 const storeMock = vi.hoisted(() => ({
@@ -17,14 +20,30 @@ const storeMock = vi.hoisted(() => ({
       return 0;
     }),
     enqueueLeadWithIdempotency: vi.fn(
-      async ({ idempotencyHash, successResponse }: { idempotencyHash: string; successResponse: { success: true } }) => {
-      state.enqueueCalls += 1;
-      if (state.acceptedByIdempotency.has(idempotencyHash)) {
-        return { duplicate: true as const, response: successResponse };
+      async ({
+        idempotencyHash,
+        successResponse,
+        leadRecord,
+      }: {
+        idempotencyHash: string;
+        successResponse: { success: true; leadId: string; receivedAt: string };
+        leadRecord: { payloadFingerprint: string };
+      }) => {
+        state.enqueueCalls += 1;
+        const existing = state.acceptedByIdempotency.get(idempotencyHash);
+        if (existing) {
+          if (existing.payloadFingerprint !== leadRecord.payloadFingerprint) {
+            return { duplicate: false as const, conflict: true as const };
+          }
+          return { duplicate: true as const, response: existing.response };
+        }
+        state.acceptedByIdempotency.set(idempotencyHash, {
+          response: successResponse,
+          payloadFingerprint: leadRecord.payloadFingerprint,
+        });
+        return { duplicate: false as const };
       }
-      state.acceptedByIdempotency.add(idempotencyHash);
-      return { duplicate: false as const };
-    }),
+    ),
   })),
 }));
 
@@ -58,14 +77,25 @@ const payload = {
   smartCaptchaToken: 'synthetic-valid-token',
 };
 
-function makeRequest(idempotencyKey: string) {
+function makeRequest(idempotencyKey: string, body: unknown = payload) {
   return new Request('https://mebel-irkutsk.ru/api/leads', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Idempotency-Key': idempotencyKey,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
+  });
+}
+
+function makeRawJsonRequest(body: string) {
+  return new Request('https://mebel-irkutsk.ru/api/leads', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Idempotency-Key': `invalid-json-${crypto.randomUUID()}`,
+    },
+    body,
   });
 }
 
@@ -116,6 +146,39 @@ test('fails closed on Redis outage, then recovers with idempotency and no webhoo
   const duplicate = await post({ request: makeRequest(idempotencyKey) });
   expect(duplicate.status).toBe(200);
   expect(await duplicate.json()).toMatchObject({ success: true, duplicate: true });
+  expect(state.enqueueCalls).toBe(2);
+  expect(state.webhookCalls).toBe(0);
+});
+
+test.each([
+  ['null', 'null'],
+  ['array', '[]'],
+  ['string', '"not-an-object"'],
+  ['malformed JSON', '{"name":'],
+])('returns 400 INVALID_PAYLOAD for %s request bodies', async (_label, rawBody) => {
+  const response = await post({ request: makeRawJsonRequest(rawBody) });
+  expect(response.status).toBe(400);
+  expect(await response.json()).toMatchObject({ success: false, code: 'INVALID_PAYLOAD' });
+  expect(state.enqueueCalls).toBe(0);
+});
+
+test('returns 409 when one idempotency key is reused with different lead content', async () => {
+  state.redisAvailable = true;
+  const idempotencyKey = `conflict-${crypto.randomUUID()}`;
+
+  const accepted = await post({ request: makeRequest(idempotencyKey) });
+  expect(accepted.status).toBe(200);
+  expect(await accepted.json()).toMatchObject({ success: true });
+
+  const conflict = await post({
+    request: makeRequest(idempotencyKey, {
+      ...payload,
+      phone: '+7 (950) 555-01-02',
+      message: 'Different business payload for the same key',
+    }),
+  });
+  expect(conflict.status).toBe(409);
+  expect(await conflict.json()).toMatchObject({ success: false, code: 'IDEMPOTENCY_CONFLICT' });
   expect(state.enqueueCalls).toBe(2);
   expect(state.webhookCalls).toBe(0);
 });

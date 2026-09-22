@@ -363,6 +363,10 @@ class RedisLeadStore implements LeadStore {
       (await this.client.command<string | null>('GET', idempotencyKey));
     const existingResponse = parseContactSuccessResponse(existingPayload);
     if (existingResponse) {
+      const existingRecord = await this.getLeadRecord(existingResponse.leadId);
+      if (!existingRecord || existingRecord.payloadFingerprint !== params.leadRecord.payloadFingerprint) {
+        return { duplicate: false, conflict: true };
+      }
       return { duplicate: true, response: { ...existingResponse, duplicate: true } };
     }
 
@@ -698,6 +702,7 @@ class RedisLeadStore implements LeadStore {
 
 type MemoryIdempotencyEntry = {
   response: ContactSuccessResponse;
+  payloadFingerprint: string;
   expiresAt: number;
 };
 
@@ -784,11 +789,15 @@ class MemoryLeadStore implements LeadStore {
     const now = Date.now();
     const current = this.idempotency.get(params.idempotencyHash);
     if (current && current.expiresAt > now) {
+      if (current.payloadFingerprint !== params.leadRecord.payloadFingerprint) {
+        return { duplicate: false, conflict: true };
+      }
       return { duplicate: true, response: { ...current.response, duplicate: true } };
     }
 
     this.idempotency.set(params.idempotencyHash, {
       response: params.successResponse,
+      payloadFingerprint: params.leadRecord.payloadFingerprint,
       expiresAt: now + params.idempotencyTtlSec * 1000,
     });
 
