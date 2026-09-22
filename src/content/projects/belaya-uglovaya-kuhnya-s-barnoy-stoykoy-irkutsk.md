@@ -17,6 +17,7 @@ materials:
   facade: МДФ матовая эмаль
   tabletop: HPL, декор натурального дуба
   hardware: Blum
+imageBaseDir: kuhnya-dzerzhinskogo
 images:
   - 01.jpg
   - 02.jpg

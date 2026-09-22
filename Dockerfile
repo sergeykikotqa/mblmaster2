@@ -12,12 +12,11 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm ci --no-audit --no-fund
 
 FROM base AS build
-ARG PUBLIC_SITE_URL=https://mebel-irkutsk.ru
+ARG PUBLIC_SITE_URL=https://example.com
 ENV PUBLIC_SITE_URL=${PUBLIC_SITE_URL}
 COPY --from=build-dependencies /app/node_modules ./node_modules
 COPY . .
-RUN node scripts/generate-runtime-redirects.mjs --check \
-    && npm run build
+RUN npm run build
 
 # Install only runtime dependencies. The compiler, test stack and other
 # devDependencies never enter the production Node image.

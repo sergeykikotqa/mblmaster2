@@ -120,13 +120,6 @@ export interface LocalCase {
   projectSlug?: string;
 }
 
-export interface LocalReview {
-  author: string;
-  location: string;
-  text: string;
-  rating: number;
-}
-
 export interface LocalOffer {
   title: string;
   description: string;
@@ -135,7 +128,6 @@ export interface LocalOffer {
 export interface LocalCityBlock {
   city: LocalCityId;
   cases: LocalCase[];
-  reviews: LocalReview[];
   offer: LocalOffer;
 }
 

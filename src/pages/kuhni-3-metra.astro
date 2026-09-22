@@ -10,9 +10,9 @@ import { buildProjectCards } from '~/lib/projects/project-adapters';
 import { toCanonical } from '~/lib/url-builder';
 
 const metadata = {
-  title: 'Кухня 3 метра на заказ в Иркутске — планировка и примеры',
+  title: 'Кухня 3 метра на заказ в Иркутске — стоимость и проекты',
   description:
-    'Планировка кухни 3 метра в Иркутске: что помещается, как распределить технику и хранение, и какие варианты подходят для небольших помещений.',
+    'Кухня 3 метра на заказ в Иркутске: варианты комплектации, опубликованные проекты и расчёт стоимости под размеры помещения.',
   canonical: toCanonical('/kuhni-3-metra', Astro.site),
 };
 
@@ -52,13 +52,13 @@ const leadContext = {
 
   <HeroModern
     title="Кухня 3 метра на заказ в Иркутске"
-    subtitle="Оптимальная планировка для небольших помещений. Подберём удобное наполнение и покажем, как использовать каждый метр без потери функциональности."
+    subtitle="Спроектируем комплект под размеры помещения, согласуем материалы и рассчитаем стоимость конкретной комплектации."
     actions={heroActions}
     primaryCtaId="service_hero_primary"
     secondaryCtaIds={['service_hero_secondary']}
     mobileProof={heroMobileProof}
     badge="Кухни под размер"
-    trustItems={['Уместим технику даже на 3 метрах', 'Проект до старта производства', 'Стоимость фиксируется по итогам замера']}
+    trustItems={['Проект под реальные размеры', 'Комплектация до старта производства', 'Стоимость фиксируется в смете']}
     stats={[
       { value: '3 м', label: 'длина кухни' },
       { value: 'под задачу', label: 'планировка' },
@@ -67,8 +67,8 @@ const leadContext = {
     slides={[
       {
         src: '/images/projects/kuhnya-baykalskaya/01.jpg',
-        alt: 'Кухня 3 метра на заказ',
-        title: 'Кухня 3 метра на заказ в Иркутске',
+        alt: 'Пример кухни на заказ MBL в Иркутске',
+        title: 'Кухня на заказ под размеры помещения',
         subtitle: 'Планировка под реальные размеры и тип помещения.',
         kicker: 'Иркутск',
       },
@@ -97,117 +97,21 @@ const leadContext = {
     </div>
   </section>
 
-  <section class="section section-inner cv-auto">
-    <div class="money-head ds-section-head left">
-      <div class="money-pill ds-pill">КАКОЙ ДОЛЖНА БЫТЬ</div>
-      <h2>Какой должна быть кухня 3 метра</h2>
-      <p>Чтобы кухня была удобной, важно не площадь, а планировка и хранение.</p>
-    </div>
-    <ul class="compact-list">
-      <li>Прямая или угловая планировка — без лишних поворотов.</li>
-      <li>Встроенная техника и узкие модули вместо громоздких шкафов.</li>
-      <li>Хранение до потолка, чтобы использовать вертикаль.</li>
-      <li>Минимум лишних декоративных элементов.</li>
-    </ul>
-  </section>
-
-  <section class="section section-inner cv-auto">
-    <div class="money-head ds-section-head left">
-      <div class="money-pill ds-pill">ПЛАНИРОВКА</div>
-      <h2>Планировка кухни 3 метра</h2>
-    </div>
-    <div class="layout-grid">
-      <div class="layout-card ds-card">
-        <h3>Прямая кухня</h3>
-        <p>Подходит для узкого помещения. Минимум затрат, но меньше рабочей поверхности.</p>
-      </div>
-      <div class="layout-card ds-card">
-        <h3>Угловая кухня</h3>
-        <p>Самый удобный вариант: больше хранения и правильный рабочий треугольник.</p>
-      </div>
-    </div>
-  </section>
-
-  <section class="section section-inner cv-auto">
-    <div class="money-head ds-section-head left">
-      <div class="money-pill ds-pill">СРАВНЕНИЕ</div>
-      <h2>Кухня 3 метра: прямая или угловая — что лучше</h2>
-      <p>Если есть хотя бы один угол — угловая обычно удобнее и дает больше хранения.</p>
-    </div>
-    <ul class="compact-list">
-      <li>Прямая — если кухня узкая и нет возможности развернуться.</li>
-      <li>Угловая — если нужно больше хранения и рабочей поверхности.</li>
-    </ul>
-    <p class="section-note">В большинстве случаев для кухни 3 метра выбирают угловую планировку.</p>
-  </section>
-
-  <section class="section section-inner cv-auto">
-    <div class="money-head ds-section-head left">
-      <div class="money-pill ds-pill">ПОЯСНЕНИЕ</div>
-      <h2>Кухня 3 метра: сколько это в реальности</h2>
-    </div>
-    <ul class="compact-list">
-      <li>3 метра — это небольшая кухня в квартире.</li>
-      <li>Чаще всего это 5–7 м².</li>
-      <li>Требуется продуманная планировка и хранение.</li>
-    </ul>
-  </section>
-
   <section id="service-projects" class="section section-inner cv-auto" data-service-projects="kuhni-3-metra">
     <div class="money-head ds-section-head left">
       <div class="money-pill ds-pill">РЕАЛЬНЫЕ ПРОЕКТЫ</div>
-      <h2>Наши работы: кухни 3 метра</h2>
-      <p>Формат «м² + результат + цена» — ориентир для понимания бюджета.</p>
+      <h2>Примеры наших кухонь для компактных помещений</h2>
+      <p>В подборке показаны опубликованные кухонные проекты MBL. Их точная длина не заявляется как 3 метра без подтверждённых данных конкретного проекта.</p>
     </div>
     <ul class="example-list">
-      <li>Компактная планировка в квартире с узким проходом — сделали ставку на вертикальное хранение и встроенную технику.</li>
-      <li>Угловая схема в небольшой квартире — использовали максимум глубины и выдвижных систем, чтобы сохранить рабочую поверхность.</li>
+      <li>Сравните материалы, конфигурацию и состав хранения в реальных проектах.</li>
+      <li>Стоимость каждого нового заказа рассчитывается под его размеры и комплектацию.</li>
     </ul>
     {projectCards.length > 0 && (
       <div class="mt-6">
         <ProjectsGrid projects={projectCards} />
       </div>
     )}
-  </section>
-
-  <section class="section section-inner cv-auto">
-    <div class="money-head ds-section-head left">
-      <div class="money-pill ds-pill">ЧТО ПОМЕСТИТСЯ</div>
-      <h2>Кухня 3 метра с техникой: что учитывать</h2>
-      <p>При правильной планировке можно разместить технику и сохранить удобные проходы.</p>
-    </div>
-    <ul class="compact-list">
-      <li>Встраиваемую технику лучше закладывать в проект заранее.</li>
-      <li>Посудомойка 45 см и духовка обычно помещаются без потери хранения.</li>
-      <li>Для вытяжки нужно предусмотреть место и выводы заранее.</li>
-    </ul>
-  </section>
-
-  <section class="section section-inner cv-auto">
-    <div class="money-head ds-section-head left">
-      <div class="money-pill ds-pill">ЧТО ПОМЕСТИТСЯ</div>
-      <h2>Что можно разместить в кухне 3 метра</h2>
-    </div>
-    <ul class="compact-list">
-      <li>Варочная панель на 2–4 конфорки.</li>
-      <li>Духовка.</li>
-      <li>Посудомойка 45 см.</li>
-      <li>Холодильник у торца или в нише.</li>
-    </ul>
-    <p class="section-note">При правильной планировке можно добавить микроволновку и дополнительное хранение.</p>
-  </section>
-
-  <section class="section section-inner cv-auto">
-    <div class="money-head ds-section-head left">
-      <div class="money-pill ds-pill">ОШИБКИ</div>
-      <h2>Ошибки при планировании кухни 3 метра</h2>
-    </div>
-    <ul class="compact-list">
-      <li>Ставят слишком много шкафов — кухня становится тесной и неудобной.</li>
-      <li>Не учитывают технику — в итоге она не помещается.</li>
-      <li>Выбирают тёмные фасады — пространство визуально уменьшается.</li>
-      <li>Не планируют хранение заранее — часть полезного пространства остаётся неиспользованной.</li>
-    </ul>
   </section>
 
   <section class="section section-inner cv-auto">
@@ -232,7 +136,7 @@ const leadContext = {
       </div>
     </div>
     <p class="section-note">Подходы и ориентиры обсуждаем на замере, без подмены фактической цены проекта обобщённым «средним диапазоном».</p>
-    <a class="price-next" href="/articles/planirovka-kuhni-3-metra-irkutsk">Планировка кухни 3 метра →</a>
+    <a class="price-next" href="/articles/planirovka-kuhni-3-metra-irkutsk">Как спланировать кухню длиной 3 метра →</a>
   </section>
 
   <MoneyPageReentryCta title={midCtaTitle} subtitle={midCtaSubtitle} />
@@ -240,8 +144,8 @@ const leadContext = {
   <section class="section section-inner cv-auto trust-mini">
     <div class="money-head ds-section-head left">
       <div class="money-pill ds-pill">ДОВЕРИЕ</div>
-      <h2>Регулярно делаем кухни длиной около 3 метров — это один из самых частых форматов</h2>
-      <p>Разбираем планировки и цены, работаем по договору и фиксируем стоимость до запуска производства.</p>
+      <h2>Расчёт опирается на замер и согласованную комплектацию</h2>
+      <p>Не называем обычный кухонный проект трёхметровым без подтверждённой длины. Состав и стоимость фиксируем до запуска производства.</p>
     </div>
   </section>
 
@@ -252,9 +156,9 @@ const leadContext = {
       <p>Подойдёт, даже если вы пока просто сравниваете варианты.</p>
     </div>
     <ul class="final-proof-list">
-      <li>Предложим 2–3 варианта планировки.</li>
+      <li>Подготовим вариант планировки под реальные размеры.</li>
       <li>Подберём материалы под бюджет.</li>
-      <li>Сразу скажем стоимость.</li>
+      <li>Рассчитаем стоимость согласованной комплектации.</li>
     </ul>
     <p class="final-proof-note">Можно оставить заявку без звонка; свяжемся для уточнения деталей.</p>
   </section>

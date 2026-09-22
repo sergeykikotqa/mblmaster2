@@ -17,6 +17,7 @@ materials:
   facade: МДФ матовая эмаль
   tabletop: HPL, декор светлого камня
   hardware: Blum
+imageBaseDir: kuhnya-krasnokazachya
 images:
   - 01.jpg
   - 02.jpg

@@ -256,7 +256,7 @@ const CLUSTER_TARGETS: Record<string, string[]> = {
     '/projects/pryamaya-kuhnya-s-vysokimi-penalami-irkutsk',
   ],
   storage: ['/shkafy', '/projects/vstroennyi-shkaf-s-rabochey-zonoy-irkutsk', '/projects/shkaf-kupe-na-vsyu-stenu-irkutsk'],
-  wardrobe: ['/garderobnye', '/projects/uglovaya-garderobnaya-kupe-irkutsk'],
+  wardrobe: ['/garderobnye', '/projects/garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk'],
   local: [],
 };
 

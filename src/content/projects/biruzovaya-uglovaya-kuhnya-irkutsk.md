@@ -17,6 +17,7 @@ materials:
   facade: МДФ матовая эмаль
   tabletop: кварцевый агломерат темный
   hardware: Blum
+imageBaseDir: kuhnya-bogdana
 images:
   - 01.jpg
   - 02.jpg

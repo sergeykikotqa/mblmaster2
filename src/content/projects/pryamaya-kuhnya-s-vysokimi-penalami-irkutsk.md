@@ -17,6 +17,7 @@ materials:
   facade: МДФ матовая эмаль
   tabletop: кварцевый агломерат
   hardware: Blum
+imageBaseDir: kuhnya-verkhnyaya-naberezhnaya
 images:
   - 01.jpg
   - 02.jpg

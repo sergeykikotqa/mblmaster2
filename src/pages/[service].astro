@@ -18,7 +18,7 @@ import {
   buildProjectCards,
   resolveProjectSlug as resolveProjectSlugFromAdapter,
 } from '~/lib/projects/project-adapters';
-import { buildCityPath, buildServicePath, normalizePath, toAbsoluteUrl, toCanonical } from '~/lib/url-builder';
+import { buildServicePath, normalizePath, toAbsoluteUrl, toCanonical } from '~/lib/url-builder';
 import type { GeneratedGeoPage, LocalCityBlock } from '~/types/geo-seo';
 import { hashString, selectServiceAnchor, SERVICE_CONTEXT_ANCHORS } from '~/utils/anchor-strategy';
 
@@ -219,16 +219,6 @@ function normalizeToken(value: unknown): string {
     .replace(/^\/+|\/+$/g, '');
 }
 
-function formatPrice(value: number, currency: string): string {
-  const locale = 'ru-RU';
-  const normalizedCurrency = currency === 'RUB' ? 'RUB' : currency;
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: normalizedCurrency,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
 const resolveProjectSlug = (project: ProjectEntry): string => resolveProjectSlugFromAdapter(project);
 
 function formatAreaValue(area: number | undefined): string {
@@ -409,12 +399,31 @@ const cityNameInByName = new Map(cities.map((city) => [city.name, city.nameIn ||
 const serviceAreas = cities.map((city) => buildAdministrativeArea(city.name));
 
 function buildGeoMentionText(block: LocalCityBlock & { cityModel: (typeof cities)[number] }): string {
-  const [primaryCase, secondaryCase] = block.cases;
-  const firstLocalSignal = primaryCase?.district || primaryCase?.location || block.cityModel.name;
-  const secondLocalSignal =
-    secondaryCase?.district || secondaryCase?.location || block.reviews[0]?.location || block.cityModel.name;
+  const cityLabels = new Set(
+    [block.cityModel.name, block.cityModel.nameIn]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.trim().toLocaleLowerCase('ru-RU'))
+  );
+  const localSignals = [
+    ...new Set(
+      block.cases
+        .map((item) => item.district || item.location)
+        .filter(
+          (value): value is string =>
+            Boolean(value) && !cityLabels.has(String(value).trim().toLocaleLowerCase('ru-RU'))
+        )
+    ),
+  ].slice(0, 2);
+  const evidenceText =
+    localSignals.length > 1
+      ? `Опубликованные кейсы привязаны к локальным ориентирам «${localSignals[0]}» и «${localSignals[1]}».`
+      : localSignals.length === 1
+        ? `${block.cases.length > 1 ? 'Опубликованные кейсы привязаны' : 'Опубликованный кейс привязан'} к локальному ориентиру «${localSignals[0]}».`
+        : block.cases.length > 1
+          ? `География опубликованных кейсов пока указана только как «${block.cityModel.name}», без более точного района.`
+          : `География опубликованного кейса пока указана только как «${block.cityModel.name}», без более точного района.`;
 
-  return `${currentServiceName} в ${block.cityModel.nameIn || block.cityModel.name} проектируем для адресов и районов вроде ${firstLocalSignal} и ${secondLocalSignal}. Состав работ, бюджет и сроки определяем после замера и фиксируем для конкретного проекта в смете и договоре.`;
+  return `${currentServiceName} в ${block.cityModel.nameIn || block.cityModel.name} проектируем только для конкретного помещения, а не по условному городскому шаблону. ${evidenceText} Фото и описание в блоке берутся из опубликованных карточек проектов; другие районы или адреса не приписываем без подтвержденного кейса.`;
 }
 
 const allProjects = (await getCollection('projects'))
@@ -829,22 +838,6 @@ const leadContext = {
               </ul>
             </div>
 
-            <div class="city-block-subsection">
-              <h4>Отзывы клиентов</h4>
-              <ul class="city-review-list">
-                {block.reviews.map((review) => (
-                  <li class="city-review-item">
-                    <p>{review.text}</p>
-                    <div>
-                      <strong>{review.author}</strong>
-                      <span>{review.location}</span>
-                      <small>Рейтинг: {review.rating}/5</small>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
             <div class="city-block-offer">
               <strong>{block.offer.title}</strong>
             </div>
@@ -1230,8 +1223,7 @@ const leadContext = {
     font-size: 1rem;
   }
 
-  .city-case-list,
-  .city-review-list {
+  .city-case-list {
     margin: 0;
     padding: 0;
     list-style: none;
@@ -1239,8 +1231,7 @@ const leadContext = {
     gap: 0.7rem;
   }
 
-  .city-case-item,
-  .city-review-item {
+  .city-case-item {
     border: 1px solid #ebe2db;
     border-radius: 0.85rem;
     background: #fcfaf8;
@@ -1294,22 +1285,18 @@ const leadContext = {
     padding: 0.22rem 0.55rem;
   }
 
-  .city-case-item strong,
-  .city-review-item strong {
+  .city-case-item strong {
     display: block;
     color: #201b17;
   }
 
-  .city-case-location,
-  .city-review-item span,
-  .city-review-item small {
+  .city-case-location {
     display: block;
     margin-top: 0.2rem;
     color: #7a6c61;
   }
 
-  .city-case-item p,
-  .city-review-item p {
+  .city-case-item p {
     margin: 0.45rem 0 0;
     color: #5d5550;
     line-height: 1.6;
@@ -1382,14 +1369,12 @@ const leadContext = {
       padding: 1.3rem;
     }
 
-    .city-case-list,
-    .city-review-list {
+    .city-case-list {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 0.9rem;
     }
 
-    .city-case-item,
-    .city-review-item {
+    .city-case-item {
       height: 100%;
       box-shadow: 0 16px 30px rgba(25, 18, 13, 0.08);
     }

@@ -58,10 +58,7 @@ export const normalizeProjectImageBaseDir = (value: string | null | undefined): 
  * shipped in `src/assets/images/projects`.
  */
 const LEGACY_PROJECT_IMAGE_BASE_DIRS: Record<string, string> = {
-  'garderobnaya-angarsk-29-mikrorayon': 'uglovaya-garderobnaya-kupe-irkutsk',
-  'garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion': 'uglovaya-garderobnaya-kupe-irkutsk',
   'garderobnaya-sovetskaya': 'uglovaya-garderobnaya-kupe-irkutsk',
-  'shkaf-vstroennyi-angarsk-84-i-kvartal': 'shkaf-kupe-na-vsyu-stenu-irkutsk',
 };
 
 const DEFAULT_LEGACY_PROJECT_IMAGE_BASE_DIR = 'kuhnya-trilissera';

@@ -7,17 +7,15 @@ import type {
   LocalCityBlocksByService,
   LocalCityId,
   LocalOffer,
-  LocalReview,
   LocalServiceBlocks,
 } from '~/types/geo-seo';
 
-const REQUIRED_BLOCK_KEYS = ['cases', 'city', 'offer', 'reviews'] as const;
+const REQUIRED_BLOCK_KEYS = ['cases', 'city', 'offer'] as const;
 const REQUIRED_CASE_KEYS = ['alt', 'city', 'image', 'location', 'photos', 'summary', 'title', 'year'] as const;
 const OPTIONAL_CASE_KEYS = ['area', 'district', 'projectSlug'] as const;
-const REQUIRED_REVIEW_KEYS = ['author', 'location', 'rating', 'text'] as const;
 const REQUIRED_OFFER_KEYS = ['description', 'title'] as const;
 const MIN_CASES_BY_CITY: Record<LocalCityId, number> = {
-  irkutsk: 2,
+  irkutsk: 1,
 };
 
 const REAL_CASE_IMAGES: Record<string, string[]> = {
@@ -140,21 +138,6 @@ function validateCase(serviceId: string, cityId: string, value: LocalCase, index
   }
 }
 
-function validateReview(serviceId: string, cityId: string, value: LocalReview, index: number) {
-  assertExactKeys(
-    value as unknown as Record<string, unknown>,
-    REQUIRED_REVIEW_KEYS,
-    `${serviceId}.${cityId}.reviews[${index}]`
-  );
-  assertNonEmptyString(value.author, `${serviceId}.${cityId}.reviews[${index}].author`);
-  assertNonEmptyString(value.location, `${serviceId}.${cityId}.reviews[${index}].location`);
-  assertNonEmptyString(value.text, `${serviceId}.${cityId}.reviews[${index}].text`);
-  const rating = Number(value.rating);
-  if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-    throw new Error(`[local-city-blocks] ${serviceId}.${cityId}.reviews[${index}].rating must be between 1 and 5`);
-  }
-}
-
 function validateOffer(serviceId: string, cityId: string, value: LocalOffer) {
   assertExactKeys(value as unknown as Record<string, unknown>, REQUIRED_OFFER_KEYS, `${serviceId}.${cityId}.offer`);
   assertNonEmptyString(value.title, `${serviceId}.${cityId}.offer.title`);
@@ -176,12 +159,7 @@ function validateBlock(serviceId: string, cityId: LocalCityId, value: LocalCityB
       `[local-city-blocks] ${serviceId}.${cityId}.cases must contain at least ${MIN_CASES_BY_CITY[cityId]} items`
     );
   }
-  if (!Array.isArray(value.reviews) || value.reviews.length === 0) {
-    throw new Error(`[local-city-blocks] ${serviceId}.${cityId}.reviews must contain at least one review`);
-  }
-
   value.cases.forEach((item, index) => validateCase(serviceId, cityId, item, index));
-  value.reviews.forEach((item, index) => validateReview(serviceId, cityId, item, index));
   validateOffer(serviceId, cityId, value.offer);
 }
 

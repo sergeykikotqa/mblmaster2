@@ -17,6 +17,7 @@ materials:
   facade: МДФ матовая эмаль
   tabletop: влагостойкий HPL, декор темного камня
   hardware: Hettich
+imageBaseDir: kuhnya-baykalskiy-trakt
 images:
   - 01.jpg
   - 02.jpg

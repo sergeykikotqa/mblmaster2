@@ -7,6 +7,7 @@ excerpt: >-
   Гардеробная на заказ в Иркутске: угловая система хранения с купейными дверями,
   зеркалом, полками, штангами и ящиками для повседневных вещей.
 publishDate: 2026-03-21T00:00:00.000Z
+draft: true
 city: irkutsk
 service: garderobnye
 relatedServices: [shkafy]

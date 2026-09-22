@@ -32,10 +32,6 @@ export const footerData = {
       ],
     },
     {
-      title: 'Города',
-      links: [],
-    },
-    {
       title: 'Компания',
       links: [
         { text: 'О компании', href: getPermalink('/o-kompanii') },

@@ -17,6 +17,7 @@ materials:
   facade: МДФ матовый soft-touch
   tabletop: влагостойкий HPL, декор светлого дерева
   hardware: Blum
+imageBaseDir: kuhnya-piskunova
 images:
   - 01.jpg
   - 02.jpg

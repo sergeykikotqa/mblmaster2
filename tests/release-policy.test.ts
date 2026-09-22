@@ -194,6 +194,14 @@ describe('O2.4 application release and rollback policy', () => {
     expect(source).toContain('assertCleanReleaseCheckout(releaseId)');
   });
 
+  test('passes the selected production origin into the immutable build and runtime gate', () => {
+    const source = fs.readFileSync(path.join(ROOT, 'scripts', 'release-tool.mjs'), 'utf8');
+    const dockerfile = fs.readFileSync(path.join(ROOT, 'Dockerfile'), 'utf8');
+    expect(source).toContain('`PUBLIC_SITE_URL=${publicSiteUrl}`');
+    expect(source).toContain('O23_CANONICAL_ORIGIN: publicSiteUrl');
+    expect(dockerfile).toContain('ARG PUBLIC_SITE_URL=https://example.com');
+  });
+
   test('keeps a stable active-release link on the exact committed bundle', () => {
     const runtimeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mbl-active-release-'));
     const releaseA = 'a'.repeat(40);

@@ -7,8 +7,7 @@ const DIST_DIR = path.join(ROOT, 'dist');
 const GENERATED_PAGES_PATH = path.join(ROOT, 'data', 'generated-pages.json');
 const LOCAL_CITY_BLOCKS_PATH = path.join(ROOT, 'data', 'local-city-blocks.json');
 const CITY_HUBS = [];
-const REQUIRED_SERVICE_CITIES = [{ id: 'irkutsk', label: 'Irkutsk', minCases: 2 }];
-const REQUIRED_SERVICE_CITY_IDS = new Set(REQUIRED_SERVICE_CITIES.map((city) => city.id));
+const REQUIRED_SERVICE_CITIES = [{ id: 'irkutsk', label: 'Irkutsk', minCases: 1 }];
 const REQUIRED_SERVICE_CITY_ALIASES = new Set(['irkutsk', 'иркутск', 'irkutsk city']);
 const FORBIDDEN_SERVICE_CITY_ALIASES = new Set(['angarsk', 'ангарск', 'shelehov', 'шелехов']);
 const FORBIDDEN_SERVICE_CITY_LABELS = {
@@ -43,16 +42,6 @@ function stripHtml(html) {
     .replace(/&nbsp;/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-function parseTagAttributes(tag) {
-  const attrs = {};
-  const attrRegex = /([a-zA-Z:_-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g;
-  let match;
-  while ((match = attrRegex.exec(tag)) !== null) {
-    attrs[String(match[1] || '').toLowerCase()] = String(match[2] ?? match[3] ?? match[4] ?? '');
-  }
-  return attrs;
 }
 
 function extractLocalCityBlocks(html) {

@@ -6,11 +6,13 @@ import { generateProjectSlug } from '../src/utils/slugify';
 
 type ProjectFrontmatter = {
   slug?: string;
+  draft?: boolean;
   title?: string;
   city?: string;
   service?: string;
   street?: string;
   images?: string[];
+  imageBaseDir?: string;
   materials?: Record<string, string>;
 };
 
@@ -93,6 +95,16 @@ function normalizeSlug(value: string | undefined): string {
     .replace(/\.mdx?$/i, '');
 }
 
+function resolveProjectImagePaths(file: string, data: ProjectFrontmatter): string[] {
+  const baseDir = normalizeSlug(data.imageBaseDir || data.slug || file);
+  return (data.images || [])
+    .map((image) => {
+      const normalized = String(image || '').replaceAll('\\', '/');
+      return normalized.startsWith('/') ? normalized : `/images/projects/${baseDir}/${normalized}`;
+    })
+    .sort();
+}
+
 test('projects content files have valid seo-critical structure', () => {
   const projectsDir = path.join(process.cwd(), 'src/content/projects');
   const files = fs.readdirSync(projectsDir).filter((name) => name.endsWith('.md') || name.endsWith('.mdx'));
@@ -134,6 +146,51 @@ test('projects content files have valid seo-critical structure', () => {
     expect(finalSlug).toMatch(SLUG_PATTERN);
     expect(seenSlugs.has(finalSlug)).toBe(false);
     seenSlugs.add(finalSlug);
+  }
+});
+
+test('published projects do not present one exact gallery as separate projects', () => {
+  const projectsDir = path.join(process.cwd(), 'src/content/projects');
+  const files = fs.readdirSync(projectsDir).filter((name) => /\.mdx?$/i.test(name));
+  const galleryOwner = new Map<string, string>();
+
+  for (const file of files) {
+    const data = readFrontmatter(path.join(projectsDir, file));
+    if (data.draft) continue;
+    const signature = resolveProjectImagePaths(file, data).join('|');
+    expect(signature.length).toBeGreaterThan(0);
+    expect(
+      galleryOwner.get(signature),
+      `${file} duplicates the complete gallery of ${galleryOwner.get(signature)}`
+    ).toBeUndefined();
+    galleryOwner.set(signature, file);
+  }
+});
+
+test('local service cases link to a published project and use only its images', () => {
+  const projectsDir = path.join(process.cwd(), 'src/content/projects');
+  const projects = new Map<string, Set<string>>();
+  for (const file of fs.readdirSync(projectsDir).filter((name) => /\.mdx?$/i.test(name))) {
+    const data = readFrontmatter(path.join(projectsDir, file));
+    if (data.draft) continue;
+    projects.set(normalizeSlug(data.slug || file), new Set(resolveProjectImagePaths(file, data)));
+  }
+
+  const localBlocks = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), 'data/local-city-blocks.json'), 'utf8')
+  ) as Record<string, Record<string, { cases: Array<{ projectSlug?: string; image: string; photos: string[] }> }>>;
+
+  for (const [serviceId, cities] of Object.entries(localBlocks)) {
+    for (const [cityId, block] of Object.entries(cities)) {
+      for (const [index, item] of block.cases.entries()) {
+        expect(item.projectSlug, `${serviceId}.${cityId}.cases[${index}] needs project evidence`).toBeTruthy();
+        const projectImages = projects.get(normalizeSlug(item.projectSlug));
+        expect(projectImages, `${serviceId}.${cityId}.cases[${index}] links to a missing/draft project`).toBeDefined();
+        for (const image of [item.image, ...(item.photos || [])]) {
+          expect(projectImages?.has(image), `${image} is not part of project ${item.projectSlug}`).toBe(true);
+        }
+      }
+    }
   }
 });
 

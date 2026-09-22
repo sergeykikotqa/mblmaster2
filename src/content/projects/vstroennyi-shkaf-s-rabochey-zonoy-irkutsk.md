@@ -18,6 +18,7 @@ materials:
   facade: ЛДСП, декор светлый дуб
   tabletop: ЛДСП с износостойкой кромкой
   hardware: Hettich
+imageBaseDir: shkaf-deputatskaya
 images:
   - 01.jpg
   - 02.jpg

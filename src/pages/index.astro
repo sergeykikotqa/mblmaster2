@@ -125,7 +125,6 @@ const faqItems = [
 ];
 
 const districts = ['Октябрьский', 'Свердловский', 'Ленинский', 'Правобережный', 'Ново-Ленино', 'Солнечный'];
-const cityLinks = [];
 
 const projectEntries = (await getCollection('projects', ({ data }) => !data.draft)).sort((a, b) => {
   const dateDiff = Number(b.data.publishDate || 0) - Number(a.data.publishDate || 0);
@@ -406,12 +405,9 @@ const heroPreload = import.meta.env.DEV
         </dl>
         <div class="home-geography mbl-reveal" data-mbl-reveal>
           <div>
-            <p class="home-geography-label">Работаем по городу и рядом</p>
-            <div class="home-city-links">
-              {cityLinks.map((city) => <a href={city.href}>{city.label}</a>)}
-            </div>
+            <p class="home-geography-label">Работаем в Иркутске</p>
           </div>
-          <p>{districts.join(' · ')}</p>
+          <p>Районы: {districts.join(' · ')}</p>
         </div>
       </div>
     </section>

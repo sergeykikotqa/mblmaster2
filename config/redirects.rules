@@ -2,13 +2,13 @@
 # Syntax: <source> <target> <status>. Supported statuses: 301, 307, 404, 410.
 # `*` matches a trailing path and `:name` matches exactly one path segment.
 
-http://mebel-irkutsk.ru/* https://example.com/:splat 301
-http://www.mebel-irkutsk.ru/* https://example.com/:splat 301
-https://www.mebel-irkutsk.ru/* https://example.com/:splat 301
-http://mebelirkutsk.ru/* https://example.com/:splat 301
-http://www.mebelirkutsk.ru/* https://example.com/:splat 301
-https://mebelirkutsk.ru/* https://example.com/:splat 301
-https://www.mebelirkutsk.ru/* https://example.com/:splat 301
+http://mebel-irkutsk.ru/* __CANONICAL_ORIGIN__/:splat 301
+http://www.mebel-irkutsk.ru/* __CANONICAL_ORIGIN__/:splat 301
+https://www.mebel-irkutsk.ru/* __CANONICAL_ORIGIN__/:splat 301
+http://mebelirkutsk.ru/* __CANONICAL_ORIGIN__/:splat 301
+http://www.mebelirkutsk.ru/* __CANONICAL_ORIGIN__/:splat 301
+https://mebelirkutsk.ru/* __CANONICAL_ORIGIN__/:splat 301
+https://www.mebelirkutsk.ru/* __CANONICAL_ORIGIN__/:splat 301
 
 /api/contact /api/leads 307
 

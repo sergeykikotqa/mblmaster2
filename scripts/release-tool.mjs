@@ -405,7 +405,12 @@ export function createReleaseBundle(options = {}) {
 
     if (!options.skipRuntimeGate) {
       runNpm(['run', 'check:compose-runtime'], {
-        env: { ...process.env, O23_IMAGE_REVISION: releaseId, O23_SKIP_BUILD: '1' },
+        env: {
+          ...process.env,
+          O23_CANONICAL_ORIGIN: publicSiteUrl,
+          O23_IMAGE_REVISION: releaseId,
+          O23_SKIP_BUILD: '1',
+        },
         timeoutMs: 30 * 60_000,
       });
     } else {
