@@ -12,6 +12,14 @@ function isAdminPath(pathname: string) {
   );
 }
 
+function isPublicAdminAuthPath(pathname: string) {
+  return pathname === '/admin/login' || pathname === '/admin/login/' || pathname.startsWith('/api/admin/auth/');
+}
+
+function isAdminHtmlPath(pathname: string) {
+  return pathname === '/admin' || pathname.startsWith('/admin/');
+}
+
 function resolveAdminRateLimitScope(pathname: string) {
   if (pathname.startsWith('/api/admin/metrics')) return 'admin:metrics';
   if (pathname.startsWith('/api/admin/health')) return 'admin:health';
@@ -26,17 +34,24 @@ function resolveAdminScope(pathname: string) {
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const pathname = context.url.pathname;
-  const isProd = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
   const isPrerendered = context.isPrerendered === true;
 
-  if (isProd && !isPrerendered && isAdminPath(pathname)) {
+  if (!isPrerendered && isAdminPath(pathname) && !isPublicAdminAuthPath(pathname)) {
+    const htmlRequest = isAdminHtmlPath(pathname);
     const auth = await authorizeAdminRequest(context.request, {
       scope: resolveAdminScope(pathname),
       rateLimitScope: resolveAdminRateLimitScope(pathname),
       allowDevBypass: false,
+      requireSession: htmlRequest,
+      registerFailure: !htmlRequest,
+      clientAddress: context.clientAddress,
     });
 
     if (!auth.ok) {
+      if (htmlRequest && auth.status === 401) {
+        const nextPath = `${context.url.pathname}${context.url.search}`;
+        return context.redirect(`/admin/login?next=${encodeURIComponent(nextPath)}`, 303);
+      }
       return auth.response;
     }
   }

@@ -9,8 +9,6 @@ String(value ?? '-')
 .replaceAll("'", '&#39;');
 const API_PATH = '/api/admin/health';
 const ui = {
-token: $('admin-token'),
-clear: $('admin-token-clear'),
 refresh: $('health-check-button'),
 auto: $('health-auto-refresh'),
 interval: $('health-refresh-interval'),
@@ -358,7 +356,7 @@ state.inFlight = true;
 if (!background) setStatus('loading', 'Проверка health-состояния...');
 try {
 const response = await fetch(API_PATH, {
-headers: ui.token.value.trim() ? { Authorization: `Bearer ${ui.token.value.trim()}` } : {},
+credentials: 'same-origin',
 });
 const payload = await parseJson(response);
 ui.raw.textContent = JSON.stringify(payload || {}, null, 2);
@@ -387,13 +385,14 @@ return;
 if (response.status === 401 || String(payload?.code || '') === 'UNAUTHORIZED') {
 stopAutoRefresh();
 resetDashboard();
-setStatus('error', 'UNAUTHORIZED: нужен верный admin token или allowlisted IP.');
+setStatus('error', 'UNAUTHORIZED: сессия завершена. Войдите через Telegram повторно.');
+window.location.assign(`/admin/login?next=${encodeURIComponent(window.location.pathname)}`);
 return;
 }
 if (String(payload?.code || '') === 'ADMIN_AUTH_NOT_CONFIGURED') {
 stopAutoRefresh();
 resetDashboard();
-setStatus('error', 'ADMIN_AUTH_NOT_CONFIGURED: на сервере не задан METRICS_ADMIN_TOKEN.');
+setStatus('error', 'ADMIN_AUTH_NOT_CONFIGURED: вход владельца не настроен на сервере.');
 return;
 }
 if (!payload || typeof payload !== 'object' || typeof payload.summary !== 'object') {
@@ -425,17 +424,6 @@ scheduleAutoRefresh();
 if (ui.auto.checked && ui.dashboard.hidden) void checkHealth(false);
 });
 ui.interval.addEventListener('change', scheduleAutoRefresh);
-ui.clear.addEventListener('click', () => {
-ui.token.value = '';
-state.inFlight = false;
-state.rateLimitedUntil = 0;
-stopTimer('rateTimer');
-stopTimer('freshnessTimer');
-stopAutoRefresh();
 resetDashboard();
-setStatus('idle', 'Введите admin token или используйте allowlisted IP, затем нажмите «Refresh now».');
-});
-
-resetDashboard();
-setStatus('idle', 'Введите admin token или используйте allowlisted IP, затем нажмите «Refresh now».');
+setStatus('idle', 'Нажмите «Refresh now», чтобы получить актуальное состояние системы.');
 })();

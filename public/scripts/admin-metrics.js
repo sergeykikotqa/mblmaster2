@@ -4,8 +4,6 @@ const form = document.getElementById('metrics-filter');
 const submitButton = document.getElementById('metrics-submit');
 const tableBody = document.getElementById('metrics-table-body');
 const summary = document.getElementById('metrics-summary');
-const tokenInput = document.getElementById('admin-token');
-const clearTokenButton = document.getElementById('admin-token-clear');
 const UI_STATE = Object.freeze({
 IDLE: 'idle',
 LOADING: 'loading',
@@ -21,9 +19,7 @@ if (
 !(form instanceof HTMLFormElement) ||
 !(submitButton instanceof HTMLButtonElement) ||
 !(tableBody instanceof HTMLElement) ||
-!(summary instanceof HTMLElement) ||
-!(tokenInput instanceof HTMLInputElement) ||
-!(clearTokenButton instanceof HTMLButtonElement)
+!(summary instanceof HTMLElement)
 )
 return;
 
@@ -117,17 +113,6 @@ tableBody.appendChild(row);
 }
 };
 
-const readToken = () => {
-return tokenInput.value.trim();
-};
-
-const buildAuthHeaders = (token) => {
-if (!token) return {};
-return {
-Authorization: `Bearer ${token}`,
-};
-};
-
 const updateRateLimitedSummary = () => {
 if (uiState !== UI_STATE.RATE_LIMITED) return;
 const remainingSec = Math.max(0, Math.ceil((rateLimitUntilMs - Date.now()) / 1000));
@@ -158,7 +143,7 @@ const message = options.message || '';
 if (nextState === UI_STATE.IDLE) {
 stopRateLimitTimer();
 setSubmitDisabled(false);
-setSummaryText(message || 'Введите admin token или используйте allowlisted IP, затем нажмите «Обновить».');
+setSummaryText(message || 'Настройте фильтры и нажмите «Обновить».');
 return;
 }
 
@@ -211,7 +196,6 @@ updateRateLimitedSummary();
 return;
 }
 
-const token = readToken();
 const fd = new FormData(form);
 const params = new URLSearchParams();
 for (const [key, value] of fd.entries()) {
@@ -223,16 +207,17 @@ params.set(key, normalized);
 setState(UI_STATE.LOADING);
 try {
 const response = await fetch(`${API_PATH}?${params.toString()}`, {
-headers: buildAuthHeaders(token),
+credentials: 'same-origin',
 });
 const payload = await parseResponseJson(response);
 if (!response.ok || !payload?.ok) {
 const code = payload?.code || `HTTP_${response.status}`;
 if (code === 'UNAUTHORIZED') {
-renderEmptyRows('Доступ запрещён: нужен верный admin token или allowlisted IP.');
+renderEmptyRows('Сессия завершена. Войдите через Telegram повторно.');
 setState(UI_STATE.ERROR, {
-message: 'UNAUTHORIZED: нужен верный admin token или allowlisted IP.',
+message: 'UNAUTHORIZED: сессия завершена.',
 });
+window.location.assign(`/admin/login?next=${encodeURIComponent(window.location.pathname)}`);
 return;
 }
 
@@ -249,7 +234,7 @@ return;
 if (code === 'ADMIN_AUTH_NOT_CONFIGURED') {
 renderEmptyRows('Сервер не настроен для admin auth.');
 setState(UI_STATE.ERROR, {
-message: 'ADMIN_AUTH_NOT_CONFIGURED: на сервере не задан METRICS_ADMIN_TOKEN.',
+message: 'ADMIN_AUTH_NOT_CONFIGURED: вход владельца не настроен на сервере.',
 });
 return;
 }
@@ -291,12 +276,6 @@ message: `Ошибка загрузки: ${error instanceof Error ? error.messag
 form.addEventListener('submit', (event) => {
 event.preventDefault();
 void loadMetrics();
-});
-
-clearTokenButton.addEventListener('click', () => {
-tokenInput.value = '';
-renderEmptyRows('Данные появятся после успешной загрузки.');
-setState(UI_STATE.IDLE);
 });
 
 renderEmptyRows('Данные появятся после успешной загрузки.');

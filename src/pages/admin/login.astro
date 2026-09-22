@@ -1,0 +1,66 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import { sanitizeAdminNextPath } from '~/server/admin/telegram-oidc';
+import { parseBooleanEnv } from '~/server/utils/auth';
+
+export const prerender = false;
+
+const nextPath = sanitizeAdminNextPath(Astro.url.searchParams.get('next'));
+const errorCode = (Astro.url.searchParams.get('error') || '').trim();
+const errorMessages: Record<string, string> = {
+  not_configured: 'Telegram Login ещё не настроен владельцем сайта.',
+  unavailable: 'Сервис входа временно недоступен. Повторите позже.',
+  invalid_flow: 'Попытка входа устарела или уже была использована. Начните заново.',
+  cancelled: 'Вход через Telegram отменён.',
+  owner_not_allowed: 'Этот Telegram-аккаунт не имеет доступа к админке.',
+  verification_failed: 'Не удалось подтвердить ответ Telegram. Начните вход заново.',
+};
+const errorMessage = errorMessages[errorCode] || '';
+const mockEnabled =
+  import.meta.env.DEV &&
+  parseBooleanEnv(process.env.ALLOW_DEV_BYPASS, false) &&
+  parseBooleanEnv(process.env.TELEGRAM_LOGIN_MOCK_MODE, false);
+---
+
+<AdminLayout title="Вход в админку MBL">
+  <section class="mx-auto flex min-h-screen max-w-xl items-center px-4 py-12 sm:px-6">
+    <div class="w-full rounded-2xl border border-[#e8d8cb] bg-white p-6 shadow-lg shadow-[#e7d9ce]/50 sm:p-8">
+      <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[#8b5a3c]">MBL Мастер</p>
+      <h1 class="mt-3 text-3xl font-bold text-slate-900">Вход в веб-админку</h1>
+      <p class="mt-3 text-sm leading-6 text-slate-600">
+        Подтвердите личность через Telegram. Доступ получит только заранее разрешённый аккаунт владельца.
+      </p>
+
+      {
+        errorMessage && (
+          <p class="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">
+            {errorMessage}
+          </p>
+        )
+      }
+
+      <a
+        href={`/api/admin/auth/telegram/start?next=${encodeURIComponent(nextPath)}`}
+        class="ui-btn-state mt-6 inline-flex w-full items-center justify-center rounded-lg bg-[#8b5a3c] px-6 py-3 font-semibold text-white hover:bg-[#7f5438] focus-visible:ring-[#8b5a3c]"
+      >
+        Войти через Telegram
+      </a>
+
+      {
+        mockEnabled && (
+          <a
+            href={`/api/admin/auth/telegram/mock?next=${encodeURIComponent(nextPath)}`}
+            class="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-[#d9c6b7] bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-[#f9f4ef]"
+          >
+            Локальный тестовый вход
+          </a>
+        )
+      }
+
+      <p class="mt-5 text-xs leading-5 text-slate-500">
+        Технические токены не сохраняются в браузере. Сессия ограничена по времени и может быть отозвана кнопкой
+        «Выйти».
+      </p>
+    </div>
+  </section>
+</AdminLayout>

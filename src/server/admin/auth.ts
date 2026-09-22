@@ -3,6 +3,8 @@ import { BlockList, isIP } from 'node:net';
 import { assertMemoryFallbackAllowed, hasRedisConfig, redisCommand } from '~/server/redis/client';
 import { extractBearerToken, isProd, parseBooleanEnv, requireAdminToken, timingSafeCompare } from '~/server/utils/auth';
 import { normalizeIp, resolveClientIp as resolveClientIpFromRequest } from '~/server/utils/ip';
+import { validateAdminCsrf, validateAdminSession } from '~/server/admin/session';
+import { isTelegramOidcConfigured } from '~/server/admin/telegram-oidc';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -16,9 +18,10 @@ const DEFAULT_AUTH_FAIL_MAX_ATTEMPTS = 10;
 const DEFAULT_AUTH_FAIL_BLOCK_SEC = 10 * 60;
 const FORBIDDEN_QUERY_KEYS = ['token', 'access_token', 'auth', 'authorization', 'bearer'];
 
-type AuthMethod = 'bearer' | 'allowlist' | 'dev-bypass';
+type AuthMethod = 'bearer' | 'session' | 'dev-bypass';
 type AdminAuthCode =
   | 'UNAUTHORIZED'
+  | 'CSRF_FAILED'
   | 'TOO_MANY_REQUESTS'
   | 'TOKEN_IN_QUERY_NOT_ALLOWED'
   | 'ADMIN_AUTH_NOT_CONFIGURED'
@@ -50,6 +53,9 @@ type AdminAuthOptions = {
   token?: string;
   tokenConfigName?: string;
   allowAllowlist?: boolean;
+  allowSession?: boolean;
+  requireSession?: boolean;
+  registerFailure?: boolean;
   requireToken?: boolean;
 };
 
@@ -469,21 +475,24 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
     };
   }
 
-  let blockedRetryAfterSec: number;
-  try {
-    blockedRetryAfterSec = await getBlockRetryAfterSec(identity, nowMs, rateLimitScope);
-  } catch (error) {
-    return makeAuthStoreUnavailableFailure(scope, clientIp, 'block_check', error);
-  }
-  if (blockedRetryAfterSec > 0) {
-    return {
-      ok: false,
-      status: 429,
-      code: 'TOO_MANY_REQUESTS',
-      clientIp,
-      retryAfterSec: blockedRetryAfterSec,
-      response: makeAuthFailureResponse(429, 'TOO_MANY_REQUESTS', blockedRetryAfterSec),
-    };
+  const shouldRegisterFailure = options.registerFailure !== false;
+  if (shouldRegisterFailure) {
+    let blockedRetryAfterSec: number;
+    try {
+      blockedRetryAfterSec = await getBlockRetryAfterSec(identity, nowMs, rateLimitScope);
+    } catch (error) {
+      return makeAuthStoreUnavailableFailure(scope, clientIp, 'block_check', error);
+    }
+    if (blockedRetryAfterSec > 0) {
+      return {
+        ok: false,
+        status: 429,
+        code: 'TOO_MANY_REQUESTS',
+        clientIp,
+        retryAfterSec: blockedRetryAfterSec,
+        response: makeAuthFailureResponse(429, 'TOO_MANY_REQUESTS', blockedRetryAfterSec),
+      };
+    }
   }
 
   const adminTokenResult = requireAdminToken();
@@ -505,8 +514,17 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
 
   const tokenConfigured = Boolean(adminToken);
   const allowlistConfigured = allowlist.hasEntries;
+  const allowSession = !hasTokenOverride && options.allowSession !== false;
+  const requireSession = options.requireSession === true;
+  const telegramLoginConfigured = !hasTokenOverride && isTelegramOidcConfigured();
 
-  if ((isProductionAuthMode() || options.requireToken === true) && !tokenConfigured) {
+  const session = allowSession ? await validateAdminSession(request, nowMs) : ({ ok: false, code: 'MISSING' } as const);
+  if (!session.ok && session.code === 'STORE_UNAVAILABLE') {
+    return makeAuthStoreUnavailableFailure(scope, clientIp, 'block_check', new Error('ADMIN_SESSION_STORE_UNAVAILABLE'));
+  }
+  const sessionAuthorized = session.ok;
+
+  if (options.requireToken === true && !tokenConfigured) {
     console.error('[admin-auth] missing required token in production', { scope, tokenConfigName });
     return {
       ok: false,
@@ -517,7 +535,25 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
     };
   }
 
-  if (!isProductionAuthMode() && allowDevBypass && !tokenConfigured && !allowlistConfigured) {
+  if (isProductionAuthMode() && !requireSession && !tokenConfigured && !telegramLoginConfigured && !sessionAuthorized) {
+    console.error('[admin-auth] missing admin identity provider in production', { scope });
+    return {
+      ok: false,
+      status: 503,
+      code: 'ADMIN_AUTH_NOT_CONFIGURED',
+      clientIp,
+      response: makeAuthFailureResponse(503, 'ADMIN_AUTH_NOT_CONFIGURED'),
+    };
+  }
+
+  if (
+    !isProductionAuthMode() &&
+    allowDevBypass &&
+    !requireSession &&
+    !tokenConfigured &&
+    !telegramLoginConfigured &&
+    !allowlistConfigured
+  ) {
     return {
       ok: true,
       method: 'dev-bypass',
@@ -526,19 +562,43 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
   }
 
   const bearerToken = extractBearerToken(request);
-  const bearerAuthorized = tokenConfigured && timingSafeCompare(adminToken, bearerToken);
+  const bearerAuthorized = !requireSession && tokenConfigured && timingSafeCompare(adminToken, bearerToken);
   const allowlistAuthorized = allowlistConfigured && clientIp ? isAllowlistedIp(clientIp, allowlist) : false;
+  const identityAuthorized = requireSession ? sessionAuthorized : bearerAuthorized || sessionAuthorized;
+  const networkAuthorized = !allowlistConfigured || allowlistAuthorized;
 
-  if (bearerAuthorized || allowlistAuthorized) {
-    try {
-      await clearFailures(identity, rateLimitScope);
-    } catch (error) {
-      return makeAuthStoreUnavailableFailure(scope, clientIp, 'failure_clear', error);
+  if (identityAuthorized && networkAuthorized) {
+    const unsafeMethod = !['GET', 'HEAD', 'OPTIONS'].includes(request.method.toUpperCase());
+    if (session.ok && !bearerAuthorized && unsafeMethod && !validateAdminCsrf(request, session.record)) {
+      return {
+        ok: false,
+        status: 403,
+        code: 'CSRF_FAILED',
+        clientIp,
+        response: makeAuthFailureResponse(403, 'CSRF_FAILED'),
+      };
+    }
+    if (shouldRegisterFailure) {
+      try {
+        await clearFailures(identity, rateLimitScope);
+      } catch (error) {
+        return makeAuthStoreUnavailableFailure(scope, clientIp, 'failure_clear', error);
+      }
     }
     return {
       ok: true,
-      method: bearerAuthorized ? 'bearer' : 'allowlist',
+      method: bearerAuthorized ? 'bearer' : 'session',
       clientIp,
+    };
+  }
+
+  if (!shouldRegisterFailure) {
+    return {
+      ok: false,
+      status: 401,
+      code: 'UNAUTHORIZED',
+      clientIp,
+      response: makeAuthFailureResponse(401, 'UNAUTHORIZED'),
     };
   }
 
@@ -556,6 +616,8 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
     clientIp: clientIp || 'unknown',
     hasAuthorizationHeader: Boolean(request.headers.get('authorization')),
     tokenConfigured,
+    telegramLoginConfigured,
+    sessionPresented: session.code !== 'MISSING',
     allowlistConfigured,
     blocked: failure.blocked,
     trustProxyHeaders: shouldTrustProxyHeaders(),

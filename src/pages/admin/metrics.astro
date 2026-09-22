@@ -1,5 +1,8 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
+import AdminSessionBar from '~/components/admin/AdminSessionBar.astro';
+
+export const prerender = false;
 ---
 
 <AdminLayout title="Lead Metrics Dashboard">
@@ -9,28 +12,7 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
       Ежедневный дашборд конверсии. Фокус на `page_view`, `form_opened`, `form_submitted` и CR.
     </p>
 
-    <div
-      class="mb-6 grid gap-3 rounded-xl border border-[#e8d8cb] bg-[#f9f4ef] p-4 md:grid-cols-[1fr_auto] md:items-end"
-    >
-      <label class="text-sm font-medium text-slate-700">
-        Admin token (Bearer)
-        <input
-          id="admin-token"
-          name="admin-token"
-          type="password"
-          autocomplete="off"
-          placeholder="METRICS_ADMIN_TOKEN"
-          class="mt-1 block w-full rounded-md border border-[#d9c6b7] px-3 py-2"
-        />
-      </label>
-      <button
-        id="admin-token-clear"
-        type="button"
-        class="inline-flex w-fit items-center rounded-md border border-[#d9c6b7] bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-[#f3ebe4]"
-      >
-        Очистить токен
-      </button>
-    </div>
+    <AdminSessionBar />
 
     <form id="metrics-filter" class="grid gap-4 md:grid-cols-4 rounded-xl border border-[#e8d8cb] bg-[#f9f4ef] p-4">
       <label class="text-sm font-medium text-slate-700">
