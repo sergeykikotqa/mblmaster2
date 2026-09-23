@@ -1,0 +1,226 @@
+[
+  {
+    "pageSlug": "/",
+    "city": "irkutsk",
+    "district": "",
+    "service": "",
+    "pageType": "homepage"
+  },
+  {
+    "pageSlug": "/contacts",
+    "city": "irkutsk",
+    "district": "",
+    "service": "",
+    "pageType": "site"
+  },
+  {
+    "pageSlug": "/garderobnye",
+    "city": "irkutsk",
+    "district": "",
+    "service": "garderobnye",
+    "pageType": "service-money"
+  },
+  {
+    "pageSlug": "/kuhni",
+    "city": "irkutsk",
+    "district": "",
+    "service": "kuhni-na-zakaz",
+    "pageType": "service-money"
+  },
+  {
+    "pageSlug": "/projects",
+    "city": "irkutsk",
+    "district": "",
+    "service": "",
+    "pageType": "projects"
+  },
+  {
+    "pageSlug": "/projects/belaya-uglovaya-kuhnya-s-barnoy-stoykoy-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "kuhni-na-zakaz",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/belaya-uglovaya-kuhnya-s-derevyannoy-stoleshnitsey-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "kuhni-na-zakaz",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "kuhni-na-zakaz",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/bezhevaya-uglovaya-kuhnya-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "kuhni-na-zakaz",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/biruzovaya-uglovaya-kuhnya-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "kuhni-na-zakaz",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/detskaya-krovat-cherdak-so-stolom-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "garderobnye",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/kuhnya-grafitovaya",
+    "city": "irkutsk",
+    "district": "",
+    "service": "kuhni-na-zakaz",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/mansardnaya-rabochaya-zona-pod-skatom-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/mebel-pod-lestnitsey",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/postirochnaya-so-shkafami-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/prihozhaya-so-shkafom-i-antresolyu-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/pryamaya-kuhnya-s-vysokimi-penalami-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "kuhni-na-zakaz",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/raspashnoi-shkaf-s-antresolyu-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/shkaf-kupe-na-vsyu-stenu-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/shkaf-kupe-prihozhaya-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/shkaf-s-antresolyami-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/shkaf-s-gladilnoy-doskoy-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/shkaf-tv-zona-s-podvesnymi-modulyami-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/shkaf-v-koridor-s-riflenymi-fasadami-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/shkaf-v-spalnyu-s-riflenymi-fasadami-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/shkaf-vo-vsyu-stenu-so-stellazhom-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/tumba-komod-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/tumba-pod-rakovinu-vannaya-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/uglovaya-kuhnya-s-podsvetkoy-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "kuhni-na-zakaz",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/projects/vstroennyi-shkaf-s-rabochey-zonoy-irkutsk",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "project"
+  },
+  {
+    "pageSlug": "/shkafy",
+    "city": "irkutsk",
+    "district": "",
+    "service": "shkafy-kupe",
+    "pageType": "service-money"
+  }
+]

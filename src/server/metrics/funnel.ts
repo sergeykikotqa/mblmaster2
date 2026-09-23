@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { getGeneratedPageBySlug } from '~/lib/geo-data';
+import funnelPublicPagesRaw from '../../../data/funnel-public-pages.json';
 import { assertMemoryFallbackAllowed, hasRedisConfig, redisCommand } from '~/server/redis/client';
 
 type FunnelConversionEventName = 'page_view' | 'form_opened' | 'form_submitted';
@@ -25,6 +25,10 @@ type FunnelDimensions = {
   service: string;
   pageType: string;
 };
+
+const funnelPublicPages = new Map(
+  (funnelPublicPagesRaw as FunnelDimensions[]).map((page) => [normalizePath(page.pageSlug), page])
+);
 
 type FunnelOpsCounts = {
   formView: number;
@@ -141,7 +145,15 @@ function sanitizePageSlug(value: unknown): string {
   if (typeof value !== 'string') return '';
   const input = value.trim();
   if (!input) return '';
-  if (input.startsWith('/')) return normalizePath(input);
+  if (input.startsWith('/')) {
+    try {
+      const url = new URL(input, 'https://local.internal');
+      if (url.origin !== 'https://local.internal') return '';
+      return normalizePath(url.pathname);
+    } catch {
+      return '';
+    }
+  }
   try {
     const url = new URL(input);
     return normalizePath(url.pathname);
@@ -205,16 +217,12 @@ function toDimension(params: {
   pageType?: unknown;
 }): FunnelDimensions | null {
   const pageSlug = sanitizePageSlug(params.pageSlug);
-  if (!pageSlug || pageSlug === '/') return null;
-  const generatedPage = getGeneratedPageBySlug(pageSlug);
-  if (!generatedPage) return null;
+  if (!pageSlug) return null;
+  const publicPage = funnelPublicPages.get(pageSlug);
+  if (!publicPage) return null;
 
   return {
-    pageSlug: generatedPage.pageSlug,
-    city: generatedPage.cityId,
-    district: '',
-    service: generatedPage.serviceId,
-    pageType: generatedPage.pageType,
+    ...publicPage,
   };
 }
 
@@ -525,7 +533,7 @@ function aggregateRollup(params: {
     if (!parsed) continue;
 
     const { eventName, dimensions } = parsed;
-    if (!dimensions.pageSlug || dimensions.pageSlug === '/') continue;
+    if (!dimensions.pageSlug) continue;
     if (!matchesFilter(dimensions.pageSlug, params.filters.pageSlug)) continue;
     if (!matchesFilter(dimensions.city, params.filters.city)) continue;
     if (!matchesFilter(dimensions.district, params.filters.district)) continue;

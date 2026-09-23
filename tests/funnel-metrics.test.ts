@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, expect, test } from 'vitest';
 
 import { post as postTrack } from '../src/pages/api/track';
-import { getFunnelRollupFull, recordFunnelMetric } from '../src/server/metrics/funnel';
+import funnelPublicPages from '../data/funnel-public-pages.json';
+import services from '../data/services.json';
+import { getMetricsServiceFilterOptions } from '../src/lib/admin-metrics-filters';
+import { getFunnelRollupFull, recordFunnelMetric, resolveFunnelDimensions } from '../src/server/metrics/funnel';
 
 const ORIGINAL_ENV = {
   REDIS_URL: process.env.REDIS_URL,
@@ -100,4 +103,132 @@ test('api/track persists ops funnel events with reasons into storage', async () 
 
   expect(rollup.totalOps.formSubmitBlocked).toBeGreaterThanOrEqual(1);
   expect(rollup.totalOpsReasons.submitBlocked.smartcaptcha_unavailable).toBeGreaterThanOrEqual(1);
+});
+
+test.each([
+  ['/', 'homepage', '', 'irkutsk'],
+  ['/contacts', 'site', '', 'irkutsk'],
+] as const)('records conversion events for trusted public route %s', async (pageSlug, pageType, service, city) => {
+  const timestampMs = Date.UTC(2035, 0, 5, 10, 0, 0);
+  const bucket = '2035-01-05';
+  const sentAt = new Date(timestampMs).toISOString();
+
+  for (const event of ['page_view', 'form_opened']) {
+    const response = await postTrack({
+      request: new Request('https://example.com/api/track', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'user-agent': 'vitest' },
+        body: JSON.stringify({
+          event,
+          page: `${pageSlug}?ignored=query`,
+          sentAt,
+          payload: { page_slug: pageSlug, service: 'untrusted-service', lead_page_type: 'untrusted-type' },
+        }),
+      }),
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ success: true, funnelMetricRecorded: true });
+  }
+  await recordFunnelMetric({ eventName: 'form_submitted', pageSlug, timestampMs });
+
+  const rollup = await getFunnelRollupFull({ span: 'day', bucket, pageSlug });
+  expect(rollup).toMatchObject({ totalPageViews: 1, totalOpened: 1, totalSubmitted: 1 });
+  expect(rollup.entries).toContainEqual(
+    expect.objectContaining({ pageSlug, pageType, service, city, pageViews: 1, formOpened: 1, formSubmitted: 1 })
+  );
+});
+
+test('records a published project with canonical service dimensions', async () => {
+  const project = funnelPublicPages.find((page) => page.pageType === 'project');
+  expect(project).toBeTruthy();
+  const timestampMs = Date.UTC(2035, 0, 6, 10, 0, 0);
+  const bucket = '2035-01-06';
+
+  for (const eventName of ['page_view', 'form_opened', 'form_submitted'] as const) {
+    await recordFunnelMetric({ eventName, pageSlug: project!.pageSlug, timestampMs });
+  }
+
+  const rollup = await getFunnelRollupFull({ span: 'day', bucket, pageSlug: project!.pageSlug });
+  expect(rollup).toMatchObject({ totalPageViews: 1, totalOpened: 1, totalSubmitted: 1 });
+  expect(rollup.entries[0]).toMatchObject({
+    pageSlug: project!.pageSlug,
+    pageType: 'project',
+    service: project!.service,
+    city: project!.city,
+  });
+});
+
+test('keeps existing service-page dimensions and normalizes trailing slash and query strings', () => {
+  expect(
+    resolveFunnelDimensions({
+      pageSlug: '/kuhni/?phone=not-a-dimension',
+      city: 'untrusted-city',
+      service: 'shkafy',
+      pageType: 'untrusted-type',
+    })
+  ).toEqual({
+    pageSlug: '/kuhni',
+    city: 'irkutsk',
+    district: '',
+    service: 'kuhni-na-zakaz',
+    pageType: 'service-money',
+  });
+  expect(resolveFunnelDimensions({ pageSlug: '/?phone=not-a-dimension' })?.pageSlug).toBe('/');
+  expect(resolveFunnelDimensions({ pageSlug: '/contacts/?phone=not-a-dimension' })?.pageSlug).toBe('/contacts');
+});
+
+test.each(['/unknown', '/admin', '/api/leads', '/projects/uglovaya-garderobnaya-s-dveryami-kupe-irkutsk'])(
+  'rejects untrusted, technical or unpublished route %s',
+  (pageSlug) => {
+    expect(resolveFunnelDimensions({ pageSlug })).toBeNull();
+  }
+);
+
+test('does not add rejected routes to aggregate totals', async () => {
+  const timestampMs = Date.UTC(2035, 0, 8, 10, 0, 0);
+  const bucket = '2035-01-08';
+  for (const pageSlug of [
+    '/unknown',
+    '/admin',
+    '/api/leads',
+    '/projects/uglovaya-garderobnaya-s-dveryami-kupe-irkutsk',
+  ]) {
+    await recordFunnelMetric({ eventName: 'page_view', pageSlug, timestampMs });
+  }
+
+  const rollup = await getFunnelRollupFull({ span: 'day', bucket });
+  expect(rollup.totalPageViews).toBe(0);
+  expect(rollup.entries).toHaveLength(0);
+});
+
+test('filters rollups by canonical service ids without mixing path segments', async () => {
+  const timestampMs = Date.UTC(2035, 0, 7, 10, 0, 0);
+  const bucket = '2035-01-07';
+  const expectedServices = ['kuhni-na-zakaz', 'shkafy-kupe', 'garderobnye'];
+  expect(services.map((service) => service.id)).toEqual(expectedServices);
+  expect(getMetricsServiceFilterOptions()).toEqual([
+    { value: 'kuhni-na-zakaz', label: 'Кухни на заказ' },
+    { value: 'shkafy-kupe', label: 'Шкафы-купе' },
+    { value: 'garderobnye', label: 'Гардеробные' },
+  ]);
+
+  for (const page of funnelPublicPages.filter((item) => item.pageType === 'service-money')) {
+    await recordFunnelMetric({ eventName: 'page_view', pageSlug: page.pageSlug, timestampMs });
+  }
+
+  const all = await getFunnelRollupFull({ span: 'day', bucket });
+  expect(all.totalPageViews).toBe(3);
+
+  for (const service of expectedServices) {
+    const filtered = await getFunnelRollupFull({ span: 'day', bucket, service });
+    expect(filtered.totalPageViews).toBe(1);
+    expect(filtered.entries).toHaveLength(1);
+    expect(filtered.entries[0]?.service).toBe(service);
+  }
+
+  for (const legacyPathSegment of ['kuhni', 'shkafy']) {
+    const filtered = await getFunnelRollupFull({ span: 'day', bucket, service: legacyPathSegment });
+    expect(filtered.totalPageViews).toBe(0);
+    expect(filtered.entries).toHaveLength(0);
+  }
 });

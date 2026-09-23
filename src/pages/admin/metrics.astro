@@ -1,8 +1,11 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import AdminSessionBar from '~/components/admin/AdminSessionBar.astro';
+import { getMetricsServiceFilterOptions } from '~/lib/admin-metrics-filters';
 
 export const prerender = false;
+
+const serviceOptions = getMetricsServiceFilterOptions();
 ---
 
 <AdminLayout title="Lead Metrics Dashboard">
@@ -32,12 +35,10 @@ export const prerender = false;
         />
       </label>
       <label class="text-sm font-medium text-slate-700">
-        Service
+        Услуга
         <select name="service" class="mt-1 block w-full rounded-md border border-[#d9c6b7] px-3 py-2">
-          <option value="">all</option>
-          <option value="kuhni">kuhni</option>
-          <option value="shkafy">shkafy</option>
-          <option value="garderobnye">garderobnye</option>
+          <option value="">Все</option>
+          {serviceOptions.map((service) => <option value={service.value}>{service.label}</option>)}
         </select>
       </label>
       <label class="text-sm font-medium text-slate-700">
@@ -88,4 +89,3 @@ export const prerender = false;
 
   <script src="/scripts/admin-metrics.js" defer></script>
 </AdminLayout>
-
