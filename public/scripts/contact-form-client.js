@@ -213,8 +213,7 @@
 
   function initForm(form) {
     if (!(form instanceof HTMLFormElement)) return;
-    if (form.dataset.contactFormInitialized === 'true') return;
-    form.dataset.contactFormInitialized = 'true';
+    if (form.dataset.contactFormInitialized === 'true') return true;
 
     const tracking = resolveTracking();
 
@@ -1137,13 +1136,27 @@
     window.addEventListener('hashchange', handleHashAttention);
     document.addEventListener('click', handleAnchorAttention, true);
     handleHashAttention();
+    form.dataset.contactFormInitialized = 'true';
+    return true;
   }
 
-  function initContactForms() {
-    const forms = Array.from(document.querySelectorAll('form.lead-contact-form'));
-    forms.forEach((form) => initForm(form));
+  function initContactForms(root = document) {
+    const forms =
+      root instanceof HTMLFormElement
+        ? root.matches('form.lead-contact-form')
+          ? [root]
+          : []
+        : Array.from(
+            (root && typeof root.querySelectorAll === 'function' ? root : document).querySelectorAll(
+              'form.lead-contact-form'
+            )
+          );
+    const initialized = forms.map((form) => initForm(form));
     window.__contactFormsInit = true;
+    return forms.length > 0 && initialized.every(Boolean);
   }
+
+  window.mblContactForms = Object.freeze({ init: initContactForms });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initContactForms, { once: true });

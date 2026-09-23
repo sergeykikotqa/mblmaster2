@@ -42,6 +42,7 @@
   if (hasLeadSignals) {
     leadPromise = loadScript('/scripts/lead-tracking-client.js', { defer: true });
   }
+  window.__mblLeadTrackingReady = leadPromise;
 
   if (hasContactForm) {
     leadPromise.then(() => loadScript('/scripts/contact-form-client.js', { defer: true }));

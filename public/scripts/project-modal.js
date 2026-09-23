@@ -27,6 +27,11 @@
     const formTitle = form?.querySelector('h3');
     const formCtaText = form?.querySelector('[data-btn-text]');
     const messageInput = form?.querySelector('textarea[name="message"]');
+    const submitButton = form?.querySelector('[data-submit-btn]');
+    const formStatus = form?.querySelector('[data-form-status]');
+    const submitFallback = form?.querySelector('[data-submit-fallback]');
+    const submitFallbackCopy = form?.querySelector('[data-submit-fallback-copy]');
+    const submitFallbackCall = form?.querySelector('[data-submit-fallback-call]');
     const requiredFieldNames = [
       'service',
       'pageSlug',
@@ -46,12 +51,189 @@
       form instanceof HTMLFormElement &&
       formCtaText instanceof HTMLElement &&
       messageInput instanceof HTMLTextAreaElement &&
+      submitButton instanceof HTMLButtonElement &&
+      formStatus instanceof HTMLElement &&
+      submitFallback instanceof HTMLElement &&
+      submitFallbackCopy instanceof HTMLElement &&
+      submitFallbackCall instanceof HTMLAnchorElement &&
       closeButtons.some((button) => button instanceof HTMLElement) &&
       hasRequiredFields;
 
     if (!modalReady) return;
     modal.dataset.modalInit = 'true';
     if (!panel.hasAttribute('tabindex')) panel.setAttribute('tabindex', '-1');
+
+    const CONTACT_FORM_CLIENT_SRC = '/scripts/contact-form-client.js';
+    const CONTACT_FORM_CLIENT_TIMEOUT_MS = 15_000;
+    const LEAD_TRACKING_WAIT_MS = 2_000;
+    const contactFormWasDisabled = submitButton instanceof HTMLButtonElement ? submitButton.disabled : false;
+
+    const getContactFormApi = () => {
+      const api = window.mblContactForms;
+      return api && typeof api.init === 'function' ? api : null;
+    };
+
+    const waitForLeadTracking = () =>
+      new Promise((resolve) => {
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeoutId);
+          resolve();
+        };
+        const timeoutId = window.setTimeout(finish, LEAD_TRACKING_WAIT_MS);
+        Promise.resolve(window.__mblLeadTrackingReady).then(finish, finish);
+      });
+
+    const loadContactFormClient = () => {
+      const readyApi = getContactFormApi();
+      if (readyApi) return Promise.resolve(readyApi);
+      if (window.__mblContactFormClientLoadPromise) return window.__mblContactFormClientLoadPromise;
+
+      const loadPromise = waitForLeadTracking()
+        .then(
+          () =>
+            new Promise((resolve, reject) => {
+              const api = getContactFormApi();
+              if (api) {
+                resolve(api);
+                return;
+              }
+
+              const absoluteSrc = new URL(CONTACT_FORM_CLIENT_SRC, window.location.href).href;
+              let script = Array.from(document.scripts).find((candidate) => candidate.src === absoluteSrc);
+              let shouldAppendScript = false;
+              let pollTimer;
+              let timeoutTimer;
+              let settled = false;
+
+              const cleanup = () => {
+                window.clearInterval(pollTimer);
+                window.clearTimeout(timeoutTimer);
+                script?.removeEventListener('load', handleLoad);
+                script?.removeEventListener('error', handleError);
+              };
+              const finish = (callback) => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                callback();
+              };
+              const confirmApi = () => {
+                const loadedApi = getContactFormApi();
+                if (loadedApi) finish(() => resolve(loadedApi));
+              };
+              const handleLoad = () => {
+                confirmApi();
+                if (!getContactFormApi()) {
+                  finish(() => reject(new Error('CONTACT_FORM_API_MISSING')));
+                }
+              };
+              const handleError = () => finish(() => reject(new Error('CONTACT_FORM_CLIENT_FAILED')));
+
+              if (!(script instanceof HTMLScriptElement)) {
+                script = document.createElement('script');
+                script.src = CONTACT_FORM_CLIENT_SRC;
+                script.async = true;
+                script.defer = true;
+                script.dataset.mblContactFormLoader = 'true';
+                shouldAppendScript = true;
+              }
+
+              script.addEventListener('load', handleLoad, { once: true });
+              script.addEventListener('error', handleError, { once: true });
+              if (shouldAppendScript) document.head.appendChild(script);
+              pollTimer = window.setInterval(confirmApi, 50);
+              timeoutTimer = window.setTimeout(
+                () => finish(() => reject(new Error('CONTACT_FORM_CLIENT_TIMEOUT'))),
+                CONTACT_FORM_CLIENT_TIMEOUT_MS
+              );
+              confirmApi();
+            })
+        );
+
+      window.__mblContactFormClientLoadPromise = loadPromise.catch((error) => {
+        window.__mblContactFormClientLoadPromise = undefined;
+        throw error;
+      });
+      return window.__mblContactFormClientLoadPromise;
+    };
+
+    const setFormLoadingState = () => {
+      form.dataset.contactFormState = 'loading';
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = true;
+        submitButton.setAttribute('aria-disabled', 'true');
+      }
+      if (formStatus instanceof HTMLElement) {
+        formStatus.textContent = 'Подготавливаем форму…';
+        formStatus.classList.remove('hidden');
+      }
+    };
+
+    const showFormFallback = (message) => {
+      if (submitFallbackCopy instanceof HTMLElement) submitFallbackCopy.textContent = message;
+      if (submitFallback instanceof HTMLElement) {
+        submitFallback.dataset.projectModalInitFallback = 'true';
+        submitFallback.classList.remove('hidden');
+      }
+    };
+
+    const setFormReadyState = () => {
+      form.dataset.contactFormState = 'ready';
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = contactFormWasDisabled;
+        submitButton.removeAttribute('aria-disabled');
+      }
+      if (formStatus instanceof HTMLElement) {
+        formStatus.textContent = '';
+        formStatus.classList.add('hidden');
+      }
+      if (submitFallback instanceof HTMLElement && submitFallback.dataset.projectModalInitFallback === 'true') {
+        submitFallback.classList.add('hidden');
+        delete submitFallback.dataset.projectModalInitFallback;
+      }
+    };
+
+    const setFormUnavailableState = () => {
+      form.dataset.contactFormState = 'unavailable';
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = true;
+        submitButton.setAttribute('aria-disabled', 'true');
+      }
+      if (formStatus instanceof HTMLElement) {
+        formStatus.textContent = 'Онлайн-форма временно недоступна. Позвоните нам — мы примем заявку по телефону.';
+        formStatus.classList.remove('hidden');
+      }
+      showFormFallback('Онлайн-форма временно недоступна. Можно сразу позвонить нам.');
+    };
+
+    form.addEventListener(
+      'submit',
+      (event) => {
+        if (form.dataset.contactFormInitialized === 'true') return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        showFormFallback(
+          form.dataset.contactFormState === 'unavailable'
+            ? 'Онлайн-форма временно недоступна. Можно сразу позвонить нам.'
+            : 'Форма ещё загружается. Можно подождать или сразу позвонить нам.'
+        );
+      },
+      true
+    );
+
+    setFormLoadingState();
+    void loadContactFormClient()
+      .then((api) => {
+        const initialized = api.init(form);
+        if (!initialized || form.dataset.contactFormInitialized !== 'true') {
+          throw new Error('CONTACT_FORM_INITIALIZATION_FAILED');
+        }
+        setFormReadyState();
+      })
+      .catch(setFormUnavailableState);
 
     const focusableSelector = [
       'a[href]',
