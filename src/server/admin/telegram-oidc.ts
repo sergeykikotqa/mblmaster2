@@ -47,6 +47,14 @@ function ownerIds(raw: string | undefined): Set<string> {
   return new Set(parsed);
 }
 
+export function isTelegramAdminOwnerAllowed(ownerTelegramId: string, env: NodeJS.ProcessEnv = process.env): boolean {
+  try {
+    return ownerIds(env.TELEGRAM_ADMIN_ALLOWED_USER_IDS).has(ownerTelegramId);
+  } catch {
+    return false;
+  }
+}
+
 function isLoopback(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1';
 }
@@ -76,7 +84,10 @@ export function loadTelegramOidcConfig(env: NodeJS.ProcessEnv = process.env): Te
   if (redirectUri.pathname !== '/api/admin/auth/telegram/callback') {
     throw new TelegramOidcError('TELEGRAM_REDIRECT_URI_INVALID');
   }
-  if (redirectUri.protocol !== 'https:' && (isProd('ADMIN_AUTH_FORCE_PROD_MODE') || !isLoopback(redirectUri.hostname))) {
+  if (
+    redirectUri.protocol !== 'https:' &&
+    (isProd('ADMIN_AUTH_FORCE_PROD_MODE') || !isLoopback(redirectUri.hostname))
+  ) {
     throw new TelegramOidcError('TELEGRAM_REDIRECT_HTTPS_REQUIRED');
   }
 
@@ -217,7 +228,12 @@ export async function verifyTelegramIdToken(
       options.fetchImpl || fetch
     );
     const payload = await limitedJson(response);
-    if (response.status !== 200 || !payload || typeof payload !== 'object' || !Array.isArray((payload as JSONWebKeySet).keys)) {
+    if (
+      response.status !== 200 ||
+      !payload ||
+      typeof payload !== 'object' ||
+      !Array.isArray((payload as JSONWebKeySet).keys)
+    ) {
       throw new TelegramOidcError('TELEGRAM_JWKS_INVALID');
     }
     jwks = payload as JSONWebKeySet;

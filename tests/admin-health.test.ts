@@ -161,7 +161,7 @@ describe('admin health aggregate', () => {
         payload: {
           ok: true,
           service: 'system',
-          authMethod: 'allowlist',
+          authMethod: 'session',
           now: 1,
           runtimeConfig: {
             trustProxyHeaders: {
@@ -180,7 +180,7 @@ describe('admin health aggregate', () => {
       },
     });
 
-    const summary = buildAdminHealthSummary(checks, 'allowlist');
+    const summary = buildAdminHealthSummary(checks, 'session');
 
     expect(summary.status).toBe('warning');
     expect(summary.ok).toBe(false);

@@ -224,6 +224,16 @@ function findForbiddenQueryTokenKey(url: URL): string {
   return '';
 }
 
+function hasSameOrigin(request: Request): boolean {
+  const origin = (request.headers.get('origin') || '').trim();
+  if (!origin) return false;
+  try {
+    return new URL(origin).origin === new URL(request.url).origin;
+  } catch {
+    return false;
+  }
+}
+
 function makeAuthFailureResponse(status: number, code: AdminAuthCode, retryAfterSec?: number): Response {
   const headers = new Headers(JSON_HEADERS);
   if (retryAfterSec && retryAfterSec > 0) {
@@ -520,7 +530,12 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
 
   const session = allowSession ? await validateAdminSession(request, nowMs) : ({ ok: false, code: 'MISSING' } as const);
   if (!session.ok && session.code === 'STORE_UNAVAILABLE') {
-    return makeAuthStoreUnavailableFailure(scope, clientIp, 'block_check', new Error('ADMIN_SESSION_STORE_UNAVAILABLE'));
+    return makeAuthStoreUnavailableFailure(
+      scope,
+      clientIp,
+      'block_check',
+      new Error('ADMIN_SESSION_STORE_UNAVAILABLE')
+    );
   }
   const sessionAuthorized = session.ok;
 
@@ -569,7 +584,12 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
 
   if (identityAuthorized && networkAuthorized) {
     const unsafeMethod = !['GET', 'HEAD', 'OPTIONS'].includes(request.method.toUpperCase());
-    if (session.ok && !bearerAuthorized && unsafeMethod && !validateAdminCsrf(request, session.record)) {
+    if (
+      session.ok &&
+      !bearerAuthorized &&
+      unsafeMethod &&
+      (!hasSameOrigin(request) || !validateAdminCsrf(request, session.record))
+    ) {
       return {
         ok: false,
         status: 403,
@@ -617,7 +637,7 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
     hasAuthorizationHeader: Boolean(request.headers.get('authorization')),
     tokenConfigured,
     telegramLoginConfigured,
-    sessionPresented: session.code !== 'MISSING',
+    sessionPresented: session.ok || session.code !== 'MISSING',
     allowlistConfigured,
     blocked: failure.blocked,
     trustProxyHeaders: shouldTrustProxyHeaders(),

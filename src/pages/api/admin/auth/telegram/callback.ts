@@ -3,6 +3,7 @@ import type { APIRoute } from 'astro';
 import {
   ADMIN_OIDC_FLOW_COOKIE,
   ADMIN_SESSION_COOKIE,
+  type AdminLoginFlowRecord,
   consumeAdminLoginFlow,
   createAdminSession,
   readAdminLoginFlowId,
@@ -43,7 +44,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   const flowId = readAdminLoginFlowId(request);
   if (!flowId) return loginFailure(request, 'invalid_flow');
 
-  let flow;
+  let flow: AdminLoginFlowRecord | null;
   try {
     flow = await consumeAdminLoginFlow(flowId);
   } catch {

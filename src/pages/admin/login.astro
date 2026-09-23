@@ -1,7 +1,7 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
 import { sanitizeAdminNextPath } from '~/server/admin/telegram-oidc';
-import { parseBooleanEnv } from '~/server/utils/auth';
+import { isProd, parseBooleanEnv } from '~/server/utils/auth';
 
 export const prerender = false;
 
@@ -18,7 +18,7 @@ const errorMessages: Record<string, string> = {
 const errorMessage = errorMessages[errorCode] || '';
 const mockEnabled =
   import.meta.env.DEV &&
-  parseBooleanEnv(process.env.ALLOW_DEV_BYPASS, false) &&
+  !isProd('ADMIN_AUTH_FORCE_PROD_MODE') &&
   parseBooleanEnv(process.env.TELEGRAM_LOGIN_MOCK_MODE, false);
 ---
 

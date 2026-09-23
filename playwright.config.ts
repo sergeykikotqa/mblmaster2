@@ -72,6 +72,13 @@ export default defineConfig({
           ALLOW_DEV_BYPASS: 'false',
           ADMIN_ALLOWLIST_IPS: allowlistIps,
           ADMIN_TRUST_PROXY_HEADERS: trustProxyHeaders,
+          TELEGRAM_LOGIN_CLIENT_ID: process.env.TELEGRAM_LOGIN_CLIENT_ID || '123456789',
+          TELEGRAM_LOGIN_CLIENT_SECRET: process.env.TELEGRAM_LOGIN_CLIENT_SECRET || 'playwright-telegram-client-secret',
+          TELEGRAM_LOGIN_REDIRECT_URI:
+            process.env.TELEGRAM_LOGIN_REDIRECT_URI || `${baseURL}/api/admin/auth/telegram/callback`,
+          TELEGRAM_ADMIN_ALLOWED_USER_IDS: process.env.TELEGRAM_ADMIN_ALLOWED_USER_IDS || '123456789',
+          TELEGRAM_LOGIN_MOCK_USER_ID: process.env.TELEGRAM_LOGIN_MOCK_USER_ID || '123456789',
+          TELEGRAM_LOGIN_MOCK_MODE: 'true',
           PUBLIC_SITE_URL: publicSiteUrl,
           REDIS_URL: '',
           ADMIN_AUTH_FAIL_WINDOW_SEC: process.env.ADMIN_AUTH_FAIL_WINDOW_SEC || '60',

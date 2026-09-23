@@ -104,7 +104,7 @@ const parts = [];
 if (!payload.tokenConfigured) parts.push('admin token missing');
 if (Number(payload.invalidAllowlistEntriesCount || 0) > 0)
 parts.push(`invalid allowlist: ${payload.invalidAllowlistEntriesCount}`);
-return parts.length > 0 ? parts.join(' · ') : 'token and allowlist look valid';
+return parts.length > 0 ? parts.join(' · ') : 'admin auth configuration looks valid';
 };
 const summarizeWorker = (entry) => {
 const payload = payloadOf(entry);

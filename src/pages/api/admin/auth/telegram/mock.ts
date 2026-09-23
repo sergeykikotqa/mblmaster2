@@ -9,14 +9,14 @@ import {
   shouldUseSecureAdminCookies,
 } from '~/server/admin/session';
 import { loadTelegramOidcConfig, sanitizeAdminNextPath } from '~/server/admin/telegram-oidc';
-import { parseBooleanEnv } from '~/server/utils/auth';
+import { isProd, parseBooleanEnv } from '~/server/utils/auth';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request, url }) => {
   const enabled =
     import.meta.env.DEV &&
-    parseBooleanEnv(process.env.ALLOW_DEV_BYPASS, false) &&
+    !isProd('ADMIN_AUTH_FORCE_PROD_MODE') &&
     parseBooleanEnv(process.env.TELEGRAM_LOGIN_MOCK_MODE, false);
   if (!enabled) return new Response(null, { status: 404 });
 

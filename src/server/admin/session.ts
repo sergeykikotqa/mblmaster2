@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 
 import { assertMemoryFallbackAllowed, hasRedisConfig, redisCommand } from '~/server/redis/client';
 import { isProd, timingSafeCompare } from '~/server/utils/auth';
+import { isTelegramAdminOwnerAllowed } from '~/server/admin/telegram-oidc';
 
 export const ADMIN_SESSION_COOKIE = 'mbl_admin_session';
 export const ADMIN_OIDC_FLOW_COOKIE = 'mbl_admin_oidc_flow';
@@ -41,6 +42,13 @@ export type AdminSessionValidation =
   | { ok: false; code: 'MISSING' | 'INVALID' | 'EXPIRED' | 'STORE_UNAVAILABLE' };
 
 const memoryValues = new Map<string, { value: string; expiresAtMs: number }>();
+
+function assertAdminSessionMemoryFallbackAllowed(error?: unknown): void {
+  if (isProd('ADMIN_AUTH_FORCE_PROD_MODE')) {
+    throw error instanceof Error ? error : new Error('ADMIN_SESSION_STORE_UNAVAILABLE');
+  }
+  assertMemoryFallbackAllowed(error);
+}
 
 function parsePositiveInt(value: string | undefined, fallback: number, min: number, max: number): number {
   const parsed = Number(value);
@@ -97,10 +105,10 @@ async function storeValue(key: string, value: string, ttlSec: number): Promise<v
       await redisCommand('SET', key, value, 'EX', ttlSec);
       return;
     } catch (error) {
-      assertMemoryFallbackAllowed(error);
+      assertAdminSessionMemoryFallbackAllowed(error);
     }
   } else {
-    assertMemoryFallbackAllowed();
+    assertAdminSessionMemoryFallbackAllowed();
   }
 
   cleanupMemory();
@@ -112,10 +120,10 @@ async function readValue(key: string): Promise<string | null> {
     try {
       return await redisCommand<string | null>('GET', key);
     } catch (error) {
-      assertMemoryFallbackAllowed(error);
+      assertAdminSessionMemoryFallbackAllowed(error);
     }
   } else {
-    assertMemoryFallbackAllowed();
+    assertAdminSessionMemoryFallbackAllowed();
   }
 
   cleanupMemory();
@@ -127,10 +135,10 @@ async function consumeValue(key: string): Promise<string | null> {
     try {
       return await redisCommand<string | null>('GETDEL', key);
     } catch (error) {
-      assertMemoryFallbackAllowed(error);
+      assertAdminSessionMemoryFallbackAllowed(error);
     }
   } else {
-    assertMemoryFallbackAllowed();
+    assertAdminSessionMemoryFallbackAllowed();
   }
 
   cleanupMemory();
@@ -145,10 +153,10 @@ async function deleteValue(key: string): Promise<void> {
       await redisCommand('DEL', key);
       return;
     } catch (error) {
-      assertMemoryFallbackAllowed(error);
+      assertAdminSessionMemoryFallbackAllowed(error);
     }
   } else {
-    assertMemoryFallbackAllowed();
+    assertAdminSessionMemoryFallbackAllowed();
   }
 
   memoryValues.delete(key);
@@ -277,6 +285,10 @@ export async function validateAdminSession(request: Request, nowMs = Date.now())
     return { ok: false, code: 'EXPIRED' };
   }
   if (!timingSafeCompare(record.userAgentHash, userAgentHash(request))) {
+    return { ok: false, code: 'INVALID' };
+  }
+  if (!isTelegramAdminOwnerAllowed(record.ownerTelegramId)) {
+    await deleteValue(sessionKey(sessionId)).catch(() => {});
     return { ok: false, code: 'INVALID' };
   }
   return { ok: true, sessionId, record };
