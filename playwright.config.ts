@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
 const host = process.env.PLAYWRIGHT_HOST || '127.0.0.1';
@@ -10,6 +11,7 @@ const adminE2eToken = process.env.METRICS_ADMIN_TOKEN || 'playwright-admin-token
 const publicSiteUrl = process.env.PUBLIC_SITE_URL || baseURL;
 const allowlistIps = process.env.ADMIN_ALLOWLIST_IPS || '203.0.113.120';
 const trustProxyHeaders = process.env.ADMIN_TRUST_PROXY_HEADERS || 'true';
+const astroCliPath = path.join(process.cwd(), 'node_modules', 'astro', 'bin', 'astro.mjs');
 
 process.env.PUBLIC_SITE_URL = publicSiteUrl;
 process.env.ADMIN_ALLOWLIST_IPS = allowlistIps;
@@ -64,10 +66,11 @@ export default defineConfig({
   webServer: useExternalServer
     ? undefined
     : {
-        command: `npm run dev -- --host ${host} --port ${port}`,
+        command: `"${process.execPath}" "${astroCliPath}" dev --host ${host} --port ${port}`,
         url: `${baseURL}/api/health`,
         env: {
           ...process.env,
+          ASTRO_DEV_BACKGROUND: '0',
           METRICS_ADMIN_TOKEN: adminE2eToken,
           ALLOW_DEV_BYPASS: 'false',
           ADMIN_ALLOWLIST_IPS: allowlistIps,

@@ -1,9 +1,12 @@
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { createServer } from 'node:net';
+import { join } from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
-const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const projectRoot = fileURLToPath(new URL('../', import.meta.url));
+const playwrightCliPath = join(projectRoot, 'node_modules', '@playwright', 'test', 'cli.js');
 
 async function getFreePort() {
   const server = createServer();
@@ -24,7 +27,8 @@ async function getFreePort() {
 
 async function main() {
   const port = process.env.PLAYWRIGHT_PORT || String(await getFreePort());
-  const child = spawn(npxCommand, ['playwright', 'test', 'tests/e2e/admin-auth.spec.ts'], {
+  const child = spawn(process.execPath, [playwrightCliPath, 'test', 'tests/e2e/admin-auth.spec.ts'], {
+    cwd: projectRoot,
     env: {
       ...process.env,
       CI: 'true',
@@ -32,7 +36,7 @@ async function main() {
       METRICS_ADMIN_TOKEN: process.env.METRICS_ADMIN_TOKEN || 'playwright-admin-token',
     },
     stdio: 'inherit',
-    shell: process.platform === 'win32',
+    shell: false,
   });
 
   const [code] = await once(child, 'exit');

@@ -33,7 +33,7 @@ async function allowLeadRequestToFinishAfterClientAbort(page: Page) {
         return realFetch(input, init);
       }
 
-      const { signal: _signal, ...detachedInit } = init;
+      const detachedInit = { ...init, signal: undefined };
       return realFetch(input, detachedInit);
     }) as typeof window.fetch;
   });
@@ -386,7 +386,9 @@ test.describe('Contact form', () => {
     await firstSubmit;
 
     await expect(form.locator('[data-form-status]')).toContainText('Заявка принята с данными на момент нажатия кнопки');
-    await expect(form.locator('[data-form-status]')).toContainText('Изменения, внесённые во время отправки, не переданы');
+    await expect(form.locator('[data-form-status]')).toContainText(
+      'Изменения, внесённые во время отправки, не переданы'
+    );
     await expect(form.locator('[data-success-box]')).toBeHidden();
     await expect(form.locator('[data-retry-btn]')).toBeVisible();
     expect(messages).toEqual(['Первоначальные данные']);
@@ -490,20 +492,16 @@ test.describe('Contact form', () => {
     }
 
     const invalidCases = ['7123456789', '8123456789', '791234567890', '891234567890', '91234567890'];
+    await form.locator('input[name="name"]').fill('CI E2E');
+    await form.locator('input[name="consent"]').check();
     for (const raw of invalidCases) {
       await phoneInput.fill(raw);
       await expect(phoneInput).toHaveValue(raw);
-      await form.locator('input[name="name"]').fill('CI E2E');
-      await form.locator('input[name="consent"]').check();
       await form.locator('[data-submit-btn]').click();
       await expect(form.locator('[data-error-phone]')).toBeVisible();
       await expect(phoneInput).toHaveAttribute('aria-invalid', 'true');
       await expect(form.locator('[data-form-status]')).toContainText('Проверьте корректность полей формы.');
       expect(submitCalls).toBe(0);
-      await form.locator('[data-submit-btn]').click();
-      await phoneInput.fill(raw);
-      await form.locator('input[name="name"]').fill('CI E2E');
-      await form.locator('input[name="consent"]').check();
     }
   });
 

@@ -251,7 +251,12 @@ async function main() {
     await waitForHealth(astroServer);
 
     const health = await fetchWithTimeout(`${baseUrl}/api/health`, { method: 'GET' });
-    assert(health.status === 503, `GET /api/health must return 503 during Redis outage, got ${health.status}`);
+    assert(health.status === 200, `GET /api/health must remain diagnostic in dev mode, got ${health.status}`);
+    const healthBody = await health.json();
+    assert(healthBody?.redis?.degraded === true, 'GET /api/health must report redis.degraded=true during outage');
+
+    const readiness = await fetchWithTimeout(`${baseUrl}/health/ready`, { method: 'GET' });
+    assert(readiness.status === 503, `GET /health/ready must return 503 during Redis outage, got ${readiness.status}`);
 
     const contact = await postLead();
     assert(

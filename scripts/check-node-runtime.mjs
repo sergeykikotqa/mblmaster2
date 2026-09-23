@@ -8,7 +8,9 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const entryPath = path.join(projectRoot, '.output', 'server', 'entry.mjs');
 const publicRoot = path.join(projectRoot, 'dist');
+const publicPageRegistryPath = path.join(projectRoot, 'data', 'funnel-public-pages.json');
 const runtimeSite = new URL(process.env.PUBLIC_SITE_URL || 'https://example.com');
+const irkutskOnlyMinimumHtml = 64;
 
 function countHtml(directory) {
   let count = 0;
@@ -94,8 +96,17 @@ assert.ok(
   fs.existsSync(path.join(publicRoot, 'projects', 'biruzovaya-uglovaya-kuhnya-irkutsk', 'index.html')),
   'Project detail was not prerendered'
 );
+const publicPageRegistry = JSON.parse(fs.readFileSync(publicPageRegistryPath, 'utf8'));
+for (const page of publicPageRegistry) {
+  const route = String(page?.pageSlug || '').replace(/^\/+|\/+$/g, '');
+  const routeHtml = path.join(publicRoot, route, 'index.html');
+  assert.ok(fs.existsSync(routeHtml), `Published public route was not prerendered: ${page?.pageSlug || '(empty)'}`);
+}
 const htmlCount = countHtml(publicRoot);
-assert.ok(htmlCount >= 74, `Expected public routes to remain prerendered; found only ${htmlCount} HTML files`);
+assert.ok(
+  htmlCount >= irkutskOnlyMinimumHtml,
+  `Expected the Irkutsk-only public route inventory to remain prerendered; found only ${htmlCount} HTML files`
+);
 
 const port = await reservePort();
 const baseUrl = `http://127.0.0.1:${port}`;

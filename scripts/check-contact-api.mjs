@@ -1,14 +1,17 @@
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { join } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
+import { fileURLToPath } from 'node:url';
 
 const host = process.env.CONTACT_API_SMOKE_HOST || '127.0.0.1';
 const port = Number(process.env.CONTACT_API_SMOKE_PORT || 4351);
 const serverStartTimeoutMs = Number(process.env.CONTACT_API_SMOKE_TIMEOUT_MS || 45000);
 const requestTimeoutMs = Number(process.env.CONTACT_API_REQUEST_TIMEOUT_MS || 10000);
 const pollIntervalMs = 500;
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const projectRoot = fileURLToPath(new URL('../', import.meta.url));
+const astroCliPath = join(projectRoot, 'node_modules', 'astro', 'bin', 'astro.mjs');
 const serverLogs = [];
 
 function createBaseUrl(targetPort) {
@@ -49,10 +52,12 @@ function assert(condition, message) {
 }
 
 function startServer({ targetPort, redisPrefix, extraEnv = {} }) {
-  const child = spawn(npmCommand, ['run', 'dev', '--', '--host', host, '--port', String(targetPort)], {
+  const child = spawn(process.execPath, [astroCliPath, 'dev', '--host', host, '--port', String(targetPort)], {
+    cwd: projectRoot,
     env: {
       ...process.env,
       ASTRO_TELEMETRY_DISABLED: '1',
+      ASTRO_DEV_BACKGROUND: '0',
       CONTACT_RATE_LIMIT_MAX: '100',
       CONTACT_RATE_LIMIT_WINDOW_SEC: '60',
       CONTACT_SMARTCAPTCHA_REQUIRED: 'false',
@@ -61,7 +66,7 @@ function startServer({ targetPort, redisPrefix, extraEnv = {} }) {
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: process.platform !== 'win32',
-    shell: process.platform === 'win32',
+    shell: false,
   });
 
   child.stdout?.on('data', (chunk) => addServerLogs('stdout', chunk));
@@ -150,6 +155,7 @@ async function postLeadAsForm(targetBaseUrl) {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       Accept: 'text/html',
+      Origin: targetBaseUrl,
     },
     body: form.toString(),
     redirect: 'manual',

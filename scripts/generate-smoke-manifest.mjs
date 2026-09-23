@@ -73,8 +73,6 @@ const PAGE_SAMPLE_MAP = [
   { match: /src[\\/]+pages[\\/]+faq[\\/]+\[slug\]\.astro$/i, routes: ['/faq/voprosy-ob-ispolzovanii-kuhen'] },
   { match: /src[\\/]+pages[\\/]+\[service\]\.astro$/i, routes: ['/kuhni'] },
   { match: /src[\\/]+pages[\\/]+irkutsk\.astro$/i, routes: ['/irkutsk'] },
-  { match: /src[\\/]+pages[\\/]+angarsk\.astro$/i, routes: ['/angarsk'] },
-  { match: /src[\\/]+pages[\\/]+shelekhov\.astro$/i, routes: ['/shelekhov'] },
   { match: /src[\\/]+pages[\\/]+contacts\.astro$/i, routes: ['/contacts'] },
 ];
 
@@ -143,12 +141,13 @@ function readChangedFiles() {
 
 function mapContentRoute(filePath) {
   const normalized = filePath.replace(/\\/g, '/');
+  const absolute = path.join(ROOT, filePath);
+  if (!fs.existsSync(absolute)) return null;
   for (const entry of CONTENT_MAP) {
     const dir = entry.dir.replace(/\\/g, '/');
     if (!normalized.startsWith(dir)) continue;
     if (!/\.mdx?$/i.test(normalized)) return null;
 
-    const absolute = path.join(ROOT, filePath);
     const frontmatter = parseMarkdownFrontmatter(absolute);
     if (entry.prefix === '/articles') {
       if (frontmatter?.draft) return null;
@@ -166,6 +165,7 @@ function mapContentRoute(filePath) {
 
 function mapPageRoute(filePath) {
   const normalized = filePath.replace(/\\/g, '/');
+  if (!fs.existsSync(path.join(ROOT, filePath))) return null;
   if (normalized.startsWith('src/pages/api/')) return null;
   if (!/\.astro$/i.test(normalized)) return null;
 
