@@ -1,14 +1,15 @@
 import { spawn } from 'node:child_process';
 import { createHmac } from 'node:crypto';
-import { once } from 'node:events';
+import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
+import { join } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
+import { fileURLToPath } from 'node:url';
 
 const host = process.env.WEBHOOK_SMOKE_HOST || '127.0.0.1';
 const port = Number(process.env.WEBHOOK_SMOKE_PORT || 4361);
 const baseUrl = `http://${host}:${port}`;
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const serverStartTimeoutMs = Number(process.env.WEBHOOK_SMOKE_TIMEOUT_MS || 45000);
 const requestTimeoutMs = Number(process.env.WEBHOOK_SMOKE_REQUEST_TIMEOUT_MS || 10000);
 const pollIntervalMs = 500;
@@ -17,8 +18,22 @@ const retryBaseDelaySec = Number(process.env.WEBHOOK_SMOKE_RETRY_BASE_DELAY_SEC 
 const maxRetries = Number(process.env.WEBHOOK_SMOKE_MAX_RETRIES || 4);
 const testWebhookUrl = 'https://mbl-test-webhook.invalid/webhook';
 const testWebhookProxyRequire = '--require=./scripts/test-webhook-fetch-proxy.cjs';
+const projectRoot = fileURLToPath(new URL('../', import.meta.url));
+const astroCliPath = join(projectRoot, 'node_modules', 'astro', 'bin', 'astro.mjs');
+const astroDevMetadataPath = join(projectRoot, '.astro', 'dev.json');
+const childExitTimeoutMs = 10000;
+const portReleaseTimeoutMs = 5000;
+const ansiColorPattern = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
 
 const serverLogs = [];
+
+class BlockedByEnvironmentError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'BlockedByEnvironmentError';
+    this.code = 'BLOCKED_BY_ENV';
+  }
+}
 
 function addServerLogs(source, chunk) {
   const lines = String(chunk)
@@ -37,6 +52,69 @@ function addServerLogs(source, chunk) {
 
 function tailServerLogs() {
   return serverLogs.slice(-40).join('\n') || '(no server logs)';
+}
+
+function isProcessRunning(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === 'EPERM';
+  }
+}
+
+async function findExistingProjectAstro() {
+  let metadata;
+  try {
+    metadata = JSON.parse(await readFile(astroDevMetadataPath, 'utf8'));
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw new Error(`Unable to inspect Astro dev metadata at ${astroDevMetadataPath}`, { cause: error });
+  }
+
+  const pid = Number(metadata?.pid);
+  if (!Number.isInteger(pid) || pid <= 0 || !isProcessRunning(pid)) return null;
+
+  return {
+    pid,
+    url: typeof metadata?.url === 'string' && metadata.url ? metadata.url : '(address unavailable)',
+  };
+}
+
+async function canBindPort() {
+  return await new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.unref();
+    probe.once('error', (error) => {
+      if (error?.code === 'EADDRINUSE' || error?.code === 'EACCES') {
+        resolve(false);
+        return;
+      }
+      reject(error);
+    });
+    probe.listen({ host, port, exclusive: true }, () => {
+      probe.close((error) => (error ? reject(error) : resolve(true)));
+    });
+  });
+}
+
+async function assertSmokeEnvironment() {
+  const existingAstro = await findExistingProjectAstro();
+  if (existingAstro) {
+    throw new BlockedByEnvironmentError(
+      `Astro for this project is already running at ${existingAstro.url} (pid ${existingAstro.pid}). ` +
+        'Stop it from its owning terminal with Ctrl+C, verify that ports 4321 and 4361 are free, then rerun the smoke. ' +
+        'The existing server was not stopped and a second Astro server was not started.'
+    );
+  }
+
+  if (!(await canBindPort())) {
+    throw new BlockedByEnvironmentError(
+      `Test server port ${host}:${port} is already in use. Free that port manually and rerun the smoke. ` +
+        'No Astro server was started, and an existing /api/health response was not accepted.'
+    );
+  }
 }
 
 function assert(condition, message) {
@@ -148,7 +226,8 @@ function startAstroServer(webhookUrl, adminToken) {
   const workerToken =
     String(process.env.CONTACT_WORKER_TOKEN || '').trim() || `webhook-worker-${Date.now().toString(36)}`;
   const webhookSecret = `webhook-secret-${Date.now().toString(36)}-ci`;
-  const child = spawn(npmCommand, ['run', 'dev', '--', '--host', host, '--port', String(port), '--ignore-lock'], {
+  const child = spawn(process.execPath, [astroCliPath, 'dev', '--host', host, '--port', String(port)], {
+    cwd: projectRoot,
     env: {
       ...process.env,
       ASTRO_TELEMETRY_DISABLED: '1',
@@ -170,62 +249,152 @@ function startAstroServer(webhookUrl, adminToken) {
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: process.platform !== 'win32',
-    shell: process.platform === 'win32',
+    shell: false,
   });
 
-  child.stdout?.on('data', (chunk) => addServerLogs('stdout', chunk));
-  child.stderr?.on('data', (chunk) => addServerLogs('stderr', chunk));
-
-  return {
+  const runtime = {
     child,
     workerToken,
     webhookSecret,
+    readyObserved: false,
+    exitRecord: null,
+    spawnError: null,
   };
+
+  const observeLogs = (source, chunk) => {
+    const text = String(chunk);
+    addServerLogs(source, text);
+    const plainText = text.replace(ansiColorPattern, '');
+    if (/astro\s+v[^\r\n]*ready in/i.test(plainText)) runtime.readyObserved = true;
+  };
+
+  child.stdout?.on('data', (chunk) => observeLogs('stdout', chunk));
+  child.stderr?.on('data', (chunk) => observeLogs('stderr', chunk));
+  runtime.exitPromise = new Promise((resolve) => {
+    child.once('exit', (code, signal) => {
+      runtime.exitRecord = { code, signal };
+      resolve(runtime.exitRecord);
+    });
+  });
+  child.once('error', (error) => {
+    runtime.spawnError = error;
+  });
+
+  return runtime;
 }
 
-async function stopAstroServer(server) {
-  if (!server || server.exitCode !== null) return;
+function formatExitRecord(record) {
+  if (!record) return 'exit not observed';
+  return `code=${String(record.code)}, signal=${String(record.signal)}`;
+}
+
+async function waitForAstroExit(runtime, timeoutMs = childExitTimeoutMs) {
+  if (runtime.exitRecord) return runtime.exitRecord;
+  if (runtime.spawnError && !runtime.child.pid) {
+    throw new Error(`Astro failed to spawn: ${runtime.spawnError.message}`, { cause: runtime.spawnError });
+  }
+
+  const timeoutMarker = Symbol('child-exit-timeout');
+  const result = await Promise.race([runtime.exitPromise, delay(timeoutMs, timeoutMarker)]);
+  if (result === timeoutMarker) {
+    throw new Error(
+      `Astro child pid ${String(runtime.child.pid || 'unknown')} did not confirm exit within ${timeoutMs}ms`
+    );
+  }
+  return result;
+}
+
+async function waitForPortRelease() {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < portReleaseTimeoutMs) {
+    if (await canBindPort()) return;
+    await delay(100);
+  }
+  throw new Error(`Test server port ${host}:${port} was not released within ${portReleaseTimeoutMs}ms`);
+}
+
+async function stopAstroServer(runtime) {
+  if (!runtime) return null;
+  if (runtime.exitRecord) {
+    await waitForPortRelease();
+    return runtime.exitRecord;
+  }
+  if (runtime.spawnError && !runtime.child.pid) {
+    throw new Error(`Astro failed to spawn: ${runtime.spawnError.message}`, { cause: runtime.spawnError });
+  }
 
   if (process.platform === 'win32') {
-    const killer = spawn('taskkill', ['/pid', String(server.pid), '/T', '/F'], { stdio: 'ignore' });
-    await once(killer, 'exit').catch(() => {});
-    return;
+    const killer = spawn('taskkill', ['/pid', String(runtime.child.pid), '/T', '/F'], {
+      stdio: 'ignore',
+      shell: false,
+    });
+    const killerResult = await new Promise((resolve, reject) => {
+      killer.once('error', reject);
+      killer.once('exit', (code, signal) => resolve({ code, signal }));
+    }).catch((error) => ({ error }));
+
+    try {
+      const exitRecord = await waitForAstroExit(runtime);
+      await waitForPortRelease();
+      return exitRecord;
+    } catch (error) {
+      if (killerResult?.error) {
+        throw new AggregateError([error, killerResult.error], 'Astro cleanup and taskkill both failed');
+      }
+      throw new Error(`Astro cleanup failed after taskkill (${formatExitRecord(killerResult)}): ${error.message}`, {
+        cause: error,
+      });
+    }
   }
 
   try {
-    process.kill(-server.pid, 'SIGTERM');
-  } catch {
-    return;
+    process.kill(-runtime.child.pid, 'SIGTERM');
+  } catch (error) {
+    if (!runtime.exitRecord) throw new Error('Unable to send SIGTERM to Astro process group', { cause: error });
   }
 
-  const graceful = Promise.race([once(server, 'exit'), delay(5000)]);
-  await graceful;
-
-  if (server.exitCode === null) {
+  try {
+    const exitRecord = await waitForAstroExit(runtime, 5000);
+    await waitForPortRelease();
+    return exitRecord;
+  } catch (gracefulError) {
     try {
-      process.kill(-server.pid, 'SIGKILL');
-    } catch {
-      // process already exited
+      process.kill(-runtime.child.pid, 'SIGKILL');
+    } catch (error) {
+      if (!runtime.exitRecord) {
+        throw new AggregateError([gracefulError, error], 'Astro graceful and forced cleanup both failed');
+      }
     }
-    await once(server, 'exit').catch(() => {});
+    const exitRecord = await waitForAstroExit(runtime);
+    await waitForPortRelease();
+    return exitRecord;
   }
 }
 
-async function waitForHealth(server) {
+async function waitForHealth(runtime) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < serverStartTimeoutMs) {
-    if (server.exitCode !== null) {
-      throw new Error(`Dev server exited before readiness (code ${server.exitCode}).\n${tailServerLogs()}`);
+    if (runtime.spawnError) {
+      throw new Error(`Dev server failed to start: ${runtime.spawnError.message}.\n${tailServerLogs()}`, {
+        cause: runtime.spawnError,
+      });
+    }
+    if (runtime.exitRecord) {
+      throw new Error(
+        `Dev server exited before readiness (${formatExitRecord(runtime.exitRecord)}).\n${tailServerLogs()}`
+      );
     }
 
-    try {
-      const response = await fetchWithTimeout(`${baseUrl}/api/health`, { method: 'GET' });
-      if (response.ok) {
-        const payload = await response.json().catch(() => null);
-        if (payload && typeof payload === 'object') return;
+    if (runtime.readyObserved) {
+      try {
+        const response = await fetchWithTimeout(`${baseUrl}/api/health`, { method: 'GET' });
+        if (response.ok) {
+          const payload = await response.json().catch(() => null);
+          if (payload?.ok === true && payload?.service === 'seo-lead-pipeline') return;
+        }
+      } catch {
+        // Own Astro announced readiness, but the endpoint is not ready yet.
       }
-    } catch {
-      // continue polling
     }
 
     await delay(pollIntervalMs);
@@ -323,12 +492,18 @@ async function fetchSystemHealth(adminToken) {
 }
 
 async function main() {
+  await assertSmokeEnvironment();
+
   const adminToken = `webhook-admin-${Date.now().toString(36)}`;
-  const mockWebhook = await startMockWebhookServer();
-  const astroServer = startAstroServer(mockWebhook.webhookUrl, adminToken);
+  let mockWebhook = null;
+  let astroServer = null;
+  let primaryError = null;
+  let passSummary = '';
 
   try {
-    await waitForHealth(astroServer.child);
+    mockWebhook = await startMockWebhookServer();
+    astroServer = startAstroServer(mockWebhook.webhookUrl, adminToken);
+    await waitForHealth(astroServer);
 
     const unauthorizedWorkerRun = await runWorker(20);
     assert(
@@ -478,16 +653,49 @@ async function main() {
     assert(systemHealth.status === 200, `System health endpoint must return 200, got ${systemHealth.status}`);
     assert(systemHealth.body?.ok === true, 'System health must return ok=true');
 
-    console.log(
-      `Webhook delivery smoke check passed: leadId=${contact.body.leadId}, attempts=${mockWebhook.attempts.length}, firstStatus=${firstAttempt?.statusCode}, secondStatus=${secondAttempt?.statusCode}, backoffMs=${backoffDeltaMs}, retryRate=${health.body?.retryRateLastHour}, p95=${health.body?.p95LatencyMs}, systemHealthOk=${systemHealth.body?.ok}`
-    );
-  } finally {
-    await stopAstroServer(astroServer.child);
-    await mockWebhook.stop();
+    passSummary = `Webhook delivery smoke check passed: leadId=${contact.body.leadId}, attempts=${mockWebhook.attempts.length}, firstStatus=${firstAttempt?.statusCode}, secondStatus=${secondAttempt?.statusCode}, backoffMs=${backoffDeltaMs}, retryRate=${health.body?.retryRateLastHour}, p95=${health.body?.p95LatencyMs}, systemHealthOk=${systemHealth.body?.ok}`;
+  } catch (error) {
+    primaryError = error;
   }
+
+  const cleanupErrors = [];
+  let astroExitRecord = null;
+
+  if (astroServer) {
+    try {
+      astroExitRecord = await stopAstroServer(astroServer);
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  if (mockWebhook) {
+    try {
+      await mockWebhook.stop();
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+
+  if (primaryError && cleanupErrors.length > 0) {
+    throw new AggregateError([primaryError, ...cleanupErrors], 'Webhook smoke failed and cleanup also failed');
+  }
+  if (cleanupErrors.length > 0) {
+    throw new AggregateError(cleanupErrors, 'Webhook smoke assertions passed, but cleanup failed');
+  }
+  if (primaryError) throw primaryError;
+
+  console.log(passSummary);
+  console.log(`Webhook delivery smoke cleanup passed: Astro ${formatExitRecord(astroExitRecord)}; port released=true`);
 }
 
 main().catch((error) => {
+  if (error?.code === 'BLOCKED_BY_ENV') {
+    console.error('Webhook delivery smoke check BLOCKED_BY_ENV.');
+    console.error(error.message);
+    process.exit(2);
+  }
+
   console.error('Webhook delivery smoke check failed.');
   console.error(error);
   if (serverLogs.length > 0) {
