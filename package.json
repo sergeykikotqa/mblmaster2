@@ -87,6 +87,7 @@
     "check:redis-integration": "vitest run tests/redis-lead-store.integration.test.ts",
     "check:webhook-delivery": "node scripts/check-webhook-delivery.mjs",
     "check:lead-faults": "node scripts/check-lead-delivery-fault-injection.mjs",
+    "check:lead-process-kills": "node scripts/check-lead-delivery-process-kill.mjs",
     "check:dev-runtime": "node scripts/check-production-runtime.mjs --mode=dev",
     "check:prod-runtime": "node scripts/check-compose-runtime.mjs",
     "check:node-runtime": "node scripts/check-node-runtime.mjs",
