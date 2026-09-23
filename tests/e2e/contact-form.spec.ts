@@ -9,6 +9,56 @@ async function getLeadForm(page: Page) {
   return form;
 }
 
+async function shortenSubmitTimeout(page: Page) {
+  await page.addInitScript(() => {
+    const realSetTimeout = window.setTimeout.bind(window);
+    let shortenedSubmissionDeadlines = 0;
+
+    window.setTimeout = ((callback: TimerHandler, delay?: number, ...args: unknown[]) => {
+      if (typeof delay === 'number' && delay === 20000 && shortenedSubmissionDeadlines === 0) {
+        shortenedSubmissionDeadlines += 1;
+        return realSetTimeout(callback, 50, ...args);
+      }
+      return realSetTimeout(callback, delay as number, ...args);
+    }) as typeof window.setTimeout;
+  });
+}
+
+async function allowLeadRequestToFinishAfterClientAbort(page: Page) {
+  await page.addInitScript(() => {
+    const realFetch = window.fetch.bind(window);
+    window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = input instanceof Request ? input.url : String(input);
+      if (!requestUrl.includes('/api/leads') || !init) {
+        return realFetch(input, init);
+      }
+
+      const { signal: _signal, ...detachedInit } = init;
+      return realFetch(input, detachedInit);
+    }) as typeof window.fetch;
+  });
+}
+
+async function delayLeadResponseBody(page: Page) {
+  await page.addInitScript(() => {
+    const realFetch = window.fetch.bind(window);
+    window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const response = await realFetch(input, init);
+      const requestUrl = input instanceof Request ? input.url : String(input);
+      if (!requestUrl.includes('/api/leads')) return response;
+
+      return {
+        ok: response.ok,
+        status: response.status,
+        json: async () => {
+          await new Promise((resolve) => window.setTimeout(resolve, 180));
+          return response.json();
+        },
+      } as Response;
+    }) as typeof window.fetch;
+  });
+}
+
 test.describe('Contact form', () => {
   test('shows no-JS fallback and blocks form submission when JavaScript is disabled', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
@@ -64,6 +114,294 @@ test.describe('Contact form', () => {
     await page.keyboard.press('Enter');
     expect(submitCalls).toBe(0);
     await context.close();
+  });
+
+  test('recovers from an ambiguous timeout, retries manually with the same key, and ignores a late response', async ({
+    page,
+  }) => {
+    await mockSmartCaptcha(page);
+    await shortenSubmitTimeout(page);
+    await allowLeadRequestToFinishAfterClientAbort(page);
+
+    const requestKeys: string[] = [];
+    const captchaTokens: string[] = [];
+    let submitCalls = 0;
+
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      const key = route.request().headers()['x-idempotency-key'] || '';
+      requestKeys.push(key);
+      const payload = route.request().postDataJSON() as Record<string, unknown>;
+      captchaTokens.push(String(payload.smartCaptchaToken || ''));
+      if (submitCalls === 1) {
+        await new Promise((resolve) => setTimeout(resolve, 240));
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: false, message: 'Late response from the first attempt' }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, leadId: 'lead-timeout-retry', receivedAt: new Date().toISOString() }),
+      });
+    });
+
+    await page.goto(CONTACTS_PAGE);
+    const form = await getLeadForm(page);
+    await form.locator('input[name="phone"]').fill('9123456789');
+    await form.locator('input[name="name"]').fill('CI E2E');
+    await form.locator('input[name="consent"]').check();
+    await form.evaluate((formElement) => {
+      for (const [name, value] of [
+        ['project_variant', 'corner'],
+        ['project_material', 'oak'],
+      ]) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        input.dataset.extraField = name;
+        formElement.append(input);
+      }
+    });
+    await form.locator('[data-smartcaptcha-widget] button').click();
+
+    await form.locator('[data-submit-btn]').click();
+
+    await expect(form.locator('[data-form-status]')).toContainText('Не удалось получить подтверждение отправки');
+    await expect(form.locator('[data-submit-fallback]')).toBeVisible();
+    await expect(form.locator('[data-submit-fallback-call]')).toHaveAttribute('href', 'tel:+79641072613');
+    await expect(form.locator('[data-retry-btn]')).toBeVisible();
+    await expect(form.locator('[data-submit-btn]')).toBeEnabled();
+    await expect(form.locator('[data-btn-text]')).not.toHaveText('Отправка...');
+
+    await page.waitForTimeout(80);
+    expect(submitCalls).toBe(1);
+
+    await form.locator('[data-retry-btn]').click();
+    await expect(form.locator('[data-error-smartcaptcha]')).toContainText('Сначала завершите проверку');
+    expect(submitCalls).toBe(1);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await form.evaluate((formElement) => {
+      const extraFields = Array.from(formElement.querySelectorAll('[data-extra-field]')).reverse();
+      extraFields.forEach((field) => formElement.append(field));
+    });
+    await page.evaluate(() => {
+      (window as Window & { __smartCaptchaMock?: { issue(value?: string): void } }).__smartCaptchaMock?.issue(
+        'mock-retry-token'
+      );
+    });
+    await form.locator('[data-retry-btn]').click();
+    await expect(form.locator('[data-success-box]')).toBeVisible();
+    expect(requestKeys).toHaveLength(2);
+    expect(requestKeys[1]).toBe(requestKeys[0]);
+    expect(captchaTokens).toEqual(['mock-valid-token', 'mock-retry-token']);
+
+    await page.waitForTimeout(260);
+    await expect(form.locator('[data-success-box]')).toBeVisible();
+    await expect(form.locator('[data-form-status]')).toBeHidden();
+  });
+
+  test('creates a fresh idempotency key when the user changes the form after a timeout', async ({ page }) => {
+    await mockSmartCaptcha(page);
+    await shortenSubmitTimeout(page);
+    await allowLeadRequestToFinishAfterClientAbort(page);
+
+    const requestKeys: string[] = [];
+    let submitCalls = 0;
+
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      const key = route.request().headers()['x-idempotency-key'] || '';
+      requestKeys.push(key);
+      if (submitCalls === 1) {
+        await new Promise((resolve) => setTimeout(resolve, 180));
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, leadId: 'lead-timeout-new-key', receivedAt: new Date().toISOString() }),
+      });
+    });
+
+    await page.goto(CONTACTS_PAGE);
+    const form = await getLeadForm(page);
+    await form.locator('input[name="phone"]').fill('9123456789');
+    await form.locator('input[name="name"]').fill('CI E2E');
+    await form.locator('input[name="consent"]').check();
+    await form.locator('[data-smartcaptcha-widget] button').click();
+
+    await form.locator('[data-submit-btn]').click();
+    await expect(form.locator('[data-form-status]')).toContainText('Не удалось получить подтверждение отправки');
+
+    await form.locator('textarea[name="message"]').fill('Обновлённое описание после тайм-аута');
+    await page.evaluate(() => {
+      (window as Window & { __smartCaptchaMock?: { issue(value?: string): void } }).__smartCaptchaMock?.issue(
+        'mock-changed-payload-token'
+      );
+    });
+    await form.locator('[data-retry-btn]').click();
+    await expect(form.locator('[data-success-box]')).toBeVisible();
+    expect(requestKeys).toHaveLength(2);
+    expect(requestKeys[1]).not.toBe(requestKeys[0]);
+
+    await page.waitForTimeout(200);
+    await expect(form.locator('[data-success-box]')).toBeVisible();
+  });
+
+  test('applies the submission deadline while reading the response body', async ({ page }) => {
+    await mockSmartCaptcha(page);
+    await shortenSubmitTimeout(page);
+    await delayLeadResponseBody(page);
+
+    let submitCalls = 0;
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, leadId: 'late-body', receivedAt: new Date().toISOString() }),
+      });
+    });
+
+    await page.goto(CONTACTS_PAGE);
+    const form = await getLeadForm(page);
+    await form.locator('input[name="phone"]').fill('9123456789');
+    await form.locator('input[name="name"]').fill('CI E2E');
+    await form.locator('input[name="consent"]').check();
+    await form.locator('[data-smartcaptcha-widget] button').click();
+
+    await form.locator('[data-submit-btn]').click();
+    await expect(form.locator('[data-form-status]')).toContainText('Не удалось получить подтверждение отправки');
+    await expect(form.locator('[data-submit-btn]')).toBeEnabled();
+    expect(submitCalls).toBe(1);
+
+    await page.waitForTimeout(220);
+    await expect(form.locator('[data-success-box]')).toBeHidden();
+    await expect(form.locator('[data-form-status]')).toContainText('Не удалось получить подтверждение отправки');
+  });
+
+  test('creates a fresh idempotency key when a dynamic extra field changes', async ({ page }) => {
+    await mockSmartCaptcha(page);
+    await shortenSubmitTimeout(page);
+    await allowLeadRequestToFinishAfterClientAbort(page);
+
+    const requestKeys: string[] = [];
+    const projectVariants: string[] = [];
+    let submitCalls = 0;
+
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      requestKeys.push(route.request().headers()['x-idempotency-key'] || '');
+      const payload = route.request().postDataJSON() as Record<string, unknown>;
+      projectVariants.push(String(payload.project_variant || ''));
+      if (submitCalls === 1) {
+        await new Promise((resolve) => setTimeout(resolve, 180));
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, leadId: 'lead-extra-field', receivedAt: new Date().toISOString() }),
+      });
+    });
+
+    await page.goto(CONTACTS_PAGE);
+    const form = await getLeadForm(page);
+    await form.evaluate((formElement) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'project_variant';
+      input.value = 'corner';
+      input.dataset.extraField = 'project_variant';
+      formElement.append(input);
+    });
+    await form.locator('input[name="phone"]').fill('9123456789');
+    await form.locator('input[name="name"]').fill('CI E2E');
+    await form.locator('input[name="consent"]').check();
+    await form.locator('[data-smartcaptcha-widget] button').click();
+
+    await form.locator('[data-submit-btn]').click();
+    await expect(form.locator('[data-form-status]')).toContainText('Не удалось получить подтверждение отправки');
+
+    await form.locator('input[data-extra-field="project_variant"]').evaluate((input) => {
+      (input as HTMLInputElement).value = 'straight';
+    });
+    await page.evaluate(() => {
+      (window as Window & { __smartCaptchaMock?: { issue(value?: string): void } }).__smartCaptchaMock?.issue(
+        'mock-extra-field-token'
+      );
+    });
+    await form.locator('[data-retry-btn]').click();
+
+    await expect(form.locator('[data-success-box]')).toBeVisible();
+    expect(requestKeys).toHaveLength(2);
+    expect(requestKeys[1]).not.toBe(requestKeys[0]);
+    expect(projectVariants).toEqual(['corner', 'straight']);
+
+    await page.waitForTimeout(200);
+  });
+
+  test('does not present an in-flight edit as part of the accepted payload', async ({ page }) => {
+    await mockSmartCaptcha(page);
+
+    const requestKeys: string[] = [];
+    const messages: string[] = [];
+    let submitCalls = 0;
+    let releaseFirstResponse = () => {};
+    const firstResponseGate = new Promise<void>((resolve) => {
+      releaseFirstResponse = resolve;
+    });
+
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      requestKeys.push(route.request().headers()['x-idempotency-key'] || '');
+      const payload = route.request().postDataJSON() as Record<string, unknown>;
+      messages.push(String(payload.message || ''));
+      if (submitCalls === 1) {
+        await firstResponseGate;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, leadId: 'lead-in-flight-edit', receivedAt: new Date().toISOString() }),
+      });
+    });
+
+    await page.goto(CONTACTS_PAGE);
+    const form = await getLeadForm(page);
+    await form.locator('input[name="phone"]').fill('9123456789');
+    await form.locator('input[name="name"]').fill('CI E2E');
+    await form.locator('textarea[name="message"]').fill('Первоначальные данные');
+    await form.locator('input[name="consent"]').check();
+    await form.locator('[data-smartcaptcha-widget] button').click();
+
+    const firstSubmit = form.locator('[data-submit-btn]').click();
+    await expect.poll(() => submitCalls).toBe(1);
+    await form.locator('textarea[name="message"]').fill('Изменённые во время отправки данные');
+    releaseFirstResponse();
+    await firstSubmit;
+
+    await expect(form.locator('[data-form-status]')).toContainText('Заявка принята с данными на момент нажатия кнопки');
+    await expect(form.locator('[data-form-status]')).toContainText('Изменения, внесённые во время отправки, не переданы');
+    await expect(form.locator('[data-success-box]')).toBeHidden();
+    await expect(form.locator('[data-retry-btn]')).toBeVisible();
+    expect(messages).toEqual(['Первоначальные данные']);
+
+    await page.evaluate(() => {
+      (window as Window & { __smartCaptchaMock?: { issue(value?: string): void } }).__smartCaptchaMock?.issue(
+        'mock-in-flight-retry-token'
+      );
+    });
+    await form.locator('[data-retry-btn]').click();
+
+    await expect(form.locator('[data-success-box]')).toBeVisible();
+    expect(messages).toEqual(['Первоначальные данные', 'Изменённые во время отправки данные']);
+    expect(requestKeys).toHaveLength(2);
+    expect(requestKeys[1]).not.toBe(requestKeys[0]);
   });
 
   test('keeps the no-JS fallback visible and contained on mobile without horizontal overflow', async ({ browser }) => {

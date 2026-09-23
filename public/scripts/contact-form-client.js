@@ -264,6 +264,7 @@
     const formId = `${form.dataset.formContext || 'section'}-${pageType}`;
     const placement = form.dataset.formContext || 'section';
     const defaultBtnLabel = btnText.textContent || 'Отправить заявку';
+    const LEAD_SUBMIT_TIMEOUT_MS = 20_000;
     const firstInput =
       form.querySelector('[data-first-input]') instanceof HTMLInputElement
         ? form.querySelector('[data-first-input]')
@@ -272,7 +273,9 @@
     let isSubmitting = false;
     let isPreparing = false;
     let submitIdempotencyKey = '';
-    let resetIdempotencyAfterSubmit = false;
+    let submitLogicalSignature = '';
+    let submitAttemptSequence = 0;
+    let activeSubmitAttemptId = 0;
     let formOpenTracked = false;
     let formViewTracked = false;
     let formFocusTracked = false;
@@ -661,10 +664,6 @@
       activateFormAttention('anchor-click', true);
     };
 
-    const resetSubmissionState = function resetSubmissionState() {
-      submitIdempotencyKey = '';
-    };
-
     const setStatus = function setStatus(message, mode) {
       status.textContent = message;
       status.classList.remove('hidden', 'text-green-600', 'text-red-600', 'text-amber-600');
@@ -704,9 +703,10 @@
       successBox.classList.remove('hidden');
     };
 
-    const getIdempotencyKey = function getIdempotencyKey() {
-      if (!submitIdempotencyKey) {
+    const getIdempotencyKey = function getIdempotencyKey(logicalSignature) {
+      if (!submitIdempotencyKey || submitLogicalSignature !== logicalSignature) {
         submitIdempotencyKey = createIdempotencyKey(formId);
+        submitLogicalSignature = logicalSignature;
       }
       return submitIdempotencyKey;
     };
@@ -734,10 +734,7 @@
       }
     };
 
-    const collectPayload = function collectPayload() {
-      const nowIso = new Date().toISOString();
-      const sessionMeta = tracking.getFormSessionMeta(formId, pageType) || {};
-      const leadContext = resolveLeadContext();
+    const collectExtraFields = function collectExtraFields() {
       const extraFields = {};
       form.querySelectorAll('[data-extra-field]').forEach((input) => {
         if (!(input instanceof HTMLInputElement)) return;
@@ -745,6 +742,14 @@
         if (!key) return;
         extraFields[key] = input.value.trim();
       });
+      return extraFields;
+    };
+
+    const collectPayload = function collectPayload() {
+      const nowIso = new Date().toISOString();
+      const sessionMeta = tracking.getFormSessionMeta(formId, pageType) || {};
+      const leadContext = resolveLeadContext();
+      const extraFields = collectExtraFields();
       return {
         name: nameInput.value.trim(),
         phone: phoneInput.value.trim(),
@@ -772,6 +777,50 @@
         },
         ...extraFields,
       };
+    };
+
+    const canonicalizeSignatureValue = function canonicalizeSignatureValue(value) {
+      if (Array.isArray(value)) {
+        return value.map(canonicalizeSignatureValue);
+      }
+      if (!value || typeof value !== 'object') {
+        return value;
+      }
+
+      return Object.keys(value)
+        .sort()
+        .reduce((result, key) => {
+          result[key] = canonicalizeSignatureValue(value[key]);
+          return result;
+        }, {});
+    };
+
+    const getLogicalPayloadSignature = function getLogicalPayloadSignature(payload) {
+      const payloadFormContext =
+        payload.formContext && typeof payload.formContext === 'object' ? payload.formContext : {};
+      const logicalPayload = {
+        name: payload.name || '',
+        phone: payload.phone || '',
+        message: payload.message || '',
+        consent: Boolean(payload.consent),
+        service: payload.service || '',
+        city: payload.city || '',
+        district: payload.district || '',
+        pageType: payload.pageType || '',
+        pageSlug: payload.pageSlug || '',
+        formContext: {
+          formId: payloadFormContext.formId || '',
+          pageType: payloadFormContext.pageType || '',
+          placement: payloadFormContext.placement || '',
+          city: payloadFormContext.city || '',
+          district: payloadFormContext.district || '',
+          service: payloadFormContext.service || '',
+          pageSlug: payloadFormContext.pageSlug || '',
+        },
+        extraFields: collectExtraFields(),
+      };
+
+      return JSON.stringify(canonicalizeSignatureValue(logicalPayload));
     };
 
     const submitLead = async function submitLead() {
@@ -878,17 +927,41 @@
         trigger: 'submit',
       });
 
+      const payload = collectPayload();
+      const logicalSignature = getLogicalPayloadSignature(payload);
+      const idempotencyKey = getIdempotencyKey(logicalSignature);
+      const attemptId = ++submitAttemptSequence;
+      activeSubmitAttemptId = attemptId;
+      const controller = new AbortController();
+      let submitTimeoutId;
+      let deadlineReached = false;
+
       try {
-        const response = await fetch('/api/leads', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Idempotency-Key': getIdempotencyKey(),
-          },
-          body: JSON.stringify(collectPayload()),
+        const request = (async () => {
+          const response = await fetch('/api/leads', {
+            method: 'POST',
+            signal: controller.signal,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Idempotency-Key': idempotencyKey,
+            },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json().catch(() => ({}));
+          return { response, data };
+        })();
+
+        const deadline = new Promise((_, reject) => {
+          submitTimeoutId = window.setTimeout(() => {
+            deadlineReached = true;
+            controller.abort();
+            reject(new DOMException('Lead submission deadline exceeded', 'AbortError'));
+          }, LEAD_SUBMIT_TIMEOUT_MS);
         });
 
-        const data = await response.json().catch(() => ({}));
+        const { response, data } = await Promise.race([request, deadline]);
+        if (activeSubmitAttemptId !== attemptId) return;
+
         if (!response.ok || !data || data.success !== true) {
           if (smartCaptchaEnabled) resetSmartCaptcha();
           const reason = response.status >= 500 ? 'server' : response.status >= 400 ? 'validation' : 'unknown';
@@ -938,30 +1011,38 @@
 
         tracking.trackLeadSuccess(formId, pageType, data.leadId);
         tracking.trackFormSubmitSuccess(formId, pageType, data.leadId);
+        const currentLogicalSignature = getLogicalPayloadSignature(collectPayload());
+        if (currentLogicalSignature !== logicalSignature) {
+          if (smartCaptchaEnabled) resetSmartCaptcha();
+          retryBtn.classList.remove('hidden');
+          setStatus(
+            'Заявка принята с данными на момент нажатия кнопки. Изменения, внесённые во время отправки, не переданы. Чтобы отправить обновлённые данные, пройдите проверку и нажмите «Повторить».',
+            'warning'
+          );
+          return;
+        }
         showSuccess();
       } catch {
+        if (activeSubmitAttemptId !== attemptId) return;
         if (smartCaptchaEnabled) resetSmartCaptcha();
-        tracking.trackLeadError(formId, pageType, 'network');
-        trackSubmitBlocked('network');
+        tracking.trackLeadError(formId, pageType, deadlineReached ? 'timeout' : 'network');
+        trackSubmitBlocked(deadlineReached ? 'timeout' : 'network');
         retryBtn.classList.remove('hidden');
-        showSubmitFallback('Если соединение нестабильно, можно сразу позвонить и оставить заявку без формы.');
-        setStatus('Ошибка сети. Проверьте соединение и повторите отправку.', 'error');
+        showSubmitFallback('Если форма сейчас не отвечает, можно сразу позвонить и оставить заявку без формы.');
+        setStatus(
+          'Не удалось получить подтверждение отправки. Возможно, заявка уже получена. Вы можете повторить отправку или связаться с нами по телефону.',
+          'warning'
+        );
       } finally {
-        isSubmitting = false;
-        if (resetIdempotencyAfterSubmit) {
-          resetSubmissionState();
-          resetIdempotencyAfterSubmit = false;
+        if (submitTimeoutId !== undefined) {
+          window.clearTimeout(submitTimeoutId);
         }
-        setSubmittingState(false);
+        if (activeSubmitAttemptId === attemptId) {
+          activeSubmitAttemptId = 0;
+          isSubmitting = false;
+          setSubmittingState(false);
+        }
       }
-    };
-
-    const onFieldChange = function onFieldChange() {
-      if (isSubmitting) {
-        resetIdempotencyAfterSubmit = true;
-        return;
-      }
-      resetSubmissionState();
     };
 
     // Reusable contract for UI layers that enrich this form without creating a second submit flow.
@@ -975,18 +1056,13 @@
       if (typeof nextContext.message === 'string' && messageInput instanceof HTMLTextAreaElement) {
         messageInput.value = nextContext.message;
       }
-
-      onFieldChange();
     });
 
     nameInput.addEventListener('input', () => {
-      onFieldChange();
       handleTextInputTracking('name', nameInput.value, 'text');
     });
-    consentInput.addEventListener('change', onFieldChange);
     if (messageInput instanceof HTMLTextAreaElement) {
       messageInput.addEventListener('input', () => {
-        onFieldChange();
         handleTextInputTracking('message', messageInput.value, 'textarea');
       });
     }
@@ -1032,7 +1108,6 @@
       const caret = phoneInput.selectionStart || phoneInput.value.length;
       phoneInput.value = formatRUPhone(phoneInput.value);
       phoneInput.setSelectionRange(caret, caret);
-      onFieldChange();
       handleTextInputTracking('phone', phoneInput.value, 'phone');
     });
 
