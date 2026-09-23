@@ -35,6 +35,7 @@ let store: LeadStore;
 let processLeadQueue: typeof import('../src/server/leads/worker').processLeadQueue;
 let redisCommand: <T>(...args: Array<string | number>) => Promise<T>;
 let closeRedisClient: () => Promise<void>;
+let redisCleanupReady = false;
 
 function createLead(leadId: string, marker: string): LeadRecord {
   const now = new Date().toISOString();
@@ -118,6 +119,7 @@ beforeAll(async () => {
   const redis = await import('../src/server/redis/client');
   redisCommand = redis.redisCommand;
   closeRedisClient = redis.closeRedisClient;
+  redisCleanupReady = true;
   store = (await import('../src/server/leads/store')).getLeadStore();
   processLeadQueue = (await import('../src/server/leads/worker')).processLeadQueue;
   expect(store.mode).toBe('redis');
@@ -131,7 +133,7 @@ beforeEach(async () => {
 
 afterAll(async () => {
   try {
-    if (redisCommand) await deletePrefixKeys();
+    if (redisCleanupReady) await deletePrefixKeys();
   } finally {
     await closeRedisClient?.();
   }

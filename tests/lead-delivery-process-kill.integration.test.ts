@@ -50,6 +50,7 @@ const receiverTarget = String(process.env.R04_RECEIVER_TARGET || '');
 let store: LeadStore;
 let redisCommand: <T>(...args: Array<string | number>) => Promise<T>;
 let closeRedisClient: () => Promise<void>;
+let redisCleanupReady = false;
 const activeWorkers = new Set<WorkerChild>();
 
 function createLead(leadId: string, marker: string): LeadRecord {
@@ -328,6 +329,7 @@ beforeAll(async () => {
   const redis = await import('../src/server/redis/client');
   redisCommand = redis.redisCommand;
   closeRedisClient = redis.closeRedisClient;
+  redisCleanupReady = true;
   store = (await import('../src/server/leads/store')).getLeadStore();
   expect(store.mode).toBe('redis');
   expect((await store.ping()).ok).toBe(true);
@@ -341,7 +343,7 @@ afterEach(async () => {
 
 afterAll(async () => {
   try {
-    if (redisCommand) await deletePrefixKeys();
+    if (redisCleanupReady) await deletePrefixKeys();
   } finally {
     await closeRedisClient?.();
   }
