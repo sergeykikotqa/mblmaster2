@@ -57,13 +57,13 @@ body.mbl-page-secondary #header.mbl-site-header .header-link.active-link {
   color: #fff;
 }
 
-body.mbl-page-secondary #header.mbl-site-header :is(.header-phone, .header-search-trigger, .header-mobile-call) {
+body.mbl-page-secondary #header.mbl-site-header :is(.header-phone, .header-mobile-call) {
   border-color: var(--mbl-color-border-strong);
   background: transparent;
   color: var(--mbl-color-text-primary);
 }
 
-body.mbl-page-secondary #header.mbl-site-header :is(.header-phone, .header-search-trigger, .header-mobile-call):hover,
+body.mbl-page-secondary #header.mbl-site-header :is(.header-phone, .header-mobile-call):hover,
 body.mbl-page-secondary #header.mbl-site-header :is(.header-menu-toggle) {
   border-color: rgb(255 255 255 / 30%);
   background: rgb(255 255 255 / 8%);
@@ -86,12 +86,6 @@ body.mbl-page-secondary #header.mbl-site-header .header-mobile-panel {
 
 body.mbl-page-secondary #header.mbl-site-header .header-mobile-link {
   border-color: var(--mbl-color-border-subtle);
-  color: var(--mbl-color-text-primary);
-}
-
-body.mbl-page-secondary #header.mbl-site-header .header-search input {
-  border-color: var(--mbl-color-border-strong);
-  background: rgb(255 255 255 / 6%);
   color: var(--mbl-color-text-primary);
 }
 
