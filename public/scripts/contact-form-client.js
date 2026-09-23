@@ -6,15 +6,24 @@
   }
 
   function formatRUPhone(value) {
-    const digits = onlyDigits(value);
+    const raw = String(value ?? '');
+    const digits = onlyDigits(raw);
     if (!digits) return '';
 
+    const hasTooManyDigits = digits.length > 11;
+    const hasInvalidCountryPrefix = digits.length === 11 && !digits.startsWith('7') && !digits.startsWith('8');
+    const isAmbiguousLocalCode = digits.length === 10 && (digits.startsWith('7') || digits.startsWith('8'));
+
+    if (hasTooManyDigits || hasInvalidCountryPrefix || isAmbiguousLocalCode) {
+      return raw;
+    }
+
     const normalized = digits.startsWith('8') ? `7${digits.slice(1)}` : digits.startsWith('7') ? digits : `7${digits}`;
-    const part = normalized.slice(1, 11);
-    const a = part.slice(0, 3);
-    const b = part.slice(3, 6);
-    const c = part.slice(6, 8);
-    const d = part.slice(8, 10);
+    const localDigits = normalized.startsWith('7') ? normalized.slice(1) : normalized;
+    const a = localDigits.slice(0, 3);
+    const b = localDigits.slice(3, 6);
+    const c = localDigits.slice(6, 8);
+    const d = localDigits.slice(8, 10);
 
     let out = '+7';
     if (a) out += ` (${a}`;
@@ -27,7 +36,10 @@
 
   function validPhone(value) {
     const digits = onlyDigits(value);
-    return digits.length === 10 || (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8')));
+    return (
+      (digits.length === 10 && !digits.startsWith('7') && !digits.startsWith('8')) ||
+      (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8')))
+    );
   }
 
   function createIdempotencyKey(formId) {

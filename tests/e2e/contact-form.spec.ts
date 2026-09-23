@@ -38,6 +38,89 @@ test.describe('Contact form', () => {
     expect(submitCalls).toBe(0);
   });
 
+  test('formats valid Russian numbers and preserves invalid long numbers without truncation', async ({ page }) => {
+    let submitCalls = 0;
+
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      await route.abort();
+    });
+
+    await page.goto(CONTACTS_PAGE);
+    const form = await getLeadForm(page);
+    const phoneInput = form.locator('input[name="phone"]');
+
+    for (const [raw, expected] of [
+      ['9', '+7 (9'],
+      ['91', '+7 (91'],
+      ['912', '+7 (912)'],
+      ['9123', '+7 (912) 3'],
+      ['9123456789', '+7 (912) 345-67-89'],
+      ['89123456789', '+7 (912) 345-67-89'],
+      ['79123456789', '+7 (912) 345-67-89'],
+    ] as const) {
+      await phoneInput.fill(raw);
+      await expect(phoneInput).toHaveValue(expected);
+    }
+
+    const invalidCases = ['7123456789', '8123456789', '791234567890', '891234567890', '91234567890'];
+    for (const raw of invalidCases) {
+      await phoneInput.fill(raw);
+      await expect(phoneInput).toHaveValue(raw);
+      await form.locator('input[name="name"]').fill('CI E2E');
+      await form.locator('input[name="consent"]').check();
+      await form.locator('[data-submit-btn]').click();
+      await expect(form.locator('[data-error-phone]')).toBeVisible();
+      await expect(phoneInput).toHaveAttribute('aria-invalid', 'true');
+      await expect(form.locator('[data-form-status]')).toContainText('Проверьте корректность полей формы.');
+      expect(submitCalls).toBe(0);
+      await form.locator('[data-submit-btn]').click();
+      await phoneInput.fill(raw);
+      await form.locator('input[name="name"]').fill('CI E2E');
+      await form.locator('input[name="consent"]').check();
+    }
+  });
+
+  test('allows submitting after correcting a previously invalid phone number', async ({ page }) => {
+    let submitCalls = 0;
+
+    await mockSmartCaptcha(page);
+
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      const payload = route.request().postDataJSON() as Record<string, unknown>;
+      expect(payload.phone).toBe('+7 (912) 345-67-89');
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, leadId: 'lead-corrected-phone', receivedAt: new Date().toISOString() }),
+      });
+    });
+
+    await page.goto(CONTACTS_PAGE);
+    const form = await getLeadForm(page);
+    const phoneInput = form.locator('input[name="phone"]');
+
+    await phoneInput.fill('91234567890');
+    await expect(phoneInput).toHaveValue('91234567890');
+    await form.locator('input[name="name"]').fill('CI E2E');
+    await form.locator('input[name="consent"]').check();
+    await form.locator('[data-submit-btn]').click();
+    await expect(form.locator('[data-error-phone]')).toBeVisible();
+    expect(submitCalls).toBe(0);
+
+    await phoneInput.fill('9123456789');
+    await expect(phoneInput).toHaveValue('+7 (912) 345-67-89');
+
+    const widgetButton = form.locator('[data-smartcaptcha-widget] button');
+    await expect(widgetButton).toBeVisible();
+    await widgetButton.click();
+
+    await form.locator('[data-submit-btn]').click();
+    await expect(form.locator('[data-success-box]')).toBeVisible();
+    expect(submitCalls).toBe(1);
+  });
+
   test('shows retry button on API failure and success state after retry', async ({ page }) => {
     let submitCalls = 0;
 
