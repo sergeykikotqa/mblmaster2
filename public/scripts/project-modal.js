@@ -13,8 +13,8 @@
     }
     if (!(modal instanceof HTMLElement)) return;
     if (modal.dataset.modalInit === 'true') return;
-    modal.dataset.modalInit = 'true';
 
+    const panel = modal.querySelector('[role="dialog"]');
     const title = modal.querySelector('[data-project-modal-title]');
     const meta = modal.querySelector('[data-project-modal-meta]');
     const preview = modal.querySelector('[data-project-modal-preview]');
@@ -27,6 +27,30 @@
     const formTitle = form?.querySelector('h3');
     const formCtaText = form?.querySelector('[data-btn-text]');
     const messageInput = form?.querySelector('textarea[name="message"]');
+    const requiredFieldNames = [
+      'service',
+      'pageSlug',
+      'project_slug',
+      'project_name',
+      'project_area',
+      'project_price',
+      'project_service',
+      'project_href',
+    ];
+    const hasRequiredFields =
+      form instanceof HTMLFormElement &&
+      requiredFieldNames.every((name) => form.querySelector(`input[name="${name}"]`) instanceof HTMLInputElement);
+    const modalReady =
+      panel instanceof HTMLElement &&
+      title instanceof HTMLElement &&
+      form instanceof HTMLFormElement &&
+      formCtaText instanceof HTMLElement &&
+      messageInput instanceof HTMLTextAreaElement &&
+      closeButtons.some((button) => button instanceof HTMLElement) &&
+      hasRequiredFields;
+
+    if (!modalReady) return;
+    modal.dataset.modalInit = 'true';
 
     const setFieldValue = (name, value) => {
       if (!(form instanceof HTMLFormElement)) return;
@@ -174,9 +198,36 @@
     }
 
     document.querySelectorAll('[data-project-modal-trigger]').forEach((trigger) => {
-      if (!(trigger instanceof HTMLElement)) return;
+      if (!(trigger instanceof HTMLAnchorElement)) return;
       trigger.addEventListener('click', (event) => {
-        if (event && typeof event.preventDefault === 'function') event.preventDefault();
+        const rawHref = (trigger.getAttribute('href') || '').trim();
+        let targetUrl;
+        try {
+          targetUrl = new URL(rawHref, window.location.href);
+        } catch {
+          return;
+        }
+
+        const target = (trigger.getAttribute('target') || '').trim().toLowerCase();
+        const isNativeAlternative =
+          event.defaultPrevented ||
+          event.button !== 0 ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.shiftKey ||
+          event.altKey ||
+          trigger.hasAttribute('download') ||
+          (target && target !== '_self');
+        const hasUsableHref =
+          Boolean(rawHref) &&
+          rawHref !== '#' &&
+          !rawHref.toLowerCase().startsWith('javascript:') &&
+          (targetUrl.protocol === 'http:' || targetUrl.protocol === 'https:') &&
+          targetUrl.origin === window.location.origin;
+
+        if (isNativeAlternative || !hasUsableHref) return;
+
+        event.preventDefault();
         const data = {
           project_slug: trigger.getAttribute('data-project-slug') || '',
           project_name: trigger.getAttribute('data-project-title') || '',
