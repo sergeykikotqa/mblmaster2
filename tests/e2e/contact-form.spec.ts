@@ -10,6 +10,94 @@ async function getLeadForm(page: Page) {
 }
 
 test.describe('Contact form', () => {
+  test('shows no-JS fallback and blocks form submission when JavaScript is disabled', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    let submitCalls = 0;
+
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      await route.abort();
+    });
+
+    await page.goto(CONTACTS_PAGE);
+
+    const fallback = page.locator('[data-nojs-fallback]').first();
+    await expect(fallback).toBeVisible();
+    await expect(fallback.locator('[data-nojs-message]')).toContainText('Для отправки заявки нужен JavaScript.');
+    await expect(page.locator('form.lead-contact-form')).toHaveCount(1);
+    await expect(page.locator('form.lead-contact-form')).not.toBeVisible();
+
+    const phoneLink = fallback.locator('[data-nojs-phone-link]');
+    await expect(phoneLink).toHaveAttribute('href', /^tel:/);
+    await expect(phoneLink).toContainText('+7');
+
+    await page.keyboard.press('Enter');
+    expect(submitCalls).toBe(0);
+    await context.close();
+  });
+
+  test('shows no-JS fallback on a service page without exposing the normal form', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    let submitCalls = 0;
+
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      await route.abort();
+    });
+
+    await page.goto('/kuhni');
+
+    const form = page.locator('form.lead-contact-form').first();
+    await expect(form).toHaveCount(1);
+    await expect(form).not.toBeVisible();
+
+    const fallback = page.locator('[data-nojs-fallback]').first();
+    await expect(fallback).toBeVisible();
+    await expect(fallback.locator('[data-nojs-message]')).toContainText('Для отправки заявки нужен JavaScript.');
+
+    const phoneLink = fallback.locator('[data-nojs-phone-link]');
+    await expect(phoneLink).toHaveAttribute('href', /^tel:/);
+    await expect(phoneLink).toContainText('+7');
+
+    await page.keyboard.press('Enter');
+    expect(submitCalls).toBe(0);
+    await context.close();
+  });
+
+  test('keeps the no-JS fallback visible and contained on mobile without horizontal overflow', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 360, height: 800 } });
+    const page = await context.newPage();
+    let submitCalls = 0;
+
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      await route.abort();
+    });
+
+    await page.goto(CONTACTS_PAGE);
+
+    const fallback = page.locator('[data-nojs-fallback]').first();
+    await expect(fallback).toBeVisible();
+    const phoneLink = fallback.locator('[data-nojs-phone-link]');
+    await expect(phoneLink).toHaveAttribute('href', /^tel:/);
+    await expect(phoneLink).toContainText('+7');
+
+    const overflow = await page.evaluate(() => {
+      const fallbackEl = document.querySelector('[data-nojs-fallback]');
+      return {
+        document: document.documentElement.scrollWidth > window.innerWidth,
+        fallback: fallbackEl instanceof HTMLElement ? fallbackEl.scrollWidth > window.innerWidth : false,
+      };
+    });
+
+    expect(overflow.document).toBe(false);
+    expect(overflow.fallback).toBe(false);
+    expect(submitCalls).toBe(0);
+    await context.close();
+  });
+
   test.beforeEach(async ({ page }) => {
     await page.route('**/api/track', async (route) => {
       await route.fulfill({ status: 204, body: '' });

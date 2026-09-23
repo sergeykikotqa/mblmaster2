@@ -107,9 +107,43 @@ const resolvedCtaNote = ctaNote || serviceCopy.ctaNote;
 ---
 
 {formAnchorId && <div id={formAnchorId} class="sr-only" aria-hidden="true" />}
+<noscript>
+  <style>
+    form.mbl-js-contact-form,
+    form.mbl-js-contact-form * {
+      display: none !important;
+      visibility: hidden !important;
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+    .mbl-contact-form-noscript {
+      display: block !important;
+    }
+  </style>
+  <div
+    class="mbl-contact-form-noscript mb-6 rounded-2xl border border-[#ead9cc] bg-[#fff8f3] p-4 text-slate-700"
+    role="status"
+    aria-live="polite"
+    data-nojs-fallback
+  >
+    <p class="text-base font-semibold text-slate-900" data-nojs-message>Для отправки заявки нужен JavaScript.</p>
+    <p class="mt-2 text-sm text-slate-700">
+      Онлайн-форма временно недоступна. Чтобы оставить заявку, позвоните нам напрямую.
+    </p>
+    <a
+      href={phoneHref}
+      class="mt-3 inline-flex items-center gap-2 font-semibold text-[#7f5438] underline"
+      data-nojs-phone-link
+    >
+      Позвонить {businessInfo.phone}
+    </a>
+  </div>
+</noscript>
 <form
   id={`${idPrefix}-form`}
-  class="lead-contact-form w-full rounded-2xl border border-[#e6d9cf] bg-white p-6 shadow-lg shadow-[#e7d9ce]/70 sm:p-8 lg:p-10"
+  class="mbl-js-contact-form lead-contact-form w-full rounded-2xl border border-[#e6d9cf] bg-white p-6 shadow-lg shadow-[#e7d9ce]/70 sm:p-8 lg:p-10"
   method="post"
   action="/api/leads"
   novalidate
