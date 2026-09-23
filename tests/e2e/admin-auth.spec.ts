@@ -61,8 +61,9 @@ test.describe.serial('Admin Telegram session auth', () => {
 
   test('unsafe session request without CSRF is rejected', async ({ page }) => {
     await loginWithLocalHarness(page);
+    const pageOrigin = new URL(page.url()).origin;
     const response = await page.request.post('/api/admin/auth/logout', {
-      headers: { 'x-real-ip': ALLOWLIST_IP, Origin: 'http://127.0.0.1:4321' },
+      headers: { 'x-real-ip': ALLOWLIST_IP, Origin: pageOrigin },
     });
     expect(response.status()).toBe(403);
     expect(await response.json()).toMatchObject({ ok: false, code: 'CSRF_FAILED' });

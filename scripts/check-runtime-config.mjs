@@ -105,6 +105,47 @@ export function assertProductionContactWebhookUrl(rawValue, envName = 'CONTACT_W
   return parsed;
 }
 
+export function assertTelegramLoginProductionConfig(env = process.env) {
+  const publicSiteUrl = String(env.PUBLIC_SITE_URL || '').trim();
+  const clientId = String(env.TELEGRAM_LOGIN_CLIENT_ID || '').trim();
+  const clientSecret = String(env.TELEGRAM_LOGIN_CLIENT_SECRET || '').trim();
+  const ownerIds = String(env.TELEGRAM_ADMIN_ALLOWED_USER_IDS || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const redirectValue = String(env.TELEGRAM_LOGIN_REDIRECT_URI || '').trim();
+
+  if (!/^\d{3,20}$/.test(clientId)) {
+    throw new Error('TELEGRAM_LOGIN_CLIENT_ID must be a valid Telegram client ID');
+  }
+  if (clientSecret.length < 24 || /replace|example|changeme|placeholder|test/i.test(clientSecret)) {
+    throw new Error('TELEGRAM_LOGIN_CLIENT_SECRET looks weak or placeholder');
+  }
+  if (ownerIds.length === 0 || ownerIds.some((value) => !/^\d{3,20}$/.test(value))) {
+    throw new Error('TELEGRAM_ADMIN_ALLOWED_USER_IDS must contain valid Telegram user IDs');
+  }
+  if (!redirectValue) {
+    throw new Error('Missing required env: TELEGRAM_LOGIN_REDIRECT_URI');
+  }
+
+  const publicUrl = parseAbsoluteHttpUrl(publicSiteUrl, 'PUBLIC_SITE_URL');
+  const redirectUrl = parseAbsoluteHttpUrl(redirectValue, 'TELEGRAM_LOGIN_REDIRECT_URI');
+  if (publicUrl.protocol !== 'https:' || redirectUrl.protocol !== 'https:') {
+    throw new Error('Telegram Login public URL and callback must use HTTPS');
+  }
+  if (redirectUrl.username || redirectUrl.password || redirectUrl.search || redirectUrl.hash) {
+    throw new Error('TELEGRAM_LOGIN_REDIRECT_URI must not contain credentials, query or fragment');
+  }
+  if (redirectUrl.pathname !== '/api/admin/auth/telegram/callback') {
+    throw new Error('TELEGRAM_LOGIN_REDIRECT_URI must use /api/admin/auth/telegram/callback');
+  }
+  if (redirectUrl.origin !== publicUrl.origin) {
+    throw new Error('TELEGRAM_LOGIN_REDIRECT_URI must use the PUBLIC_SITE_URL origin');
+  }
+
+  return { clientId, ownerIds: new Set(ownerIds), redirectUrl };
+}
+
 function assertRedisUrl(rawValue) {
   let parsed;
   try {
@@ -290,6 +331,9 @@ async function main() {
 
   assertNotPlaceholderUrl(publicSiteUrl, 'PUBLIC_SITE_URL');
   checks.push('public_site_url_ok');
+
+  assertTelegramLoginProductionConfig(process.env);
+  checks.push('telegram_login_config_ok');
 
   const parsedWebhookUrl = assertProductionContactWebhookUrl(webhookUrl, webhookSetting.envName);
   checks.push('contact_webhook_url_ok');

@@ -516,10 +516,17 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
   const allowlistEntries = options.allowAllowlist === false ? [] : resolveAllowlistEntries();
   const allowlist = parseAllowlist(allowlistEntries);
   if (allowlist.invalidEntries.length > 0) {
-    console.warn('[admin-auth] invalid allowlist entries ignored', {
+    console.error('[admin-auth] invalid allowlist configuration; denying request', {
       scope,
       count: allowlist.invalidEntries.length,
     });
+    return {
+      ok: false,
+      status: 503,
+      code: 'ADMIN_AUTH_NOT_CONFIGURED',
+      clientIp,
+      response: makeAuthFailureResponse(503, 'ADMIN_AUTH_NOT_CONFIGURED'),
+    };
   }
 
   const tokenConfigured = Boolean(adminToken);

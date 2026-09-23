@@ -657,6 +657,29 @@ function checkBrowserRuntime(baseUrl) {
   };
 }
 
+async function checkAdminHtmlAccess(baseUrl) {
+  const adminPage = await fetchWithTimeout(`${baseUrl}/admin`, { redirect: 'manual' });
+  assert(adminPage.status === 303, `Unauthenticated GET /admin must redirect with 303, got ${adminPage.status}`);
+  const location = adminPage.headers.get('location');
+  assert(location, 'Unauthenticated GET /admin redirect is missing Location');
+  const loginUrl = new URL(location, baseUrl);
+  assert(
+    loginUrl.pathname === '/admin/login',
+    `Unauthenticated GET /admin must redirect to /admin/login, got ${loginUrl.pathname}`
+  );
+  await adminPage.arrayBuffer();
+
+  const loginPage = await fetchWithTimeout(loginUrl.toString(), { redirect: 'manual' });
+  const loginHtml = await loginPage.text();
+  assert(loginPage.status === 200, `GET /admin/login must return 200, got ${loginPage.status}`);
+  assert(
+    /no-store/i.test(loginPage.headers.get('cache-control') || ''),
+    'Admin login page must use Cache-Control: no-store'
+  );
+  assert(/noindex/i.test(loginPage.headers.get('x-robots-tag') || ''), 'Admin login page must remain noindex');
+  assert(/Вход в веб-админку/i.test(loginHtml), 'Admin login page returned unexpected HTML');
+}
+
 async function checkCacheAndSecurityHeaders(baseUrl, workerToken, ownerMetricsToken) {
   const admin = await fetchWithTimeout(`${baseUrl}/api/admin/health`, { redirect: 'manual' });
   assert([401, 403].includes(admin.status), `Unauthenticated admin API must reject access, got ${admin.status}`);
@@ -693,11 +716,7 @@ async function checkCacheAndSecurityHeaders(baseUrl, workerToken, ownerMetricsTo
     'Owner metrics response exposed lead PII'
   );
 
-  const adminPage = await fetchWithTimeout(`${baseUrl}/admin`);
-  assert(adminPage.status === 200, `GET /admin must return 200, got ${adminPage.status}`);
-  await adminPage.arrayBuffer();
-  assert(/no-store/i.test(adminPage.headers.get('cache-control') || ''), 'Admin page must use Cache-Control: no-store');
-  assert(/noindex/i.test(adminPage.headers.get('x-robots-tag') || ''), 'Admin page must remain noindex');
+  await checkAdminHtmlAccess(baseUrl);
 
   const blockedWorker = await fetchWithTimeout(`${baseUrl}/api/workers/lead-delivery`, {
     method: 'POST',
@@ -1390,6 +1409,7 @@ async function main() {
 
 export {
   SERVICE_NAMES,
+  checkAdminHtmlAccess,
   extractCanonical,
   extractPageResources,
   heartbeatFrom,

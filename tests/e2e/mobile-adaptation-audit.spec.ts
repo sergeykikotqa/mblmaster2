@@ -18,9 +18,36 @@ type RouteAudit = {
 
 const DIST_DIR = path.join(process.cwd(), 'dist');
 const OUTPUT_DIR = path.join(process.cwd(), '.tmp', 'mobile-audit');
+const SITEMAP_PATH = path.join(DIST_DIR, 'sitemap.xml');
+
+function latestMtimeMs(root: string): number {
+  if (!fs.existsSync(root)) return 0;
+  let latest = fs.statSync(root).mtimeMs;
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    const absolute = path.join(root, entry.name);
+    latest = Math.max(latest, entry.isDirectory() ? latestMtimeMs(absolute) : fs.statSync(absolute).mtimeMs);
+  }
+  return latest;
+}
+
+function publishedRoutesFromSitemap(): string[] {
+  if (!fs.existsSync(SITEMAP_PATH)) throw new Error('Production build sitemap is missing; run npm run build first');
+  const xml = fs.readFileSync(SITEMAP_PATH, 'utf8');
+  const routes = [...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => new URL(match[1]).pathname);
+  if (routes.length < 2) throw new Error('Production build sitemap contains no auditable public route set');
+  return routes;
+}
 
 function collectRoutesFromDist(): string[] {
-  const routes = new Set<string>(['/']);
+  if (!fs.existsSync(DIST_DIR)) throw new Error('Production build is missing; run npm run build first');
+  const buildMtime = fs.statSync(path.join(DIST_DIR, 'index.html')).mtimeMs;
+  const inputMtime = Math.max(
+    latestMtimeMs(path.join(process.cwd(), 'src')),
+    latestMtimeMs(path.join(process.cwd(), 'public'))
+  );
+  if (buildMtime < inputMtime) throw new Error('Production build is stale; run npm run build before mobile audit');
+
+  const routes = new Set<string>();
 
   const walk = (dir: string) => {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -33,16 +60,17 @@ function collectRoutesFromDist(): string[] {
 
       if (entry.isFile() && entry.name === 'index.html') {
         const relDir = path.relative(DIST_DIR, path.dirname(absolute)).replace(/\\/g, '/');
-        if (!relDir || relDir === '.') continue;
-        const route = `/${relDir}`;
+        const route = !relDir || relDir === '.' ? '/' : `/${relDir}`;
         if (route.startsWith('/admin') || route.startsWith('/decapcms')) continue;
         routes.add(route);
       }
     }
   };
 
-  if (fs.existsSync(DIST_DIR)) {
-    walk(DIST_DIR);
+  walk(DIST_DIR);
+
+  for (const route of publishedRoutesFromSitemap()) {
+    if (!routes.has(route)) throw new Error(`Published route is missing from production build: ${route}`);
   }
 
   return [...routes].sort((a, b) => a.localeCompare(b));

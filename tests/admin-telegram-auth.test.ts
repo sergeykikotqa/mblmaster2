@@ -116,6 +116,34 @@ describe('Telegram-backed admin sessions', () => {
     if (!result.ok) expect(result.code).toBe('UNAUTHORIZED');
   });
 
+  it.each([
+    { label: 'empty list', allowlist: '', clientAddress: '198.51.100.44', expectedOk: true },
+    { label: 'valid matching address', allowlist: '203.0.113.120', clientAddress: '203.0.113.120', expectedOk: true },
+    { label: 'invalid list', allowlist: 'not-an-ip', clientAddress: '203.0.113.120', expectedOk: false },
+    {
+      label: 'mixed valid and invalid list',
+      allowlist: '203.0.113.120,not-an-ip',
+      clientAddress: '203.0.113.120',
+      expectedOk: false,
+    },
+  ])('applies the IP allowlist fail closed: $label', async ({ allowlist, clientAddress, expectedOk }) => {
+    process.env.ADMIN_ALLOWLIST_IPS = allowlist;
+    const created = await createAdminSession(requestWithSession('missing'), OWNER_ID);
+    const result = await authorizeAdminRequest(requestWithSession(created.sessionId), {
+      scope: 'allowlist-test',
+      requireSession: true,
+      registerFailure: false,
+      allowDevBypass: false,
+      clientAddress,
+    });
+
+    expect(result.ok).toBe(expectedOk);
+    if (!expectedOk && !result.ok) {
+      expect(result.status).toBe(503);
+      expect(result.code).toBe('ADMIN_AUTH_NOT_CONFIGURED');
+    }
+  });
+
   it('requires both same-origin and CSRF token for unsafe session requests', async () => {
     const created = await createAdminSession(requestWithSession('missing'), OWNER_ID);
     const options = {

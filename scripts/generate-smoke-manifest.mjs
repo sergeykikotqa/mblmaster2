@@ -6,6 +6,7 @@ import yaml from 'js-yaml';
 const ROOT = process.cwd();
 const OUTPUT_PATH = path.join(ROOT, 'artifacts', 'smoke-manifest.json');
 const ARTICLE_SEO_STATE_PATH = path.join(ROOT, 'data', 'article-seo-state.json');
+const FUNNEL_PUBLIC_PAGES_PATH = path.join(ROOT, 'data', 'funnel-public-pages.json');
 
 const PROJECT_ANCHOR_ROUTE = '/projects/biruzovaya-uglovaya-kuhnya-irkutsk';
 
@@ -41,16 +42,20 @@ function normalizeRoutePath(value) {
 }
 
 function resolveReadyArticleRoute() {
-  const fallback = '/articles/kak-vybrat-kuhnyu-na-zakaz';
-  if (!fs.existsSync(ARTICLE_SEO_STATE_PATH)) return fallback;
+  if (!fs.existsSync(ARTICLE_SEO_STATE_PATH)) {
+    throw new Error(`[smoke-manifest] Missing article SEO state: ${ARTICLE_SEO_STATE_PATH}`);
+  }
   try {
     const payload = JSON.parse(fs.readFileSync(ARTICLE_SEO_STATE_PATH, 'utf8'));
     const readyRoutes = Array.isArray(payload?.readyArticlePaths)
       ? payload.readyArticlePaths.map((item) => normalizeRoutePath(item)).filter(Boolean)
       : [];
-    return readyRoutes[0] || fallback;
-  } catch {
-    return fallback;
+    if (readyRoutes.length === 0) throw new Error('readyArticlePaths is empty');
+    return readyRoutes[0];
+  } catch (error) {
+    throw new Error(
+      `[smoke-manifest] Invalid article SEO state: ${error instanceof Error ? error.message : 'UNKNOWN'}`
+    );
   }
 }
 
@@ -72,7 +77,6 @@ const PAGE_SAMPLE_MAP = [
   { match: /src[\\/]+pages[\\/]+guides[\\/]+\[slug\]\.astro$/i, routes: ['/guides/process-izgotovleniya-kuhni'] },
   { match: /src[\\/]+pages[\\/]+faq[\\/]+\[slug\]\.astro$/i, routes: ['/faq/voprosy-ob-ispolzovanii-kuhen'] },
   { match: /src[\\/]+pages[\\/]+\[service\]\.astro$/i, routes: ['/kuhni'] },
-  { match: /src[\\/]+pages[\\/]+irkutsk\.astro$/i, routes: ['/irkutsk'] },
   { match: /src[\\/]+pages[\\/]+contacts\.astro$/i, routes: ['/contacts'] },
 ];
 
@@ -106,6 +110,36 @@ function parseMarkdownFrontmatter(filePath) {
 function slugFromFile(filePath, frontmatter) {
   const base = path.basename(filePath).replace(/\.mdx?$/i, '');
   return String(frontmatter?.slug || base).trim();
+}
+
+function resolvePublishedProjectRoute(filePath, frontmatter) {
+  if (frontmatter?.draft) return null;
+  if (!fs.existsSync(FUNNEL_PUBLIC_PAGES_PATH)) {
+    throw new Error(`[smoke-manifest] Missing public route registry: ${FUNNEL_PUBLIC_PAGES_PATH}`);
+  }
+
+  const registry = JSON.parse(fs.readFileSync(FUNNEL_PUBLIC_PAGES_PATH, 'utf8'));
+  const publishedProjectRoutes = Array.isArray(registry)
+    ? registry.map((entry) => normalizeRoutePath(entry?.pageSlug)).filter((route) => route.startsWith('/projects/'))
+    : [];
+  const explicitSlug = String(frontmatter?.slug || '').trim();
+  if (explicitSlug) {
+    const route = normalizeRoutePath(`/projects/${explicitSlug}`);
+    if (!publishedProjectRoutes.includes(route)) {
+      throw new Error(`[smoke-manifest] Project route is not published: ${route}`);
+    }
+    return route;
+  }
+
+  const fileSlug = path.basename(filePath).replace(/\.mdx?$/i, '');
+  const matches = publishedProjectRoutes.filter((route) => {
+    const routeSlug = route.slice('/projects/'.length);
+    return routeSlug === fileSlug || routeSlug.startsWith(`${fileSlug}-`) || routeSlug.endsWith(`-${fileSlug}`);
+  });
+  if (matches.length !== 1) {
+    throw new Error(`[smoke-manifest] Cannot resolve one published route for project content: ${filePath}`);
+  }
+  return matches[0];
 }
 
 function readChangedFiles() {
@@ -149,6 +183,9 @@ function mapContentRoute(filePath) {
     if (!/\.mdx?$/i.test(normalized)) return null;
 
     const frontmatter = parseMarkdownFrontmatter(absolute);
+    if (entry.prefix === '/projects') {
+      return resolvePublishedProjectRoute(absolute, frontmatter);
+    }
     if (entry.prefix === '/articles') {
       if (frontmatter?.draft) return null;
       if (frontmatter?.seoReady === false) return null;

@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
+
+import { checkAdminHtmlAccess } from '../scripts/check-compose-runtime.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 
@@ -27,5 +29,34 @@ describe('runtime evidence policy', () => {
     expect(preLaunchAudit).toContain("status: 'DEV_SMOKE_PASS'");
     expect(preLaunchAudit).toContain("status: 'PRODUCTION_RUNTIME_PASS'");
     expect(preLaunchAudit).toContain("runNpm('check:prod-runtime'");
+  });
+
+  test('proves unauthenticated admin redirects to the no-store/noindex login page', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 303,
+          headers: { Location: '/admin/login?next=%2Fadmin' },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response('<h1>Вход в веб-админку</h1>', {
+          status: 200,
+          headers: { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' },
+        })
+      );
+
+    await expect(checkAdminHtmlAccess('http://127.0.0.1:4321')).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'http://127.0.0.1:4321/admin',
+      expect.objectContaining({ redirect: 'manual' })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'http://127.0.0.1:4321/admin/login?next=%2Fadmin',
+      expect.objectContaining({ redirect: 'manual' })
+    );
   });
 });
