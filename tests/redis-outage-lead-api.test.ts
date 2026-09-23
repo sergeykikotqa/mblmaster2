@@ -77,13 +77,12 @@ const payload = {
   smartCaptchaToken: 'synthetic-valid-token',
 };
 
-function makeRequest(idempotencyKey: string, body: unknown = payload) {
+function makeRequest(idempotencyKey: string | undefined, body: unknown = payload) {
+  const headers = new Headers({ 'Content-Type': 'application/json' });
+  if (idempotencyKey) headers.set('X-Idempotency-Key', idempotencyKey);
   return new Request('https://mebel-irkutsk.ru/api/leads', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Idempotency-Key': idempotencyKey,
-    },
+    headers,
     body: JSON.stringify(body),
   });
 }
@@ -181,4 +180,75 @@ test('returns 409 when one idempotency key is reused with different lead content
   expect(await conflict.json()).toMatchObject({ success: false, code: 'IDEMPOTENCY_CONFLICT' });
   expect(state.enqueueCalls).toBe(2);
   expect(state.webhookCalls).toBe(0);
+});
+
+test('accepts independent requests without an idempotency key even when their content overlaps', async () => {
+  state.redisAvailable = true;
+
+  const first = await post({
+    request: makeRequest(undefined, {
+      ...payload,
+      name: 'Synthetic owner one',
+      smartCaptchaToken: `no-key-one-${crypto.randomUUID()}`,
+    }),
+  });
+  const second = await post({
+    request: makeRequest(undefined, {
+      ...payload,
+      name: 'Synthetic owner two',
+      smartCaptchaToken: `no-key-two-${crypto.randomUUID()}`,
+    }),
+  });
+
+  expect(first.status).toBe(200);
+  expect(second.status).toBe(200);
+  const firstBody = (await first.json()) as { leadId: string };
+  const secondBody = (await second.json()) as { leadId: string };
+  expect(firstBody.leadId).not.toBe(secondBody.leadId);
+  expect(state.acceptedByIdempotency.size).toBe(2);
+  expect(new Set(state.acceptedByIdempotency.keys()).size).toBe(2);
+});
+
+test('accepts fully identical business payloads without an idempotency key as separate leads', async () => {
+  state.redisAvailable = true;
+  const firstPayload = { ...payload, smartCaptchaToken: `no-key-identical-one-${crypto.randomUUID()}` };
+  const secondPayload = { ...payload, smartCaptchaToken: `no-key-identical-two-${crypto.randomUUID()}` };
+
+  const first = await post({ request: makeRequest(undefined, firstPayload) });
+  const second = await post({ request: makeRequest(undefined, secondPayload) });
+  const firstBody = (await first.json()) as { leadId: string };
+  const secondBody = (await second.json()) as { leadId: string };
+
+  expect(first.status).toBe(200);
+  expect(second.status).toBe(200);
+  expect(firstBody.leadId).not.toBe(secondBody.leadId);
+  expect(state.acceptedByIdempotency.size).toBe(2);
+});
+
+test('keeps explicit-key replay and conflict semantics unchanged', async () => {
+  state.redisAvailable = true;
+  const idempotencyKey = `explicit-contract-${crypto.randomUUID()}`;
+  const firstPayload = { ...payload, smartCaptchaToken: `explicit-one-${crypto.randomUUID()}` };
+  const replayPayload = { ...payload, smartCaptchaToken: `explicit-two-${crypto.randomUUID()}` };
+
+  const first = await post({ request: makeRequest(idempotencyKey, firstPayload) });
+  const replay = await post({ request: makeRequest(idempotencyKey, replayPayload) });
+  const firstBody = (await first.json()) as { leadId: string };
+  const replayBody = (await replay.json()) as { leadId: string; duplicate?: boolean };
+
+  expect(first.status).toBe(200);
+  expect(replay.status).toBe(200);
+  expect(replayBody).toMatchObject({ leadId: firstBody.leadId, duplicate: true });
+  expect(state.acceptedByIdempotency.size).toBe(1);
+
+  const conflict = await post({
+    request: makeRequest(idempotencyKey, {
+      ...payload,
+      message: 'Changed synthetic business payload',
+      smartCaptchaToken: `explicit-three-${crypto.randomUUID()}`,
+    }),
+  });
+  expect(conflict.status).toBe(409);
+  expect(await conflict.json()).toMatchObject({ success: false, code: 'IDEMPOTENCY_CONFLICT' });
+  expect(state.acceptedByIdempotency.size).toBe(1);
 });

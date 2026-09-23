@@ -339,19 +339,13 @@ function resolveRateLimitIdentity(
   };
 }
 
-function resolveIdempotencyHash(
-  request: Request,
-  normalizedPhone: string,
-  message: string,
-  timestampMs: number
-): string {
+function resolveIdempotencyHash(request: Request): string {
   const provided = (request.headers.get('x-idempotency-key') || '').trim();
   if (provided) {
     return hashForStorage(`header:${provided.slice(0, 200)}`);
   }
 
-  const minuteBucket = Math.floor(timestampMs / 60_000);
-  return hashForStorage(`${normalizedPhone}|${message}|${minuteBucket}`);
+  return hashForStorage(`attempt:${randomUUID()}`);
 }
 
 function resolvePayloadFingerprint(name: string, normalizedPhone: string, message: string): string {
@@ -704,7 +698,7 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
     const nowMs = Date.now();
     const receivedAt = new Date(nowMs).toISOString();
     const leadId = randomUUID();
-    const idempotencyHash = resolveIdempotencyHash(request, phone, message, nowMs);
+    const idempotencyHash = resolveIdempotencyHash(request);
     const payloadFingerprint = resolvePayloadFingerprint(name, phone, message);
     const successResponse: ContactSuccessResponse = {
       success: true,
