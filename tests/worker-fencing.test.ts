@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import type { LeadStore } from '../src/server/leads/store';
-import type { DeliveryAttemptMetric, LeadPipelineHealth, LeadRecord } from '../src/server/leads/types';
+import type { DeadLetterEntry, DeliveryAttemptMetric, LeadPipelineHealth, LeadRecord } from '../src/server/leads/types';
 
 const getLeadStoreMock = vi.fn();
 const deliverLeadWebhookMock = vi.fn();
@@ -73,6 +73,7 @@ function createStore(options: {
   queued: { current: boolean };
   metrics: DeliveryAttemptMetric[];
   commitResults: Array<{ status: 'committed' | 'fence_exists' | 'claim_missing'; deliveredAtIso: string | null }>;
+  deadLetters?: DeadLetterEntry[];
 }): LeadStore {
   let lockCounter = 0;
 
@@ -114,7 +115,9 @@ function createStore(options: {
       options.queued.current = false;
     },
     getQueueDepth: async () => (options.queued.current ? 1 : 0),
-    pushDeadLetter: async () => {},
+    pushDeadLetter: async (entry) => {
+      options.deadLetters?.push(entry);
+    },
     recordDeliveryMetric: async (metric) => {
       options.metrics.push(metric);
     },
@@ -213,6 +216,59 @@ test('worker re-sends the same lead id after a post-send claim loss', async () =
   expect(secondPayload?.lead?.leadId).toBe('lead-1');
   expect(record.current?.status).toBe('delivered');
   expect(queued.current).toBe(false);
+});
+
+test('worker sends insecure transport failures directly to DLQ without leaking payload data in logs', async () => {
+  const nowMs = Date.now();
+  const record = { current: createLeadRecord(nowMs) };
+  if (record.current) {
+    record.current.webhookPayload = {
+      lead: {
+        leadId: 'lead-1',
+        phone: 'SENSITIVE_PHONE_SENTINEL',
+      },
+    };
+  }
+  const queued = { current: true };
+  const metrics: DeliveryAttemptMetric[] = [];
+  const deadLetters: DeadLetterEntry[] = [];
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+  getLeadStoreMock.mockReturnValue(
+    createStore({
+      record,
+      queued,
+      metrics,
+      deadLetters,
+      commitResults: [],
+    })
+  );
+  deliverLeadWebhookMock.mockResolvedValue({
+    ok: false,
+    code: 'WEBHOOK_INSECURE_TRANSPORT',
+    message: 'Contact webhook delivery requires HTTPS',
+  });
+
+  const result = await processLeadQueue(1);
+
+  expect(result).toMatchObject({ processed: 1, failed: 1, deadLettered: 1, retried: 0 });
+  expect(deliverLeadWebhookMock).toHaveBeenCalledTimes(1);
+  expect(record.current?.status).toBe('failed');
+  expect(record.current?.lastErrorCode).toBe('WEBHOOK_INSECURE_TRANSPORT');
+  expect(record.current?.lastErrorMessage).toBe('Contact webhook delivery requires HTTPS');
+  expect(queued.current).toBe(false);
+  expect(deadLetters).toHaveLength(1);
+  expect(deadLetters[0]?.errorCode).toBe('WEBHOOK_INSECURE_TRANSPORT');
+  const capturedLogs = [...logSpy.mock.calls, ...warnSpy.mock.calls, ...errorSpy.mock.calls]
+    .flat()
+    .map((value) => (typeof value === 'string' ? value : JSON.stringify(value)))
+    .join('\n');
+  expect(capturedLogs).not.toContain('SENSITIVE_PHONE_SENTINEL');
+  logSpy.mockRestore();
+  warnSpy.mockRestore();
+  errorSpy.mockRestore();
 });
 
 test('worker returns paused summary without touching the store when CONTACT_WORKER_PAUSED=true', async () => {

@@ -163,7 +163,14 @@ function emitLeadEvent(
 }
 
 function isTerminalDeliveryFailure(code: string | undefined): boolean {
-  return code === 'WEBHOOK_NOT_CONFIGURED' || code === 'WEBHOOK_SECRET_NOT_CONFIGURED' || code === 'WEBHOOK_ID_MISSING';
+  return (
+    code === 'WEBHOOK_NOT_CONFIGURED' ||
+    code === 'WEBHOOK_SECRET_NOT_CONFIGURED' ||
+    code === 'WEBHOOK_ID_MISSING' ||
+    code === 'WEBHOOK_URL_INVALID' ||
+    code === 'WEBHOOK_INSECURE_TRANSPORT' ||
+    code === 'WEBHOOK_REDIRECT_BLOCKED'
+  );
 }
 
 async function recordDeliveryMetricSafely(store: LeadStore, metric: DeliveryAttemptMetric): Promise<void> {
@@ -531,7 +538,13 @@ async function processLeadQueueCycle(limitOverride?: number): Promise<ProcessLea
                 ? 'webhook_secret_not_configured'
                 : delivery.code === 'WEBHOOK_ID_MISSING'
                   ? 'webhook_id_missing'
-                  : 'max_retries_exceeded';
+                  : delivery.code === 'WEBHOOK_URL_INVALID'
+                    ? 'webhook_url_invalid'
+                    : delivery.code === 'WEBHOOK_INSECURE_TRANSPORT'
+                      ? 'webhook_insecure_transport'
+                      : delivery.code === 'WEBHOOK_REDIRECT_BLOCKED'
+                        ? 'webhook_redirect_blocked'
+                        : 'max_retries_exceeded';
           const alertSent = await notifyLeadDeadLetter({
             leadId,
             failedAt: deadLetterEntry.failedAt,

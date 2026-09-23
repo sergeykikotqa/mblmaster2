@@ -24,6 +24,8 @@ const requestedLocalMode = String(modeArgument?.slice('--mode='.length) || proce
   .toLowerCase();
 const allowedLocalModes = new Set(['dev', 'node', 'preview']);
 const localMode = requestedLocalMode;
+const testWebhookUrl = 'https://mbl-test-webhook.invalid/webhook';
+const testWebhookProxyRequire = '--require=./scripts/test-webhook-fetch-proxy.cjs';
 
 const serverLogs = [];
 
@@ -233,15 +235,31 @@ async function startMockWebhookServer() {
 
 function startLocalServer(mockWebhookUrl, workerToken, adminToken) {
   const webhookSecret = `prod-runtime-webhook-secret-${Date.now().toString(36)}`;
-  const npmArgs = localMode === 'node' ? ['start'] : ['run', localMode, '--', '--host', host, '--port', String(port)];
+  const npmArgs =
+    localMode === 'node'
+      ? ['start']
+      : [
+          'run',
+          localMode,
+          '--',
+          '--host',
+          host,
+          '--port',
+          String(port),
+          ...(localMode === 'dev' ? ['--ignore-lock'] : []),
+        ];
   const child = spawn(npmCommand, npmArgs, {
     env: {
       ...process.env,
       ASTRO_TELEMETRY_DISABLED: '1',
+      ...(localMode === 'dev' ? { ASTRO_DEV_BACKGROUND: '0' } : {}),
       HOST: host,
       PORT: String(port),
-      CONTACT_WEBHOOK_URL: mockWebhookUrl,
+      CONTACT_WEBHOOK_URL: testWebhookUrl,
       CONTACT_WEBHOOK_SECRET: webhookSecret,
+      MBL_TEST_WEBHOOK_HTTPS_URL: testWebhookUrl,
+      MBL_TEST_WEBHOOK_HTTP_TARGET: mockWebhookUrl,
+      NODE_OPTIONS: [process.env.NODE_OPTIONS, testWebhookProxyRequire].filter(Boolean).join(' '),
       CONTACT_ALERT_WEBHOOK_URL: mockWebhookUrl,
       CONTACT_WORKER_TOKEN: workerToken,
       METRICS_ADMIN_TOKEN: adminToken,

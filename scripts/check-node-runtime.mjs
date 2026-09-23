@@ -111,7 +111,7 @@ const child = spawn(process.execPath, [path.join(projectRoot, 'scripts', 'start-
     NODE_ENV: 'production',
     METRICS_ADMIN_TOKEN: 'node-runtime-smoke-admin',
     CONTACT_WORKER_TOKEN: 'node-runtime-smoke-worker',
-    CONTACT_WEBHOOK_URL: 'http://127.0.0.1:9/never-called',
+    CONTACT_WEBHOOK_URL: 'https://127.0.0.1:9/never-called',
     CONTACT_WEBHOOK_SECRET: 'node-runtime-smoke-secret',
     CONTACT_SMARTCAPTCHA_REQUIRED: 'true',
     CONTACT_ALERT_WEBHOOK_URL: '',

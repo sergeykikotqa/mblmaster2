@@ -24,6 +24,29 @@ function parsePositiveInt(value: string | undefined, fallback: number, min: numb
   return Math.max(min, Math.floor(parsed));
 }
 
+function resolveWebhookTarget(
+  rawUrl: string
+): { ok: true; url: URL } | { ok: false; code: 'WEBHOOK_URL_INVALID' | 'WEBHOOK_INSECURE_TRANSPORT'; message: string } {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return {
+      ok: false,
+      code: 'WEBHOOK_URL_INVALID',
+      message: 'Contact webhook URL must be an absolute HTTPS URL',
+    };
+  }
+
+  if (parsed.protocol === 'https:') return { ok: true, url: parsed };
+
+  return {
+    ok: false,
+    code: parsed.protocol === 'http:' ? 'WEBHOOK_INSECURE_TRANSPORT' : 'WEBHOOK_URL_INVALID',
+    message: 'Contact webhook delivery requires HTTPS',
+  };
+}
+
 export function resolveWebhookConfig(): WebhookConfig {
   return {
     webhookUrl: (process.env.CONTACT_WEBHOOK_URL || process.env.CONTACT_WEBHOOK || '').trim(),
@@ -56,6 +79,11 @@ export async function deliverLeadWebhook(payload: Record<string, unknown>): Prom
       code: 'WEBHOOK_NOT_CONFIGURED',
       message: 'CONTACT_WEBHOOK_URL is missing',
     };
+  }
+
+  const webhookTarget = resolveWebhookTarget(webhookUrl);
+  if (!webhookTarget.ok) {
+    return webhookTarget;
   }
 
   if (!webhookSecret) {
@@ -91,12 +119,22 @@ export async function deliverLeadWebhook(payload: Record<string, unknown>): Prom
       'X-Hub-Signature-256': `sha256=${signature}`,
     };
 
-    const response = await fetch(webhookUrl, {
+    const response = await fetch(webhookTarget.url, {
       method: 'POST',
       headers,
       body,
       signal: controller.signal,
+      redirect: 'manual',
     });
+
+    if (response.status >= 300 && response.status < 400) {
+      return {
+        ok: false,
+        code: 'WEBHOOK_REDIRECT_BLOCKED',
+        status: response.status,
+        message: 'Contact webhook redirects are not allowed',
+      };
+    }
 
     if (response.ok) {
       return {

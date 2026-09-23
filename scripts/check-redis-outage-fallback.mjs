@@ -16,6 +16,8 @@ const requestedLocalMode = String(process.env.REDIS_OUTAGE_SMOKE_LOCAL_MODE || '
   .trim()
   .toLowerCase();
 const localMode = ['node', 'preview'].includes(requestedLocalMode) ? requestedLocalMode : 'dev';
+const testWebhookUrl = 'https://mbl-test-webhook.invalid/webhook';
+const testWebhookProxyRequire = '--require=./scripts/test-webhook-fetch-proxy.cjs';
 const serverLogs = [];
 
 function addServerLogs(source, chunk) {
@@ -97,7 +99,8 @@ async function startMockWebhookServer() {
   return {
     server,
     attempts,
-    webhookUrl: `http://${host}:${address.port}/webhook`,
+    webhookUrl: testWebhookUrl,
+    localWebhookUrl: `http://${host}:${address.port}/webhook`,
     async stop() {
       await new Promise((resolve) => {
         server.close(() => resolve());
@@ -106,16 +109,32 @@ async function startMockWebhookServer() {
   };
 }
 
-function startAstroServer(webhookUrl) {
-  const npmArgs = localMode === 'node' ? ['start'] : ['run', localMode, '--', '--host', host, '--port', String(port)];
+function startAstroServer(webhookUrl, localWebhookUrl) {
+  const npmArgs =
+    localMode === 'node'
+      ? ['start']
+      : [
+          'run',
+          localMode,
+          '--',
+          '--host',
+          host,
+          '--port',
+          String(port),
+          ...(localMode === 'dev' ? ['--ignore-lock'] : []),
+        ];
   const child = spawn(npmCommand, npmArgs, {
     env: {
       ...process.env,
       ASTRO_TELEMETRY_DISABLED: '1',
+      ...(localMode === 'dev' ? { ASTRO_DEV_BACKGROUND: '0' } : {}),
       HOST: host,
       PORT: String(port),
       CONTACT_WEBHOOK_URL: webhookUrl,
       CONTACT_WEBHOOK_SECRET: 'redis-outage-local-mock-secret',
+      MBL_TEST_WEBHOOK_HTTPS_URL: webhookUrl,
+      MBL_TEST_WEBHOOK_HTTP_TARGET: localWebhookUrl,
+      NODE_OPTIONS: [process.env.NODE_OPTIONS, testWebhookProxyRequire].filter(Boolean).join(' '),
       CONTACT_WORKER_TOKEN: `redis-outage-worker-${Date.now().toString(36)}`,
       CONTACT_WORKER_URL: '',
       CONTACT_SMARTCAPTCHA_REQUIRED: 'false',
@@ -226,7 +245,7 @@ async function main() {
   ensureProductionBuild();
 
   const mockWebhook = await startMockWebhookServer();
-  const astroServer = startAstroServer(mockWebhook.webhookUrl);
+  const astroServer = startAstroServer(mockWebhook.webhookUrl, mockWebhook.localWebhookUrl);
 
   try {
     await waitForHealth(astroServer);

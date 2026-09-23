@@ -15,6 +15,8 @@ const pollIntervalMs = 500;
 const retryBackoffMs = Number(process.env.WEBHOOK_SMOKE_RETRY_WAIT_MS || 1300);
 const retryBaseDelaySec = Number(process.env.WEBHOOK_SMOKE_RETRY_BASE_DELAY_SEC || 1);
 const maxRetries = Number(process.env.WEBHOOK_SMOKE_MAX_RETRIES || 4);
+const testWebhookUrl = 'https://mbl-test-webhook.invalid/webhook';
+const testWebhookProxyRequire = '--require=./scripts/test-webhook-fetch-proxy.cjs';
 
 const serverLogs = [];
 
@@ -146,18 +148,24 @@ function startAstroServer(webhookUrl, adminToken) {
   const workerToken =
     String(process.env.CONTACT_WORKER_TOKEN || '').trim() || `webhook-worker-${Date.now().toString(36)}`;
   const webhookSecret = `webhook-secret-${Date.now().toString(36)}-ci`;
-  const child = spawn(npmCommand, ['run', 'dev', '--', '--host', host, '--port', String(port)], {
+  const child = spawn(npmCommand, ['run', 'dev', '--', '--host', host, '--port', String(port), '--ignore-lock'], {
     env: {
       ...process.env,
       ASTRO_TELEMETRY_DISABLED: '1',
-      CONTACT_WEBHOOK_URL: webhookUrl,
+      ASTRO_DEV_BACKGROUND: '0',
+      CONTACT_WEBHOOK_URL: testWebhookUrl,
       CONTACT_WEBHOOK_SECRET: webhookSecret,
+      MBL_TEST_WEBHOOK_HTTPS_URL: testWebhookUrl,
+      MBL_TEST_WEBHOOK_HTTP_TARGET: webhookUrl,
+      NODE_OPTIONS: [process.env.NODE_OPTIONS, testWebhookProxyRequire].filter(Boolean).join(' '),
       METRICS_ADMIN_TOKEN: adminToken,
       CONTACT_RETRY_BASE_DELAY_SEC: String(retryBaseDelaySec),
       CONTACT_DELIVERY_MAX_RETRIES: String(maxRetries),
       CONTACT_WORKER_BATCH_SIZE: '20',
       CONTACT_WORKER_TOKEN: workerToken,
-      CONTACT_WORKER_URL: '',
+      CONTACT_WORKER_URL: 'http://127.0.0.1:1/__mbl_test_no_auto_worker__',
+      CONTACT_WORKER_TRIGGER_TIMEOUT_MS: '100',
+      CONTACT_SMARTCAPTCHA_REQUIRED: 'false',
       REDIS_URL: '',
     },
     stdio: ['ignore', 'pipe', 'pipe'],

@@ -321,8 +321,12 @@ function makeTempEnvironment({ mockPort, canonicalOrigin, publicPort, projectNam
     `'use strict';
 const originalFetch = globalThis.fetch.bind(globalThis);
 const verifyUrl = 'https://smartcaptcha.cloud.yandex.ru/validate';
+const testWebhookUrl = 'https://mbl-test-webhook.invalid/webhook';
 globalThis.fetch = async (input, init = {}) => {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+  if (url === testWebhookUrl) {
+    return originalFetch(process.env.O23_WEBHOOK_HTTP_TARGET, init);
+  }
   if (url !== verifyUrl) return originalFetch(input, init);
   const params = new URLSearchParams(typeof init.body === 'string' ? init.body : '');
   const accepted = params.get('token') === process.env.O23_SMARTCAPTCHA_TEST_TOKEN;
@@ -336,6 +340,7 @@ globalThis.fetch = async (input, init = {}) => {
   );
   const mockHostname = String(process.env.O23_MOCK_HOSTNAME || 'host.docker.internal').trim();
   const mockUrl = `http://${mockHostname}:${mockPort}/webhook`;
+  const testWebhookUrl = 'https://mbl-test-webhook.invalid/webhook';
   const redisPrefix = `${projectName}:lead`;
   const lines = [
     'NODE_ENV=production',
@@ -344,8 +349,9 @@ globalThis.fetch = async (input, init = {}) => {
     `PUBLIC_SITE_URL=${canonicalOrigin}`,
     'REDIS_URL=redis://mbl-redis:6379/0',
     `CONTACT_REDIS_PREFIX=${redisPrefix}`,
-    `CONTACT_WEBHOOK_URL=${mockUrl}`,
+    `CONTACT_WEBHOOK_URL=${testWebhookUrl}`,
     `CONTACT_WEBHOOK_SECRET=${secrets.webhook}`,
+    `O23_WEBHOOK_HTTP_TARGET=${mockUrl}`,
     `CONTACT_ALERT_WEBHOOK_URL=${mockUrl}`,
     `CONTACT_ALERT_WEBHOOK_TOKEN=${secrets.alert}`,
     `CONTACT_WORKER_TOKEN=${secrets.worker}`,

@@ -1,5 +1,7 @@
 import process from 'node:process';
+import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { pathToFileURL } from 'node:url';
 import { createClient } from 'redis';
 
 const DEFAULT_TIMEOUT_MS = 5000;
@@ -61,6 +63,17 @@ function readOptionalEnv(name) {
   return String(process.env[name] || '').trim();
 }
 
+export function resolveContactWebhookSetting(env = process.env) {
+  const primary = String(env.CONTACT_WEBHOOK_URL || '').trim();
+  const legacy = String(env.CONTACT_WEBHOOK || '').trim();
+  if (primary && legacy && primary !== legacy) {
+    throw new Error('CONTACT_WEBHOOK_URL and legacy CONTACT_WEBHOOK must not disagree');
+  }
+  if (primary) return { envName: 'CONTACT_WEBHOOK_URL', value: primary };
+  if (legacy) return { envName: 'CONTACT_WEBHOOK', value: legacy };
+  throw new Error('Missing required env: CONTACT_WEBHOOK_URL (or legacy CONTACT_WEBHOOK)');
+}
+
 function parseAbsoluteHttpUrl(rawValue, envName) {
   let parsed;
   try {
@@ -80,6 +93,14 @@ function assertNotPlaceholderUrl(rawValue, envName) {
   const parsed = parseAbsoluteHttpUrl(rawValue, envName);
   if (isPlaceholderHost(parsed.hostname)) {
     throw new Error(`${envName} cannot use placeholder host (${parsed.hostname})`);
+  }
+  return parsed;
+}
+
+export function assertProductionContactWebhookUrl(rawValue, envName = 'CONTACT_WEBHOOK_URL') {
+  const parsed = assertNotPlaceholderUrl(rawValue, envName);
+  if (parsed.protocol !== 'https:') {
+    throw new Error(`${envName} must use HTTPS`);
   }
   return parsed;
 }
@@ -253,7 +274,8 @@ async function main() {
   const checks = [];
 
   const publicSiteUrl = readRequiredEnv('PUBLIC_SITE_URL');
-  const webhookUrl = readRequiredEnv('CONTACT_WEBHOOK_URL');
+  const webhookSetting = resolveContactWebhookSetting();
+  const webhookUrl = webhookSetting.value;
   const webhookSecret = readRequiredEnv('CONTACT_WEBHOOK_SECRET');
   const redisUrl = readRequiredEnv('REDIS_URL');
   const smartCaptchaClientKey = readRequiredEnv('SMARTCAPTCHA_CLIENT_KEY');
@@ -269,7 +291,7 @@ async function main() {
   assertNotPlaceholderUrl(publicSiteUrl, 'PUBLIC_SITE_URL');
   checks.push('public_site_url_ok');
 
-  const parsedWebhookUrl = assertNotPlaceholderUrl(webhookUrl, 'CONTACT_WEBHOOK_URL');
+  const parsedWebhookUrl = assertProductionContactWebhookUrl(webhookUrl, webhookSetting.envName);
   checks.push('contact_webhook_url_ok');
 
   if (webhookSecret.length < 16 || /replace|example|changeme|placeholder|test/i.test(webhookSecret)) {
@@ -375,8 +397,12 @@ async function main() {
   console.log(`Runtime config gate passed: ${checks.join(', ')}`);
 }
 
-main().catch((error) => {
-  console.error('Runtime config gate failed.');
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+const isMainModule = Boolean(process.argv[1]) && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+
+if (isMainModule) {
+  main().catch((error) => {
+    console.error('Runtime config gate failed.');
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}
