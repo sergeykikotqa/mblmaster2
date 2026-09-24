@@ -12,7 +12,8 @@ const serviceOptions = getMetricsServiceFilterOptions();
   <section class="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
     <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Lead Metrics Dashboard</h1>
     <p class="text-slate-600 mb-6">
-      Ежедневный дашборд конверсии. Фокус на `page_view`, `form_opened`, `form_submitted` и CR.
+      Сырые события воронки: просмотры и открытия форм с согласием на аналитику, а также заявки, принятые сервером.
+      Конверсия между этими наборами не рассчитывается из-за разного охвата.
     </p>
 
     <AdminSessionBar />
@@ -74,12 +75,9 @@ const serviceOptions = getMetricsServiceFilterOptions();
             <th class="px-4 py-3">Page</th>
             <th class="px-4 py-3">City</th>
             <th class="px-4 py-3">Service</th>
-            <th class="px-4 py-3">Views</th>
-            <th class="px-4 py-3">Opened</th>
-            <th class="px-4 py-3">Submitted</th>
-            <th class="px-4 py-3">Opened Rate</th>
-            <th class="px-4 py-3">Submit Rate</th>
-            <th class="px-4 py-3">CR (S/V)</th>
+            <th class="px-4 py-3">Просмотры (с согласием)</th>
+            <th class="px-4 py-3">Открытия (с согласием)</th>
+            <th class="px-4 py-3">Принятые заявки (сервер)</th>
           </tr>
         </thead>
         <tbody id="metrics-table-body"></tbody>

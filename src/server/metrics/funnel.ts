@@ -60,7 +60,7 @@ export type FunnelRollupEntry = {
   pageViews: number;
   formOpened: number;
   formSubmitted: number;
-  conversionRate: number;
+  conversionRate: null;
   ops: FunnelOpsCounts;
   opsReasons: FunnelOpsReasonCounts;
 };
@@ -73,7 +73,7 @@ export type FunnelRollup = {
   totalPageViews: number;
   totalOpened: number;
   totalSubmitted: number;
-  conversionRate: number;
+  conversionRate: null;
   totalOps: FunnelOpsCounts;
   totalOpsReasons: FunnelOpsReasonCounts;
   entries: FunnelRollupEntry[];
@@ -515,7 +515,7 @@ function aggregateRollup(params: {
   totalPageViews: number;
   totalOpened: number;
   totalSubmitted: number;
-  conversionRate: number;
+  conversionRate: null;
   totalOps: FunnelOpsCounts;
   totalOpsReasons: FunnelOpsReasonCounts;
 } {
@@ -558,7 +558,7 @@ function aggregateRollup(params: {
         pageViews: 0,
         formOpened: 0,
         formSubmitted: 0,
-        conversionRate: 0,
+        conversionRate: null,
         ops: createEmptyOpsCounts(),
         opsReasons: createEmptyOpsReasonCounts(),
       });
@@ -588,25 +588,16 @@ function aggregateRollup(params: {
     }
   }
 
-  const entries = sortRollupEntries(
-    [...aggregated.values()].map((entry) => ({
-      ...entry,
-      conversionRate:
-        entry.formOpened > 0
-          ? entry.formSubmitted / entry.formOpened
-          : entry.pageViews > 0
-            ? entry.formSubmitted / entry.pageViews
-            : 0,
-    }))
-  );
+  // Page views and form opens require analytics consent, while accepted leads
+  // are recorded server-side. These counters do not form a comparable cohort.
+  const entries = sortRollupEntries([...aggregated.values()]);
 
   return {
     totalPageViews,
     entries,
     totalOpened,
     totalSubmitted,
-    conversionRate:
-      totalOpened > 0 ? totalSubmitted / totalOpened : totalPageViews > 0 ? totalSubmitted / totalPageViews : 0,
+    conversionRate: null,
     totalOps,
     totalOpsReasons,
   };
@@ -650,7 +641,7 @@ function finalizeRollup(params: {
     totalPageViews: number;
     totalOpened: number;
     totalSubmitted: number;
-    conversionRate: number;
+    conversionRate: null;
     totalOps: FunnelOpsCounts;
     totalOpsReasons: FunnelOpsReasonCounts;
   };

@@ -23,7 +23,6 @@ if (
 )
 return;
 
-const formatPct = (value) => `${(Number(value || 0) * 100).toFixed(2)}%`;
 const formatDuration = (totalSeconds) => {
 const safe = Math.max(0, Math.floor(totalSeconds));
 const hours = Math.floor(safe / 3600);
@@ -78,7 +77,7 @@ return 0;
 };
 
 const renderEmptyRows = (message = 'Нет данных для отображения.') => {
-tableBody.innerHTML = `<tr><td colspan="10" class="px-4 py-6 text-center text-slate-500">${message}</td></tr>`;
+tableBody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">${message}</td></tr>`;
 };
 
 const renderRows = (entries) => {
@@ -92,9 +91,6 @@ for (const entry of entries) {
 const views = Number(entry.pageViews || 0);
 const opened = Number(entry.formOpened || 0);
 const submitted = Number(entry.formSubmitted || 0);
-const openedRate = views > 0 ? opened / views : 0;
-const submitRate = opened > 0 ? submitted / opened : 0;
-const cr = views > 0 ? submitted / views : 0;
 
 const row = document.createElement('tr');
 row.className = 'border-t border-[#f0e6de]';
@@ -105,9 +101,6 @@ row.innerHTML = `
 <td class="px-4 py-3">${views}</td>
 <td class="px-4 py-3">${opened}</td>
 <td class="px-4 py-3">${submitted}</td>
-<td class="px-4 py-3">${formatPct(openedRate)}</td>
-<td class="px-4 py-3">${formatPct(submitRate)}</td>
-<td class="px-4 py-3 font-semibold">${formatPct(cr)}</td>
 `;
 tableBody.appendChild(row);
 }
@@ -258,10 +251,10 @@ const summaryHtml = `
 <strong>Bucket:</strong> ${payload.bucket} |
 <strong>Auth:</strong> ${payload.authMethod || '-'} |
 <strong>Source:</strong> ${payload.dataSource} |
-<strong>Page views:</strong> ${payload.report?.pageViews ?? payload.totalPageViews ?? 0} |
-<strong>Opened:</strong> ${payload.report?.opened ?? payload.totalOpened ?? 0} |
-<strong>Submitted:</strong> ${payload.report?.submitted ?? payload.totalSubmitted ?? 0} |
-<strong>CR (submit/view):</strong> ${formatPct(payload.report?.conversionRate ?? payload.conversionRate ?? 0)}
+<strong>Просмотры (с согласием):</strong> ${payload.report?.pageViews ?? payload.totalPageViews ?? 0} |
+<strong>Открытия (с согласием):</strong> ${payload.report?.opened ?? payload.totalOpened ?? 0} |
+<strong>Принятые заявки (server):</strong> ${payload.report?.submitted ?? payload.totalSubmitted ?? 0} |
+<strong>Конверсия:</strong> Нет сопоставимых данных
 `;
 renderRows(payload.entries);
 setState(UI_STATE.SUCCESS, { html: summaryHtml });

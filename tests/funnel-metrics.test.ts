@@ -23,7 +23,76 @@ afterEach(() => {
   }
 });
 
-test('records ops funnel counters and reason buckets without breaking conversion totals', async () => {
+test.each([
+  {
+    name: 'form openings without accepted leads',
+    bucket: '2035-01-10',
+    timestampMs: Date.UTC(2035, 0, 10, 10, 0, 0),
+    pageViews: 4,
+    opens: 2,
+    submissions: 0,
+  },
+  {
+    name: 'accepted leads without form openings',
+    bucket: '2035-01-11',
+    timestampMs: Date.UTC(2035, 0, 11, 10, 0, 0),
+    pageViews: 4,
+    opens: 0,
+    submissions: 2,
+  },
+  {
+    name: 'more accepted leads than form openings',
+    bucket: '2035-01-12',
+    timestampMs: Date.UTC(2035, 0, 12, 10, 0, 0),
+    pageViews: 3,
+    opens: 1,
+    submissions: 2,
+  },
+  {
+    name: 'no recorded funnel events',
+    bucket: '2035-01-13',
+    timestampMs: Date.UTC(2035, 0, 13, 10, 0, 0),
+    pageViews: 0,
+    opens: 0,
+    submissions: 0,
+  },
+])(
+  'preserves raw counters and leaves conversion unknown for $name',
+  async ({ bucket, timestampMs, pageViews, opens, submissions }) => {
+    for (let count = 0; count < pageViews; count += 1) {
+      await recordFunnelMetric({ eventName: 'page_view', pageSlug: '/kuhni', timestampMs });
+    }
+    for (let count = 0; count < opens; count += 1) {
+      await recordFunnelMetric({ eventName: 'form_opened', pageSlug: '/kuhni', timestampMs });
+    }
+    for (let count = 0; count < submissions; count += 1) {
+      await recordFunnelMetric({ eventName: 'form_submitted', pageSlug: '/kuhni', timestampMs });
+    }
+
+    const rollup = await getFunnelRollupFull({ span: 'day', bucket, pageSlug: '/kuhni' });
+
+    expect(rollup).toMatchObject({
+      totalPageViews: pageViews,
+      totalOpened: opens,
+      totalSubmitted: submissions,
+      conversionRate: null,
+    });
+    if (pageViews + opens + submissions > 0) {
+      expect(rollup.entries).toContainEqual(
+        expect.objectContaining({
+          pageViews,
+          formOpened: opens,
+          formSubmitted: submissions,
+          conversionRate: null,
+        })
+      );
+    } else {
+      expect(rollup.entries).toEqual([]);
+    }
+  }
+);
+
+test('records ops funnel counters and reason buckets without changing raw conversion event totals', async () => {
   const timestampMs = Date.UTC(2035, 0, 3, 9, 30, 0);
   const bucket = '2035-01-03';
 

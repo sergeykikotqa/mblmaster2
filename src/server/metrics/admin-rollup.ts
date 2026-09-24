@@ -18,12 +18,6 @@ function parseLimit(value: string | null): number {
   return Math.max(1, Math.min(200, Math.floor(parsed)));
 }
 
-function toRate(numerator: number, denominator: number): number {
-  if (!Number.isFinite(numerator) || numerator <= 0) return 0;
-  if (!Number.isFinite(denominator) || denominator <= 0) return 0;
-  return numerator / denominator;
-}
-
 export async function handleAdminMetricsRollupRequest(
   request: Request,
   scope: string,
@@ -57,10 +51,6 @@ export async function handleAdminMetricsRollupRequest(
       pageSlug: pageSlug || undefined,
     });
 
-    const openedRate = toRate(rollup.totalOpened, rollup.totalPageViews);
-    const submitRate = toRate(rollup.totalSubmitted, rollup.totalOpened);
-    const conversionRate = toRate(rollup.totalSubmitted, rollup.totalPageViews);
-
     return new Response(
       JSON.stringify({
         ok: true,
@@ -69,9 +59,9 @@ export async function handleAdminMetricsRollupRequest(
           pageViews: rollup.totalPageViews,
           opened: rollup.totalOpened,
           submitted: rollup.totalSubmitted,
-          openedRate,
-          submitRate,
-          conversionRate,
+          openedRate: null,
+          submitRate: null,
+          conversionRate: null,
         },
         ...rollup,
       }),
