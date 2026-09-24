@@ -37,6 +37,16 @@ jobs:
   working-branch-gate:
     if: github.event_name == 'push' && github.ref == 'refs/heads/codex/o2-4-reliability'
     runs-on: ubuntu-latest
+    services:
+      metrics-health-redis:
+        image: redis:7.4.7-alpine3.21
+        ports:
+          - '127.0.0.1:6379:6379'
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
     env:
       PUBLIC_SITE_URL: https://ci.mbl.invalid
       PUBLIC_PRIMARY_SEO_CITY_ID: irkutsk
@@ -82,6 +92,11 @@ jobs:
       - run: npm run check
       - run: npm run typecheck
       - run: npm test
+      - name: Check Metrics Health State Store
+        env:
+          METRICS_HEALTH_STATE_SMOKE_ALLOW_REDIS: 'true'
+          METRICS_HEALTH_STATE_SMOKE_REDIS_URL: redis://127.0.0.1:6379/15
+        run: npm run check:metrics-health-state-store
       - run: npm run check:release-policy
       - run: npm run check:public-build-env
       - run: npm run build
@@ -127,6 +142,16 @@ jobs:
   full-audit:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    services:
+      metrics-health-redis:
+        image: redis:7.4.7-alpine3.21
+        ports:
+          - '127.0.0.1:6379:6379'
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
     env:
       PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://ci.example.invalid' }}
     steps:
@@ -169,7 +194,11 @@ jobs:
           METRICS_ADMIN_TOKEN: ci-metrics-token
         run: npm run check:metrics-smoke
       - run: npm run check:metrics-health-smoke
-      - run: npm run check:metrics-health-state-store
+      - name: Check Metrics Health State Store
+        env:
+          METRICS_HEALTH_STATE_SMOKE_ALLOW_REDIS: 'true'
+          METRICS_HEALTH_STATE_SMOKE_REDIS_URL: redis://127.0.0.1:6379/15
+        run: npm run check:metrics-health-state-store
       - run: npm run check:metrics-health-fallback
       - run: npm run check:metrics-health-fallback-alert
       - run: npm run check:lead-api
