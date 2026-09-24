@@ -122,7 +122,9 @@ async function main() {
     assert.equal(accepted.status, 200);
     assert.equal(accepted.headers.get('cache-control'), 'no-store');
     assert.equal(body.period?.timeZone, 'Asia/Irkutsk');
-    assert.deepEqual(body.counts, { pageViews: 5, opened: 2, submitted: 1 });
+    assert.deepEqual(body.counts, { consentedPageViews: 5, consentedFormOpens: 2, acceptedLeads: 1 });
+    assert.equal(body.conversions.submittedPerOpened.compatible, false);
+    assert.equal(body.conversions.submittedPerOpened.rate, null);
     assert(!/name|phone|message|leadId/i.test(JSON.stringify(body)), 'aggregate API exposed lead fields');
 
     console.log('Owner metrics runtime smoke passed: production Node artifact + disposable Docker Redis.');

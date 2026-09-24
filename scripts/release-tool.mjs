@@ -15,6 +15,7 @@ const RELEASE_SCHEMA = 1;
 const FULL_SHA = /^[a-f0-9]{40}$/i;
 const DEFAULT_WAIT_MS = 90_000;
 const APPLICATION_SERVICES = ['mbl-web', 'mbl-worker-trigger', 'mbl-nginx'];
+const PUBLIC_BUILD_POLICY_FILE = 'config/public-build-env.json';
 const diagnosticSecrets = new Set();
 
 function assert(condition, message) {
@@ -242,6 +243,10 @@ export function verifyReleaseBundle(bundleDirectory) {
     assert(image?.ref === `${policy.imageRepositories[name]}:${releaseId}`, `Unexpected ${name} image reference`);
     assert(/^sha256:[a-f0-9]{64}$/i.test(image?.id || ''), `Missing immutable ${name} image ID`);
     assert(image?.revision === releaseId, `${name} OCI revision label does not match release`);
+    assert(
+      image?.publicBuildConfigSha256 === manifest.publicBuildConfigSha256,
+      `${name} public build configuration does not match the manifest`
+    );
   }
   for (const relative of [
     'images/app-images.tar',
@@ -249,6 +254,7 @@ export function verifyReleaseBundle(bundleDirectory) {
     'compose.production.yml',
     'compose.backup.yml',
     'compose.release.yml',
+    PUBLIC_BUILD_POLICY_FILE,
     'scripts/release-tool.mjs',
     'docs/release-and-rollback.md',
   ]) {
@@ -265,14 +271,18 @@ function inspectImage(reference) {
     ref: reference,
     id: image.Id,
     revision: image?.Config?.Labels?.['org.opencontainers.image.revision'] || '',
+    publicBuildConfigSha256: image?.Config?.Labels?.['org.mbl.public-build-config-sha256'] || '',
     os: image.Os,
     architecture: image.Architecture,
   };
 }
 
-function assertBuiltImage(image, releaseId, label) {
+function assertBuiltImage(image, releaseId, label, publicConfigDigest = '') {
   assert(/^sha256:[a-f0-9]{64}$/i.test(image.id), `${label} image has no immutable ID`);
   assert(image.revision === releaseId, `${label} image OCI revision label does not match release`);
+  if (publicConfigDigest) {
+    assert(image.publicBuildConfigSha256 === publicConfigDigest, `${label} image public build configuration differs`);
+  }
   assert(image.os === 'linux', `${label} image must target Linux`);
   assert(
     ['amd64', 'arm64'].includes(image.architecture),
@@ -327,12 +337,18 @@ export function assertProductionPublicSiteUrl(publicSiteUrl, label = 'PUBLIC_SIT
   assert(/^https:\/\//i.test(value), `${label} must be the canonical HTTPS origin`);
   try {
     const parsed = new URL(value);
-    assert(parsed.origin === `${parsed.protocol}//${parsed.host}`, `${label} must be a bare origin without a path, query or hash`);
+    assert(
+      parsed.origin === `${parsed.protocol}//${parsed.host}`,
+      `${label} must be a bare origin without a path, query or hash`
+    );
     assert(parsed.pathname === '/', `${label} must not include a pathname`);
     assert(parsed.search === '', `${label} must not include a query string`);
     assert(parsed.hash === '', `${label} must not include a hash`);
     const hostname = parsed.hostname.toLowerCase();
-    assert(!['example.com', 'example.org', 'example.net', 'localhost', '127.0.0.1', '0.0.0.0'].includes(hostname), `${label} cannot use placeholder or local host (${hostname})`);
+    assert(
+      !['example.com', 'example.org', 'example.net', 'localhost', '127.0.0.1', '0.0.0.0'].includes(hostname),
+      `${label} cannot use placeholder or local host (${hostname})`
+    );
     return parsed.origin;
   } catch (error) {
     if (error instanceof Error && error.message.includes(`${label} must be a bare origin`)) throw error;
@@ -343,12 +359,105 @@ export function assertProductionPublicSiteUrl(publicSiteUrl, label = 'PUBLIC_SIT
   }
 }
 
+export function resolvePublicBuildConfig(env, policyPath = path.join(ROOT, PUBLIC_BUILD_POLICY_FILE)) {
+  const policy = readJson(policyPath, 'Public build environment policy');
+  assert(policy?.schema === 1, 'Unsupported public build environment policy schema');
+  assert(Array.isArray(policy.required) && policy.required.length > 0, 'Public build environment allowlist is empty');
+  assert(new Set(policy.required).size === policy.required.length, 'Public build environment allowlist has duplicates');
+  assert(
+    policy.required.every((key) => /^PUBLIC_[A-Z0-9_]+$/.test(key)),
+    'Public build environment allowlist has an unsafe key'
+  );
+
+  const config = {};
+  for (const key of policy.required) {
+    const value = String(env[key] || '').trim();
+    assert(value, `${key} is required for a release build`);
+    assert(!/[\r\n\0]/.test(value), `${key} contains forbidden control characters`);
+    config[key] = value;
+  }
+  config.PUBLIC_SITE_URL = assertProductionPublicSiteUrl(config.PUBLIC_SITE_URL);
+  assert(config.PUBLIC_PRIMARY_SEO_CITY_ID === 'irkutsk', 'PUBLIC_PRIMARY_SEO_CITY_ID must be irkutsk');
+  for (const key of ['PUBLIC_ENABLE_LEAD_TRACKING', 'PUBLIC_ENABLE_RUM_WEB_VITALS']) {
+    assert(['true', 'false'].includes(config[key]), `${key} must be true or false`);
+  }
+  assert(/^\d+$/.test(config.PUBLIC_YANDEX_METRIKA_ID), 'PUBLIC_YANDEX_METRIKA_ID must be numeric');
+  assert(/^G-[A-Z0-9]+$/i.test(config.PUBLIC_GA4_ID), 'PUBLIC_GA4_ID must be a GA4 measurement ID');
+  for (const key of ['PUBLIC_LEAD_FORM_ABANDON_MS', 'PUBLIC_RUM_LCP_ALERT_THRESHOLD_MS']) {
+    assert(Number.isSafeInteger(Number(config[key])) && Number(config[key]) > 0, `${key} must be a positive integer`);
+  }
+  for (const key of ['PUBLIC_BUSINESS_LAT', 'PUBLIC_BUSINESS_LON']) {
+    assert(Number.isFinite(Number(config[key])), `${key} must be numeric`);
+  }
+  for (const key of [
+    'PUBLIC_BUSINESS_IMAGE',
+    'PUBLIC_TELEGRAM_URL',
+    'PUBLIC_BUSINESS_YANDEX_MAPS_URL',
+    'PUBLIC_BUSINESS_GOOGLE_MAPS_URL',
+  ]) {
+    const parsed = new URL(config[key]);
+    assert(parsed.protocol === 'https:', `${key} must use HTTPS`);
+    assert(!parsed.username && !parsed.password, `${key} must not contain credentials`);
+  }
+  const sameAs = config.PUBLIC_BUSINESS_SAME_AS.split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  assert(sameAs.length > 0, 'PUBLIC_BUSINESS_SAME_AS must contain at least one URL');
+  for (const value of sameAs) {
+    const parsed = new URL(value);
+    assert(
+      parsed.protocol === 'https:' && !parsed.username && !parsed.password,
+      'PUBLIC_BUSINESS_SAME_AS must contain credential-free HTTPS URLs'
+    );
+  }
+  return config;
+}
+
+function publicBuildConfigDigest(config) {
+  return createHash('sha256')
+    .update(
+      JSON.stringify(Object.fromEntries(Object.entries(config).sort(([left], [right]) => left.localeCompare(right))))
+    )
+    .digest('hex');
+}
+
+function assertRenderedPublicConfig(imageRef, rootPath, config) {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mbl-release-html-'));
+  let containerId = '';
+  try {
+    containerId = run('docker', ['create', imageRef]).stdout;
+    run('docker', ['cp', `${containerId}:${rootPath}/.`, temporaryRoot], { timeoutMs: 5 * 60_000 });
+    const html = walkBundle(temporaryRoot)
+      .filter(({ relative }) => relative.endsWith('.html'))
+      .map(({ absolute }) => fs.readFileSync(absolute, 'utf8'))
+      .join('\n');
+    assert(html, `${imageRef} contains no rendered HTML`);
+    for (const [key, value] of Object.entries({
+      PUBLIC_SITE_URL: config.PUBLIC_SITE_URL,
+      PUBLIC_YANDEX_METRIKA_ID: config.PUBLIC_YANDEX_METRIKA_ID,
+      PUBLIC_YANDEX_VERIFICATION: config.PUBLIC_YANDEX_VERIFICATION,
+      PUBLIC_GA4_ID: config.PUBLIC_GA4_ID,
+      PUBLIC_BUSINESS_PHONE: config.PUBLIC_BUSINESS_PHONE,
+      PUBLIC_BUSINESS_EMAIL: config.PUBLIC_BUSINESS_EMAIL,
+      PUBLIC_BUSINESS_ADDRESS_LOCALITY: config.PUBLIC_BUSINESS_ADDRESS_LOCALITY,
+      PUBLIC_BUSINESS_STREET_ADDRESS: config.PUBLIC_BUSINESS_STREET_ADDRESS,
+    })) {
+      assert(html.includes(value), `${imageRef} rendered HTML does not contain ${key}`);
+    }
+  } finally {
+    if (containerId) run('docker', ['rm', '--force', containerId], { allowFailure: true });
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+}
+
 export function createReleaseBundle(options = {}) {
   const releaseId = assertCleanReleaseCheckout();
-  const publicSiteUrl = assertProductionPublicSiteUrl(
-    String(options.publicSiteUrl || process.env.PUBLIC_SITE_URL || '').replace(/\/+$/, ''),
-    'PUBLIC_SITE_URL'
-  );
+  const publicBuildConfig = resolvePublicBuildConfig({
+    ...process.env,
+    ...(options.publicSiteUrl ? { PUBLIC_SITE_URL: options.publicSiteUrl } : {}),
+  });
+  const publicSiteUrl = publicBuildConfig.PUBLIC_SITE_URL;
+  const publicConfigDigest = publicBuildConfigDigest(publicBuildConfig);
   const policyRelative = String(options.policyPath || 'config/release-policy.json').replaceAll('\\', '/');
   assert(
     !path.isAbsolute(policyRelative) && !policyRelative.split('/').includes('..'),
@@ -385,7 +494,8 @@ export function createReleaseBundle(options = {}) {
           '--build-arg',
           `MBL_BUILD_REVISION=${releaseId}`,
           '--build-arg',
-          `PUBLIC_SITE_URL=${publicSiteUrl}`,
+          `MBL_PUBLIC_BUILD_CONFIG_SHA256=${publicConfigDigest}`,
+          ...Object.entries(publicBuildConfig).flatMap(([key, value]) => ['--build-arg', `${key}=${value}`]),
           '--tag',
           imageRefs[name],
           immutableSource.contextDirectory,
@@ -399,9 +509,11 @@ export function createReleaseBundle(options = {}) {
       nginx: inspectImage(imageRefs.nginx),
       backup: inspectImage(imageRefs.backup),
     };
-    for (const [name, image] of Object.entries(images)) assertBuiltImage(image, releaseId, name);
+    for (const [name, image] of Object.entries(images)) assertBuiltImage(image, releaseId, name, publicConfigDigest);
     assert(images.web.architecture === images.nginx.architecture, 'Web and Nginx image architectures differ');
     assert(images.web.architecture === images.backup.architecture, 'Web and backup image architectures differ');
+    assertRenderedPublicConfig(imageRefs.web, '/app/dist', publicBuildConfig);
+    assertRenderedPublicConfig(imageRefs.nginx, '/usr/share/nginx/html', publicBuildConfig);
 
     if (!options.skipRuntimeGate) {
       runNpm(['run', 'check:compose-runtime'], {
@@ -438,6 +550,11 @@ export function createReleaseBundle(options = {}) {
     }
     copyFileIntoBundle(policyPath, bundleDir, 'config/release-policy.json');
     copyFileIntoBundle(
+      path.join(immutableSource.contextDirectory, ...PUBLIC_BUILD_POLICY_FILE.split('/')),
+      bundleDir,
+      PUBLIC_BUILD_POLICY_FILE
+    );
+    copyFileIntoBundle(
       path.join(immutableSource.contextDirectory, 'scripts', 'release-tool.mjs'),
       bundleDir,
       'scripts/release-tool.mjs'
@@ -454,6 +571,7 @@ export function createReleaseBundle(options = {}) {
       gitSha: releaseId,
       createdAt: new Date().toISOString(),
       canonicalOrigin: publicSiteUrl,
+      publicBuildConfigSha256: publicConfigDigest,
       dataContractVersion: policy.dataContractVersion,
       platform: `${images.web.os}/${images.web.architecture}`,
       images,

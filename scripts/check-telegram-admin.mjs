@@ -33,26 +33,32 @@ function metric(kind) {
       startLocal: kind === 'today' ? '2026-09-21T00:00:00+08:00' : '2026-09-21T00:00:00+08:00',
       endLocal: '2026-09-21T12:00:00+08:00',
     },
-    counts: { pageViews: 10, opened: 4, submitted: 2 },
+    counts: { consentedPageViews: 10, consentedFormOpens: 4, acceptedLeads: 2 },
     conversions: {
       openedPerPageView: {
         numerator: 4,
         denominator: 10,
         compatible: false,
         rate: null,
-        reason: 'DIFFERENT_CAPTURE_RULES',
+        reason: 'CONSENT_SCOPE_MISMATCH',
       },
-      submittedPerOpened: { numerator: 2, denominator: 4, compatible: true, rate: 0.5 },
+      submittedPerOpened: {
+        numerator: 2,
+        denominator: 4,
+        compatible: false,
+        rate: null,
+        reason: 'CONSENT_SCOPE_MISMATCH',
+      },
       submittedPerPageView: {
         numerator: 2,
         denominator: 10,
         compatible: false,
         rate: null,
-        reason: 'DIFFERENT_CAPTURE_RULES',
+        reason: 'CONSENT_SCOPE_MISMATCH',
       },
     },
     source: 'local_funnel',
-    scope: 'generated_geo_pages_only',
+    scope: 'trusted_public_routes',
     historicalCaptureVerified: false,
   };
 }
@@ -156,25 +162,31 @@ async function main() {
     /недостаточно для точного итога/
   );
   const zeroFunnel = metric('today');
-  zeroFunnel.counts = { pageViews: 0, opened: 0, submitted: 0 };
+  zeroFunnel.counts = { consentedPageViews: 0, consentedFormOpens: 0, acceptedLeads: 0 };
   zeroFunnel.conversions = {
     openedPerPageView: {
       numerator: 0,
       denominator: 0,
       compatible: false,
       rate: null,
-      reason: 'DIFFERENT_CAPTURE_RULES',
+      reason: 'CONSENT_SCOPE_MISMATCH',
     },
-    submittedPerOpened: { numerator: 0, denominator: 0, compatible: true, rate: null },
+    submittedPerOpened: {
+      numerator: 0,
+      denominator: 0,
+      compatible: false,
+      rate: null,
+      reason: 'CONSENT_SCOPE_MISMATCH',
+    },
     submittedPerPageView: {
       numerator: 0,
       denominator: 0,
       compatible: false,
       rate: null,
-      reason: 'DIFFERENT_CAPTURE_RULES',
+      reason: 'CONSENT_SCOPE_MISMATCH',
     },
   };
-  assert.match(formatMetricsCommand('/funnel', zeroFunnel), /недоступно \(нет знаменателя\)/);
+  assert.match(formatMetricsCommand('/funnel', zeroFunnel), /не рассчитывается \(разный охват согласия\)/);
 
   const server = await listen((request, response) => {
     const chunks = [];
@@ -237,12 +249,13 @@ async function main() {
     const first = await runTelegramAdminOnce(config, { nowMs, statusReader });
     assert.deepEqual(first, { received: 6, processed: 4, replied: 4, deliveryFailures: 0 });
     assert.equal(sent.length, 4, 'Unauthorized owner/chat generated a response');
-    assert.match(sent[0].text, /Учтённые просмотры страниц: 10/);
+    assert.match(sent[0].text, /Просмотры с согласием на аналитику: 10/);
     assert.match(sent[0].text, /не весь сайт/);
     assert.match(sent[0].text, /не уникальные посетители/);
     assert.match(sent[1].text, /текущая неделя/);
-    assert.match(sent[2].text, /Заявки \/ открытия \(2\/4\): 50/);
-    assert.match(sent[2].text, /не рассчитывается \(разные правила учёта\)/);
+    assert.match(sent[2].text, /Заявки \/ открытия \(2\/4\): не рассчитывается/);
+    assert.doesNotMatch(sent[2].text, /50%/);
+    assert.match(sent[2].text, /разный охват согласия/);
     assert.match(sent[3].text, /Данные независимого мониторинга/);
     assert.doesNotMatch(fs.readFileSync(config.statusFile, 'utf8'), /token|secret|phone|message|backupId/i);
 

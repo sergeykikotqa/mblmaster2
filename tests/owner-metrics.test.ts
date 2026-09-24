@@ -39,14 +39,37 @@ describe('owner metrics periods in Asia/Irkutsk', () => {
     expect(buckets).toEqual(['2026-10-01T16', '2026-10-01T17', '2026-10-01T18']);
     expect(report.complete).toBe(true);
     if (!report.complete) throw new Error('expected complete report');
-    expect(report.counts).toEqual({ pageViews: 6, opened: 3, submitted: 3 });
-    expect(report.conversions.submittedPerOpened).toEqual({ numerator: 3, denominator: 3, compatible: true, rate: 1 });
+    expect(report.counts).toEqual({ consentedPageViews: 6, consentedFormOpens: 3, acceptedLeads: 3 });
+    expect(report.conversions.submittedPerOpened).toEqual({
+      numerator: 3,
+      denominator: 3,
+      compatible: false,
+      rate: null,
+      reason: 'CONSENT_SCOPE_MISMATCH',
+    });
     expect(report.conversions.openedPerPageView).toEqual({
       numerator: 3,
       denominator: 6,
       compatible: false,
       rate: null,
-      reason: 'DIFFERENT_CAPTURE_RULES',
+      reason: 'CONSENT_SCOPE_MISMATCH',
+    });
+  });
+
+  test('does not calculate conversion when a lead is accepted without consent-gated openings', async () => {
+    const report = await getOwnerMetricsSummary('today', {
+      nowMs: Date.parse('2026-09-20T16:00:00.000Z'),
+      retentionSec: 14 * 24 * 60 * 60,
+      loadHour: async () => ({ totalPageViews: 0, totalOpened: 0, totalSubmitted: 1, dataSource: 'redis' }),
+    });
+    if (!report.complete) throw new Error('expected complete report');
+    expect(report.counts).toEqual({ consentedPageViews: 0, consentedFormOpens: 0, acceptedLeads: 1 });
+    expect(report.conversions.submittedPerOpened).toEqual({
+      numerator: 1,
+      denominator: 0,
+      compatible: false,
+      rate: null,
+      reason: 'CONSENT_SCOPE_MISMATCH',
     });
   });
 

@@ -27,10 +27,14 @@
   }
 
   function loadAnalytics() {
-    if (initialized || !hasConsent()) return;
-    initialized = true;
+    if (!hasConsent()) return;
     window[disableKey] = false;
     window.gtag = window.gtag || gtag;
+    if (initialized) {
+      window.gtag('consent', 'update', { analytics_storage: 'granted' });
+      return;
+    }
+    initialized = true;
     window.gtag('consent', 'default', { analytics_storage: 'granted' });
     window.gtag('js', new Date());
     window.gtag('config', analyticsId);

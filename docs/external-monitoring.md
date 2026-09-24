@@ -140,17 +140,18 @@ week; the API returns an explicit incomplete result if configured retention is
 too short.
 
 These are deliberately labelled local funnel events, not unique visitors or
-whole-site traffic. Current collection includes supported generated geo pages.
-`page_view` requires analytics consent, `form_opened` is a local operational
-event, and `form_submitted` is recorded only after a new lead from a supported
-page is durably accepted. Historical consent/tracking coverage is not stored,
-so the bot always explains this limitation and never merges these values with
-Yandex Metrika.
+whole-site traffic. Current collection includes trusted public routes.
+`page_view` and `form_opened` require analytics consent, while
+`form_submitted` is recorded after every new lead from a supported page is
+durably accepted, regardless of analytics consent. Historical
+consent/tracking coverage is not stored, so the bot always explains this
+limitation and never merges these values with Yandex Metrika.
 
-The funnel prints every numerator and denominator. Percentages that combine
-consent-gated page views with operational/server events are deliberately not
-calculated. Only accepted leads divided by form openings is shown as a rate;
-a zero denominator is reported as unavailable rather than `0%`.
+The funnel prints the raw counters with their capture scope. Conversion
+percentages are deliberately not calculated because consent-gated views and
+form openings are not a compatible denominator for all server-accepted leads.
+Every conversion object therefore returns `compatible=false`, `rate=null` and
+an explicit reason instead of a misleading percentage.
 
 `/status` reads `/var/lib/mbl-monitor/status-snapshot.json`, written atomically
 after every independent probe. It does not call the primary VPS. If the latest

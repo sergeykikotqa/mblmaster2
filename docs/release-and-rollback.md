@@ -31,12 +31,24 @@ The release overlay removes all build definitions and sets `pull_policy:
 never`. Deployment on the VPS therefore cannot silently rebuild source or pull
 a moving application tag.
 
-Create a bundle on the trusted build host:
+Create a bundle on the trusted build host. Populate every key listed in
+`config/public-build-env.json` in a dedicated public build environment file;
+the release command rejects missing values and never forwards unlisted
+variables. These values are embedded in public HTML and must contain no
+runtime credentials.
 
 ```sh
-PUBLIC_SITE_URL=https://mebel-irkutsk.ru \
-  npm run release:bundle -- --output /secure/export/mbl
+set -a
+. /secure/config/mbl-public-build.env
+set +a
+npm run release:bundle -- --output /secure/export/mbl
 ```
+
+The public build file must explicitly provide the canonical origin, analytics
+and webmaster identifiers, approved contact/address/legal details and public
+links. Docker Compose uses the same allowlist for a source build. Runtime-only
+secrets remain in the separate mode-0600 production environment file and must
+not be present in the public build file, Docker build arguments or bundle.
 
 The normal command runs the production Compose gate against the built SHA
 images before it writes the bundle. `--skip-runtime-gate` exists only for an

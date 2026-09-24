@@ -119,6 +119,23 @@ test('grant loads bundled Web Vitals and external analytics, persists, and can b
   expect(observed.trackEvents.some((entry) => entry.event === 'form_focus')).toBe(true);
   expect(observed.browserErrors.filter((message) => /web-vitals|module specifier/i.test(message))).toEqual([]);
 
+  await page.evaluate(() => (window as ConsentWindow).__analyticsConsent?.setState?.('denied'));
+  await page.evaluate(() => (window as ConsentWindow).__analyticsConsent?.setState?.('granted'));
+  await page.waitForTimeout(100);
+  expect(observed.externalRequests.filter((url) => url.includes('googletagmanager.com'))).toHaveLength(1);
+  const gaCalls = await page.evaluate(() =>
+    ((window as Window & { dataLayer?: IArguments[] }).dataLayer || []).map((entry) => Array.from(entry))
+  );
+  expect(gaCalls.filter((entry) => entry[0] === 'config')).toHaveLength(1);
+  expect(
+    gaCalls.some(
+      (entry) =>
+        entry[0] === 'consent' &&
+        entry[1] === 'update' &&
+        (entry[2] as { analytics_storage?: string })?.analytics_storage === 'granted'
+    )
+  ).toBe(true);
+
   observed.externalRequests.length = 0;
   await page.reload({ waitUntil: 'networkidle' });
   expect(await page.evaluate(() => (window as ConsentWindow).__analyticsConsent?.getState?.())).toBe('granted');

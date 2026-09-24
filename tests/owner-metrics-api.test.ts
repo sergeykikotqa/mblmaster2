@@ -33,10 +33,18 @@ describe('owner metrics read-only API', () => {
       ok: true,
       complete: true,
       period: { kind: 'today', timeZone: 'Asia/Irkutsk' },
-      counts: { pageViews: 4, opened: 2, submitted: 1 },
-      conversions: {},
+      counts: { consentedPageViews: 4, consentedFormOpens: 2, acceptedLeads: 1 },
+      conversions: {
+        submittedPerOpened: {
+          numerator: 1,
+          denominator: 2,
+          compatible: false,
+          rate: null,
+          reason: 'CONSENT_SCOPE_MISMATCH',
+        },
+      },
       source: 'local_funnel',
-      scope: 'generated_geo_pages_only',
+      scope: 'trusted_public_routes',
       historicalCaptureVerified: false,
     });
   });
@@ -62,7 +70,10 @@ describe('owner metrics read-only API', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('no-store');
     const body = await response.json();
-    expect(body).toMatchObject({ counts: { pageViews: 4, opened: 2, submitted: 1 } });
+    expect(body).toMatchObject({
+      counts: { consentedPageViews: 4, consentedFormOpens: 2, acceptedLeads: 1 },
+      conversions: { submittedPerOpened: { compatible: false, rate: null } },
+    });
     expect(JSON.stringify(body)).not.toMatch(/name|phone|message|leadId/i);
     expect(mocks.authorize).toHaveBeenCalledWith(
       expect.any(Request),

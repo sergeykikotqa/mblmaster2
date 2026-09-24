@@ -16,6 +16,40 @@ const PROJECT_PREFIX = 'mbl-o23-gate-';
 const CANONICAL_ORIGIN = String(
   process.env.O23_CANONICAL_ORIGIN || process.env.PUBLIC_SITE_URL || 'https://example.com'
 ).replace(/\/+$/, '');
+const TEST_PUBLIC_BUILD_CONFIG = {
+  PUBLIC_PRIMARY_SEO_CITY_ID: 'irkutsk',
+  PUBLIC_ENABLE_LEAD_TRACKING: 'true',
+  PUBLIC_YANDEX_METRIKA_ID: '12345678',
+  PUBLIC_YANDEX_VERIFICATION: 'compose-runtime-verification',
+  PUBLIC_GA4_ID: 'G-COMPOSE123',
+  PUBLIC_LEAD_FORM_ABANDON_MS: '60000',
+  PUBLIC_ENABLE_RUM_WEB_VITALS: 'true',
+  PUBLIC_RUM_LCP_ALERT_THRESHOLD_MS: '2500',
+  PUBLIC_BUSINESS_PHONE: '+7 (900) 000-00-01',
+  PUBLIC_BUSINESS_EMAIL: 'compose-runtime@example.invalid',
+  PUBLIC_BUSINESS_ADDRESS_LOCALITY: 'Иркутск',
+  PUBLIC_BUSINESS_ADDRESS_DISTRICT: 'Тестовый район',
+  PUBLIC_BUSINESS_STREET_ADDRESS: 'Тестовая улица, 1',
+  PUBLIC_BUSINESS_REGION: 'Иркутская область',
+  PUBLIC_BUSINESS_POSTAL_CODE: '664000',
+  PUBLIC_BUSINESS_OPENING_HOURS: 'Mo-Fr 09:00-18:00',
+  PUBLIC_BUSINESS_OPENING_HOURS_TEXT: 'Пн–Пт: 09:00–18:00',
+  PUBLIC_BUSINESS_IMAGE: 'https://assets.example.invalid/business.jpg',
+  PUBLIC_BUSINESS_SAME_AS: 'https://social.example.invalid/mbl',
+  PUBLIC_TELEGRAM_URL: 'https://t.me/mbl_compose_test',
+  PUBLIC_BUSINESS_YANDEX_MAPS_URL: 'https://yandex.example.invalid/maps/mbl',
+  PUBLIC_BUSINESS_GOOGLE_MAPS_URL: 'https://google.example.invalid/maps/mbl',
+  PUBLIC_BUSINESS_PRICE_RANGE: '₽₽',
+  PUBLIC_BUSINESS_LAT: '52.2864',
+  PUBLIC_BUSINESS_LON: '104.2808',
+  PUBLIC_BUSINESS_LEGAL_NAME: 'ИП Тестовый Владелец',
+  PUBLIC_BUSINESS_TAX_ID: '000000000000',
+  PUBLIC_BUSINESS_REGISTRATION_ID: '000000000000000',
+  PUBLIC_BUSINESS_CHECKING_ACCOUNT: '00000000000000000000',
+  PUBLIC_BUSINESS_BIC: '000000000',
+  PUBLIC_BUSINESS_BANK_NAME: 'Тестовый банк',
+  PUBLIC_BUSINESS_REGISTERED_ADDRESS: 'Иркутск, тестовый адрес',
+};
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -391,6 +425,7 @@ globalThis.fetch = async (input, init = {}) => {
     redisPrefix,
     composeEnv: {
       ...process.env,
+      ...TEST_PUBLIC_BUILD_CONFIG,
       MBL_ENV_FILE: envPath,
       MBL_BIND_ADDRESS: '127.0.0.1',
       MBL_HTTP_PORT: String(publicPort),

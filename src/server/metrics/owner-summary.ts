@@ -28,17 +28,13 @@ export function getIrkutskPeriod(nowMs: number, kind: OwnerMetricsPeriod) {
   };
 }
 
-function conversion(numerator: number, denominator: number) {
-  return { numerator, denominator, compatible: true as const, rate: denominator > 0 ? numerator / denominator : null };
-}
-
 function incompatibleConversion(numerator: number, denominator: number) {
   return {
     numerator,
     denominator,
     compatible: false as const,
     rate: null,
-    reason: 'DIFFERENT_CAPTURE_RULES' as const,
+    reason: 'CONSENT_SCOPE_MISMATCH' as const,
   };
 }
 
@@ -72,7 +68,7 @@ export async function getOwnerMetricsSummary(
       counts: null,
       conversions: null,
       source: 'local_funnel' as const,
-      scope: 'generated_geo_pages_only' as const,
+      scope: 'trusted_public_routes' as const,
     };
   }
 
@@ -82,15 +78,15 @@ export async function getOwnerMetricsSummary(
     buckets.push(new Date(at).toISOString().slice(0, 13));
   }
 
-  const counts = { pageViews: 0, opened: 0, submitted: 0 };
+  const counts = { consentedPageViews: 0, consentedFormOpens: 0, acceptedLeads: 0 };
   // Bound concurrent Redis reads; the longest supported period is 168 hours.
   for (let index = 0; index < buckets.length; index += 8) {
     const rows = await Promise.all(buckets.slice(index, index + 8).map(loadHour));
     for (const row of rows) {
       if (row.dataSource !== 'redis') throw new Error('METRICS_SOURCE_UNAVAILABLE');
-      counts.pageViews += assertCount(row.totalPageViews);
-      counts.opened += assertCount(row.totalOpened);
-      counts.submitted += assertCount(row.totalSubmitted);
+      counts.consentedPageViews += assertCount(row.totalPageViews);
+      counts.consentedFormOpens += assertCount(row.totalOpened);
+      counts.acceptedLeads += assertCount(row.totalSubmitted);
     }
   }
 
@@ -100,12 +96,12 @@ export async function getOwnerMetricsSummary(
     period,
     counts,
     conversions: {
-      openedPerPageView: incompatibleConversion(counts.opened, counts.pageViews),
-      submittedPerOpened: conversion(counts.submitted, counts.opened),
-      submittedPerPageView: incompatibleConversion(counts.submitted, counts.pageViews),
+      openedPerPageView: incompatibleConversion(counts.consentedFormOpens, counts.consentedPageViews),
+      submittedPerOpened: incompatibleConversion(counts.acceptedLeads, counts.consentedFormOpens),
+      submittedPerPageView: incompatibleConversion(counts.acceptedLeads, counts.consentedPageViews),
     },
     source: 'local_funnel' as const,
-    scope: 'generated_geo_pages_only' as const,
+    scope: 'trusted_public_routes' as const,
     // Historical tracking/consent coverage is not recorded by the existing
     // store. These are exact sums of retained events, not unique visitors or
     // a claim that every site visit and accepted lead was captured.

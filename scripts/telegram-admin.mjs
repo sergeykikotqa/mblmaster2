@@ -182,14 +182,16 @@ function validMetrics(body, kind) {
   if (
     body.complete !== true ||
     body.source !== 'local_funnel' ||
-    body.scope !== 'generated_geo_pages_only' ||
+    body.scope !== 'trusted_public_routes' ||
     body.historicalCaptureVerified !== false
   )
     return false;
   const counts = body.counts;
   if (!(
     counts &&
-    [counts.pageViews, counts.opened, counts.submitted].every((value) => Number.isSafeInteger(value) && value >= 0)
+    [counts.consentedPageViews, counts.consentedFormOpens, counts.acceptedLeads].every(
+      (value) => Number.isSafeInteger(value) && value >= 0
+    )
   )) {
     return false;
   }
@@ -197,22 +199,22 @@ function validMetrics(body, kind) {
   const openedPerPageView = conversion?.openedPerPageView;
   const submittedPerOpened = conversion?.submittedPerOpened;
   const submittedPerPageView = conversion?.submittedPerPageView;
-  const expectedSubmitRate = counts.opened > 0 ? counts.submitted / counts.opened : null;
   return (
-    openedPerPageView?.numerator === counts.opened &&
-    openedPerPageView?.denominator === counts.pageViews &&
+    openedPerPageView?.numerator === counts.consentedFormOpens &&
+    openedPerPageView?.denominator === counts.consentedPageViews &&
     openedPerPageView?.compatible === false &&
     openedPerPageView?.rate === null &&
-    openedPerPageView?.reason === 'DIFFERENT_CAPTURE_RULES' &&
-    submittedPerOpened?.numerator === counts.submitted &&
-    submittedPerOpened?.denominator === counts.opened &&
-    submittedPerOpened?.compatible === true &&
-    submittedPerOpened?.rate === expectedSubmitRate &&
-    submittedPerPageView?.numerator === counts.submitted &&
-    submittedPerPageView?.denominator === counts.pageViews &&
+    openedPerPageView?.reason === 'CONSENT_SCOPE_MISMATCH' &&
+    submittedPerOpened?.numerator === counts.acceptedLeads &&
+    submittedPerOpened?.denominator === counts.consentedFormOpens &&
+    submittedPerOpened?.compatible === false &&
+    submittedPerOpened?.rate === null &&
+    submittedPerOpened?.reason === 'CONSENT_SCOPE_MISMATCH' &&
+    submittedPerPageView?.numerator === counts.acceptedLeads &&
+    submittedPerPageView?.denominator === counts.consentedPageViews &&
     submittedPerPageView?.compatible === false &&
     submittedPerPageView?.rate === null &&
-    submittedPerPageView?.reason === 'DIFFERENT_CAPTURE_RULES'
+    submittedPerPageView?.reason === 'CONSENT_SCOPE_MISMATCH'
   );
 }
 
@@ -238,8 +240,8 @@ function localDate(iso) {
 
 function percent(item) {
   if (!item || !Number.isSafeInteger(item.numerator) || !Number.isSafeInteger(item.denominator)) return 'недоступно';
-  if (item.compatible === false || item.reason === 'DIFFERENT_CAPTURE_RULES') {
-    return 'не рассчитывается (разные правила учёта)';
+  if (item.compatible === false || item.reason === 'CONSENT_SCOPE_MISMATCH') {
+    return 'не рассчитывается (разный охват согласия)';
   }
   if (item.denominator <= 0 || !Number.isFinite(item.rate)) return 'недоступно (нет знаменателя)';
   return `${(item.rate * 100).toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%`;
@@ -247,8 +249,9 @@ function percent(item) {
 
 function metricNotes() {
   return [
-    'Источник: локальная воронка, только охваченные геостраницы — не весь сайт.',
-    'Просмотры учитываются при согласии на аналитику; открытия — локальные события; заявки — принятые сервером с этих страниц.',
+    'Источник: локальная воронка по доверенным публичным маршрутам — не весь сайт.',
+    'Просмотры и открытия учитываются только при согласии на аналитику; заявки — все принятые сервером с этих страниц.',
+    'Процент конверсии не рассчитывается: числитель и знаменатель имеют разный охват согласия.',
     'Полнота исторического сбора не подтверждена. Это учтённые события, не уникальные посетители.',
   ];
 }
@@ -263,20 +266,24 @@ export function formatMetricsCommand(command, body) {
   }
   const lines = [title, '', `Период: ${localDate(period.startLocal)} — ${localDate(period.endLocal)} (Иркутск).`];
   if (command !== '/funnel') {
-    lines.push(`Учтённые просмотры страниц: ${body.counts.pageViews}`);
-    lines.push(`Учтённые открытия формы: ${body.counts.opened}`);
-    lines.push(`Учтённые принятые заявки: ${body.counts.submitted}`);
+    lines.push(`Просмотры с согласием на аналитику: ${body.counts.consentedPageViews}`);
+    lines.push(`Открытия формы с согласием: ${body.counts.consentedFormOpens}`);
+    lines.push(`Все принятые сервером заявки: ${body.counts.acceptedLeads}`);
   } else {
-    lines.push(`Просмотры → открытия: ${body.counts.pageViews} → ${body.counts.opened}`);
     lines.push(
-      `Открытия / просмотры (${body.counts.opened}/${body.counts.pageViews}): ${percent(body.conversions?.openedPerPageView)}`
-    );
-    lines.push(`Открытия → заявки: ${body.counts.opened} → ${body.counts.submitted}`);
-    lines.push(
-      `Заявки / открытия (${body.counts.submitted}/${body.counts.opened}): ${percent(body.conversions?.submittedPerOpened)}`
+      `Просмотры с согласием → открытия с согласием: ${body.counts.consentedPageViews} → ${body.counts.consentedFormOpens}`
     );
     lines.push(
-      `Заявки / просмотры (${body.counts.submitted}/${body.counts.pageViews}): ${percent(body.conversions?.submittedPerPageView)}`
+      `Открытия / просмотры (${body.counts.consentedFormOpens}/${body.counts.consentedPageViews}): ${percent(body.conversions?.openedPerPageView)}`
+    );
+    lines.push(
+      `Открытия с согласием → все принятые заявки: ${body.counts.consentedFormOpens} → ${body.counts.acceptedLeads}`
+    );
+    lines.push(
+      `Заявки / открытия (${body.counts.acceptedLeads}/${body.counts.consentedFormOpens}): ${percent(body.conversions?.submittedPerOpened)}`
+    );
+    lines.push(
+      `Заявки / просмотры (${body.counts.acceptedLeads}/${body.counts.consentedPageViews}): ${percent(body.conversions?.submittedPerPageView)}`
     );
   }
   return [...lines, '', ...metricNotes()].join('\n');
