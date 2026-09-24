@@ -14,8 +14,6 @@ import { getAdminAuthConfigurationSnapshot, type AdminAuthMethod } from './auth'
 
 const DEFAULT_RETRY_RATE_ALERT_THRESHOLD = 0.1;
 const DEFAULT_PIPELINE_STRICT_STATUS = false;
-const DEFAULT_MIN_CONVERSION_RATE = 0.03;
-const DEFAULT_MIN_PAGE_VIEWS = 30;
 const DEFAULT_METRICS_STRICT_STATUS = false;
 const DEFAULT_ADMIN_HEALTH_CHECK_TIMEOUT_MS = 1500;
 const DEFAULT_QUEUE_MAX_DEPTH = 1000;
@@ -106,27 +104,25 @@ export type AdminPipelineHealthPayload =
 
 export type AdminMetricsHealthPayload =
   | ({
-      ok: boolean;
+      ok: true;
       service: 'lead-metrics';
       strictMode: boolean;
       authMethod: AdminAuthMethod;
       city: string | null;
       generatedAtMs: number;
       dataSource: 'redis' | 'memory';
+      sourceAvailable: true;
       bucket: string;
       span: 'day';
       totals: {
         pageViews: number;
         formOpened: number;
         formSubmitted: number;
-        openedRate: number;
-        submitRate: number;
-        conversionRate: number;
+        conversionRate: null;
       };
-      alerts: {
-        lowConversion: boolean;
-        minConversionRate: number;
-        minPageViews: number;
+      conversion: {
+        available: false;
+        reason: 'CONSENT_SCOPE_MISMATCH';
       };
       sampledPages: number;
     } & AdminHealthCheckTiming)
@@ -159,6 +155,10 @@ export type AdminHealthSummary = {
     ok: boolean;
     label: string;
     source: string | null;
+  };
+  conversion: {
+    available: false;
+    reason: 'CONSENT_SCOPE_MISMATCH' | 'SOURCE_UNAVAILABLE';
   };
   worker: {
     ok: boolean;
@@ -206,14 +206,6 @@ function resolveQueueBackpressureThreshold(): number {
 function parseThreshold(value: string | undefined, fallback: number): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) return fallback;
-  return parsed;
-}
-
-function parseFraction(value: string | undefined, fallback: number): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  if (parsed < 0) return 0;
-  if (parsed > 1) return 1;
   return parsed;
 }
 
@@ -565,49 +557,37 @@ export async function buildMetricsHealthCheck(
   const strictMode = options.strictMode === true || resolveMetricsStrictStatusByEnv();
 
   try {
-    const minConversionRate = parseFraction(process.env.LEAD_METRICS_MIN_CONVERSION_RATE, DEFAULT_MIN_CONVERSION_RATE);
-    const minPageViews = parsePositiveInt(process.env.LEAD_METRICS_MIN_PAGE_VIEWS, DEFAULT_MIN_PAGE_VIEWS, 1);
-
     const rollup = await getFunnelRollup({
       span: 'day',
       city: city || undefined,
       limit: 10,
     });
-
-    const pageViews = rollup.totalPageViews;
-    const opened = rollup.totalOpened;
-    const submitted = rollup.totalSubmitted;
-    const openedRate = pageViews > 0 ? opened / pageViews : 0;
-    const submitRate = opened > 0 ? submitted / opened : 0;
-    const conversionRate = pageViews > 0 ? submitted / pageViews : 0;
-    const lowConversion = pageViews >= minPageViews && conversionRate < minConversionRate;
-    const status = strictMode && import.meta.env.PROD && lowConversion ? 503 : 200;
     const timing = createCheckTiming(startedAtMs);
 
     return {
-      status,
+      status: 200,
       payload: {
-        ok: !lowConversion,
+        ok: true,
         service: 'lead-metrics',
         strictMode,
         authMethod,
         city: city || null,
         generatedAtMs: rollup.generatedAtMs,
         dataSource: rollup.dataSource,
+        sourceAvailable: true,
         bucket: rollup.bucket,
         span: 'day',
         totals: {
-          pageViews,
-          formOpened: opened,
-          formSubmitted: submitted,
-          openedRate: Number(openedRate.toFixed(4)),
-          submitRate: Number(submitRate.toFixed(4)),
-          conversionRate: Number(conversionRate.toFixed(4)),
+          pageViews: rollup.totalPageViews,
+          formOpened: rollup.totalOpened,
+          formSubmitted: rollup.totalSubmitted,
+          // Page views and form opens depend on analytics consent, while accepted
+          // leads are recorded server-side. These counters do not form a cohort.
+          conversionRate: null,
         },
-        alerts: {
-          lowConversion,
-          minConversionRate,
-          minPageViews,
+        conversion: {
+          available: false,
+          reason: 'CONSENT_SCOPE_MISMATCH',
         },
         sampledPages: rollup.entries.length,
         ...timing,
@@ -652,7 +632,12 @@ export function buildAdminHealthSummary(
     typeof metricsPayload === 'object' && metricsPayload && 'dataSource' in metricsPayload
       ? String(metricsPayload.dataSource || '')
       : '';
-  const snapshotOk = metricsStatus < 500 && metricsPayload.ok === true;
+  const snapshotOk =
+    metricsStatus < 500 && 'sourceAvailable' in metricsPayload && metricsPayload.sourceAvailable === true;
+  const conversionReason =
+    'conversion' in metricsPayload && metricsPayload.conversion
+      ? metricsPayload.conversion.reason
+      : 'SOURCE_UNAVAILABLE';
   const snapshotLabel = isTimeoutPayload(metricsPayload)
     ? 'DEGRADED (timeout)'
     : metricsStatus >= 500
@@ -771,6 +756,10 @@ export function buildAdminHealthSummary(
       ok: snapshotOk,
       label: snapshotLabel,
       source: snapshotSource || null,
+    },
+    conversion: {
+      available: false,
+      reason: conversionReason,
     },
     worker: {
       ok: workerOk,

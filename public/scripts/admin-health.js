@@ -128,16 +128,19 @@ if (payload.alerts?.retryRateWarning) return `retry rate ${formatPercent(payload
 if (Number.isFinite(payload.p95LatencyMs)) return `p95 delivery ${Math.round(payload.p95LatencyMs)} ms`;
 return payload.metricsDataSource === 'redis' ? 'durable store available' : 'pipeline healthy';
 };
-const summarizeMetrics = (entry) => {
-const payload = payloadOf(entry);
-if (isTimeout(entry)) return `timeout after ${payload.timeoutMs || '?'} ms`;
-if (isInternalError(entry)) return 'internal error';
-if (payload.alerts?.lowConversion) return 'conversion below threshold';
-if (payload.dataSource && payload.dataSource !== 'redis') return `using ${payload.dataSource} snapshot`;
-return Number.isFinite(payload?.totals?.pageViews)
-? `${payload.totals.pageViews} page views today`
-: 'snapshot healthy';
-};
+  const summarizeMetricsSource = (entry) => {
+    const payload = payloadOf(entry);
+    if (isTimeout(entry)) return `timeout after ${payload.timeoutMs || '?'} ms`;
+    if (isInternalError(entry)) return 'internal error';
+    if (payload.dataSource && payload.dataSource !== 'redis') return `statistics available via ${payload.dataSource}`;
+    return Number.isFinite(payload?.totals?.pageViews)
+      ? `${payload.totals.pageViews} page views read`
+      : 'statistics source available';
+  };
+  const summarizeConversion = (summary) =>
+    summary?.conversion?.reason === 'SOURCE_UNAVAILABLE'
+      ? 'Конверсия: источник статистики недоступен'
+      : 'Конверсия: нет сопоставимых данных';
 const deriveCards = (payload) => {
 const summary = payload.summary || {};
 const checks = payload.checks || {};
@@ -168,20 +171,26 @@ tone: isInternalError(checks.worker) ? 'fail' : payloadOf(checks.worker).ok === 
 status: isInternalError(checks.worker) ? 'FAIL' : payloadOf(checks.worker).ok === true ? 'OK' : 'DEGRADED',
 detail: summarizeWorker(checks.worker),
 },
-{
-label: 'Snapshot',
-tone: isInternalError(checks.metrics)
-? 'fail'
-: payloadOf(checks.metrics).ok === true && String(summary.snapshot?.label || '').startsWith('OK')
-? 'ok'
-: 'warning',
-status: isInternalError(checks.metrics)
-? 'FAIL'
-: payloadOf(checks.metrics).ok === true && String(summary.snapshot?.label || '').startsWith('OK')
-? 'OK'
-: 'DEGRADED',
-detail: summarizeMetrics(checks.metrics),
-},
+      {
+        label: 'Statistics source',
+        tone: isInternalError(checks.metrics) || isTimeout(checks.metrics)
+          ? 'fail'
+          : summary.snapshot?.ok === true
+            ? 'ok'
+            : 'warning',
+        status: isInternalError(checks.metrics) || isTimeout(checks.metrics)
+          ? 'FAIL'
+          : summary.snapshot?.ok === true
+            ? 'OK'
+            : 'DEGRADED',
+        detail: summarizeMetricsSource(checks.metrics),
+      },
+      {
+        label: 'Conversion',
+        tone: 'warning',
+        status: 'N/A',
+        detail: summarizeConversion(summary),
+      },
 {
 label: 'Proxy',
 tone: 'ok',
@@ -201,10 +210,11 @@ ui.cards.innerHTML = deriveCards(payload)
 const renderOperations = (payload) => {
 const metrics = payloadOf(payload.checks?.metrics);
 const pipeline = payloadOf(payload.checks?.pipeline);
-const items = [
-['Leads today', metrics?.totals?.formSubmitted ?? '-'],
-['Forms opened', metrics?.totals?.formOpened ?? '-'],
-['Retry rate 1h', formatPercent(pipeline?.retryRateLastHour)],
+    const items = [
+      ['Page views', metrics?.totals?.pageViews ?? '-'],
+      ['Leads today', metrics?.totals?.formSubmitted ?? '-'],
+      ['Forms opened', metrics?.totals?.formOpened ?? '-'],
+      ['Retry rate 1h', formatPercent(pipeline?.retryRateLastHour)],
 ['DLQ 24h', pipeline?.dlqLast24Hours ?? '-'],
 ];
 ui.ops.innerHTML = items
@@ -246,17 +256,24 @@ formatMs(latencyOf(payload.checks.pipeline)),
 checkedAtOf(payload.checks.pipeline) > 0 ? timeFormatter.format(checkedAtOf(payload.checks.pipeline)) : '-',
 summarizePipeline(payload.checks.pipeline),
 ],
-[
-'Snapshot',
-isInternalError(payload.checks.metrics)
-? 'FAIL'
-: payloadOf(payload.checks.metrics).ok === true && String(summary.snapshot?.label || '').startsWith('OK')
-? 'OK'
-: 'DEGRADED',
-formatMs(latencyOf(payload.checks.metrics)),
-checkedAtOf(payload.checks.metrics) > 0 ? timeFormatter.format(checkedAtOf(payload.checks.metrics)) : '-',
-summarizeMetrics(payload.checks.metrics),
-],
+    [
+      'Statistics source',
+      isInternalError(payload.checks.metrics) || isTimeout(payload.checks.metrics)
+        ? 'FAIL'
+        : summary.snapshot?.ok === true
+          ? 'OK'
+          : 'DEGRADED',
+      formatMs(latencyOf(payload.checks.metrics)),
+      checkedAtOf(payload.checks.metrics) > 0 ? timeFormatter.format(checkedAtOf(payload.checks.metrics)) : '-',
+      summarizeMetricsSource(payload.checks.metrics),
+    ],
+    [
+      'Conversion',
+      'N/A',
+      '-',
+      '-',
+      summarizeConversion(summary),
+    ],
 ];
 ui.details.innerHTML = rows
 .map(
