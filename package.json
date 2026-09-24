@@ -117,6 +117,7 @@
     "check:privacy-disclosure": "node scripts/check-privacy-disclosure.mjs",
     "check:audit": "node scripts/security-audit-gate.mjs",
     "check:e2e:admin-auth": "node scripts/check-admin-auth-e2e.mjs",
+    "check:e2e:analytics-consent": "node scripts/check-analytics-consent-e2e.mjs",
     "check:e2e": "playwright test",
     "check:no-legacy-project-fields": "node scripts/check-no-legacy-project-fields.mjs",
     "migrate:projects-blocks": "node scripts/migrate-project-to-blocks.mjs",

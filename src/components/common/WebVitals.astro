@@ -2,4 +2,114 @@
 const rumEnabled = String(import.meta.env.PUBLIC_ENABLE_RUM_WEB_VITALS ?? 'true') !== 'false';
 ---
 
-{rumEnabled && <script type="module" src="/scripts/web-vitals.js" defer></script>}
+{
+  rumEnabled && (
+    <script>
+      type AnalyticsConsentApi = {
+        hasConsent?: () => boolean;
+      };
+
+      type TrackingConfig = {
+        trackEndpoint?: string;
+        rumLcpAlertThresholdMs?: number | string;
+      };
+
+      type AnalyticsWindow = Window & {
+        __analyticsConsent?: AnalyticsConsentApi;
+        __LEAD_TRACKING_CONFIG?: TrackingConfig;
+      };
+
+      const analyticsWindow = window as AnalyticsWindow;
+      let startPromise: Promise<void> | null = null;
+
+      function hasAnalyticsConsent() {
+        if (document.documentElement.dataset.e2e === 'true') return true;
+        return analyticsWindow.__analyticsConsent?.hasConsent?.() === true;
+      }
+
+      function sendEvent(eventName: string, payload: Record<string, unknown>) {
+        if (!hasAnalyticsConsent()) return;
+        const config = analyticsWindow.__LEAD_TRACKING_CONFIG || {};
+        const trackEndpoint = typeof config.trackEndpoint === 'string' ? config.trackEndpoint : '/api/track';
+        const body = JSON.stringify({
+          event: eventName,
+          payload,
+          page: window.location.pathname + window.location.search,
+          sentAt: new Date().toISOString(),
+        });
+
+        let sentViaBeacon = false;
+        if (typeof navigator.sendBeacon === 'function') {
+          try {
+            sentViaBeacon = navigator.sendBeacon(trackEndpoint, new Blob([body], { type: 'application/json' }));
+          } catch {
+            sentViaBeacon = false;
+          }
+        }
+
+        if (!sentViaBeacon) {
+          void fetch(trackEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            keepalive: true,
+          }).catch(() => {});
+        }
+      }
+
+      function startWebVitals() {
+        if (!hasAnalyticsConsent() || startPromise) return;
+
+        startPromise = import('web-vitals')
+          .then(({ onCLS, onINP, onLCP }) => {
+            const config = analyticsWindow.__LEAD_TRACKING_CONFIG || {};
+            const configuredThreshold = Number(config.rumLcpAlertThresholdMs);
+            const lcpAlertThresholdMs =
+              Number.isFinite(configuredThreshold) && configuredThreshold > 0 ? configuredThreshold : 2500;
+
+            const emitMetric = (metricName: 'CLS' | 'INP' | 'LCP', value: number, id: string, rating: string) => {
+              sendEvent('web_vital', {
+                metric_name: metricName,
+                value: metricName === 'CLS' ? Number(value.toFixed(4)) : Math.round(value),
+                rating: String(rating || ''),
+                metric_id: String(id || ''),
+                threshold_ms: metricName === 'LCP' ? lcpAlertThresholdMs : undefined,
+              });
+            };
+
+            onLCP((metric) => emitMetric('LCP', metric.value, metric.id, metric.rating));
+            onCLS((metric) => emitMetric('CLS', metric.value, metric.id, metric.rating));
+            onINP((metric) => {
+              const inpThreshold = 200;
+              emitMetric('INP', metric.value, metric.id, metric.rating);
+              if (metric.value > inpThreshold) {
+                sendEvent('rum_alert', {
+                  metric: 'INP',
+                  value: Math.round(metric.value),
+                  threshold: inpThreshold,
+                  rating: metric.rating,
+                });
+              }
+            });
+          })
+          .catch((error: unknown) => {
+            startPromise = null;
+            console.warn('[web-vitals] load_failed', {
+              code: error instanceof Error ? error.message : 'UNKNOWN',
+            });
+          });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startWebVitals, { once: true });
+      } else {
+        startWebVitals();
+      }
+
+      window.addEventListener('analytics-consent-change', (event) => {
+        const state = (event as CustomEvent<{ state?: string }>).detail?.state;
+        if (state === 'granted') startWebVitals();
+      });
+    </script>
+  )
+}

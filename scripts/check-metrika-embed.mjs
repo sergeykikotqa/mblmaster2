@@ -52,6 +52,10 @@ function shouldSkipRoute(routePath) {
   return false;
 }
 
+function isRedirectDocument(html) {
+  return /<meta\b[^>]*http-equiv=["']refresh["'][^>]*>/i.test(html);
+}
+
 function readRequiredMetrikaId() {
   const metrikaId = String(process.env.PUBLIC_YANDEX_METRIKA_ID || '').trim();
   if (!metrikaId) {
@@ -77,6 +81,7 @@ for (const filePath of htmlFiles) {
   if (shouldSkipRoute(routePath)) continue;
 
   const html = fs.readFileSync(filePath, 'utf8');
+  if (isRedirectDocument(html)) continue;
   const scriptTags = [...html.matchAll(/<script\b[^>]*>/gi)].map((match) => match[0]);
   const metrikaTags = scriptTags
     .map((tag) => ({ tag, attrs: parseTagAttributes(tag) }))

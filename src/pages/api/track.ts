@@ -131,7 +131,9 @@ function sanitizePage(value: unknown): string {
 }
 
 function sanitizeReason(value: unknown): string {
-  return sanitizeString(value, 64).toLowerCase().replace(/[^a-z0-9_:-]+/g, '');
+  return sanitizeString(value, 64)
+    .toLowerCase()
+    .replace(/[^a-z0-9_:-]+/g, '');
 }
 
 function shouldTrustProxyHeaders(): boolean {
@@ -496,8 +498,9 @@ export async function post({ request, clientAddress }: { request: Request; clien
     }
 
     const page = sanitizePage(body?.page);
-    const sentAt = sanitizeTimestamp(body?.sentAt) || new Date().toISOString();
-    const sentAtMs = Number.isFinite(Date.parse(sentAt)) ? Date.parse(sentAt) : Date.now();
+    const receivedAtMs = Date.now();
+    const receivedAt = new Date(receivedAtMs).toISOString();
+    const clientSentAt = sanitizeTimestamp(body?.sentAt);
     const knownEvent = KNOWN_EVENTS.has(event);
     const userAgent = request.headers.get('user-agent') || '';
     const rumMetric = event === 'web_vital' ? sanitizeRumMetric(body?.payload) : null;
@@ -542,7 +545,7 @@ export async function post({ request, clientAddress }: { request: Request; clien
       if (rumLcpAlertDecision.shouldAlert) {
         rumLcpAlertSent = await notifyRumLcpAlert({
           page,
-          sentAt,
+          sentAt: receivedAt,
           lcpMs: rumMetric.value,
           thresholdMs,
           metricId: rumMetric.metricId,
@@ -594,7 +597,7 @@ export async function post({ request, clientAddress }: { request: Request; clien
           district: dimensions.district,
           service: dimensions.service,
           pageType: dimensions.pageType,
-          timestampMs: sentAtMs,
+          timestampMs: receivedAtMs,
           reason: sanitizeReason(payload.reason),
         });
         funnelMetricRecorded = true;
@@ -607,7 +610,8 @@ export async function post({ request, clientAddress }: { request: Request; clien
       event,
       knownEvent,
       page,
-      sentAt,
+      receivedAt,
+      clientSentAt,
       userAgent,
       rumMetricName: rumMetric?.metricName || '',
       rumMetricValue: rumMetric?.value ?? null,

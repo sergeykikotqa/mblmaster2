@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { post as postTrack } from '../src/pages/api/track';
 import funnelPublicPages from '../data/funnel-public-pages.json';
@@ -15,6 +15,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   if (ORIGINAL_ENV.REDIS_URL) {
     process.env.REDIS_URL = ORIGINAL_ENV.REDIS_URL;
   } else {
@@ -68,6 +69,8 @@ test('records ops funnel counters and reason buckets without breaking conversion
 
 test('api/track persists ops funnel events with reasons into storage', async () => {
   const sentAt = new Date(Date.UTC(2035, 0, 4, 12, 0, 0)).toISOString();
+  vi.useFakeTimers();
+  vi.setSystemTime(sentAt);
   const request = new Request('https://example.com/api/track', {
     method: 'POST',
     headers: {
@@ -105,6 +108,44 @@ test('api/track persists ops funnel events with reasons into storage', async () 
   expect(rollup.totalOpsReasons.submitBlocked.smartcaptcha_unavailable).toBeGreaterThanOrEqual(1);
 });
 
+test('api/track assigns funnel buckets from server receive time instead of arbitrary client sentAt', async () => {
+  const receivedAt = new Date(Date.UTC(2042, 5, 15, 1, 30, 0));
+  vi.useFakeTimers();
+  vi.setSystemTime(receivedAt);
+
+  const clientDates = [
+    receivedAt.toISOString(),
+    new Date(Date.UTC(2042, 5, 14, 17, 30, 0)).toISOString(),
+    new Date(Date.UTC(2001, 0, 1, 0, 0, 0)).toISOString(),
+    new Date(Date.UTC(2099, 11, 31, 23, 59, 59)).toISOString(),
+  ];
+
+  for (const sentAt of clientDates) {
+    const response = await postTrack({
+      request: new Request('https://example.com/api/track', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'user-agent': 'vitest' },
+        body: JSON.stringify({
+          event: 'page_view',
+          page: '/contacts',
+          sentAt,
+          payload: { page_slug: '/contacts' },
+        }),
+      }),
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ success: true, funnelMetricRecorded: true });
+  }
+
+  const serverBucket = await getFunnelRollupFull({ span: 'day', bucket: '2042-06-15', pageSlug: '/contacts' });
+  expect(serverBucket.totalPageViews).toBe(4);
+
+  for (const clientBucket of ['2042-06-14', '2001-01-01', '2099-12-31']) {
+    const rollup = await getFunnelRollupFull({ span: 'day', bucket: clientBucket, pageSlug: '/contacts' });
+    expect(rollup.totalPageViews).toBe(0);
+  }
+});
+
 test.each([
   ['/', 'homepage', '', 'irkutsk'],
   ['/contacts', 'site', '', 'irkutsk'],
@@ -112,6 +153,8 @@ test.each([
   const timestampMs = Date.UTC(2035, 0, 5, 10, 0, 0);
   const bucket = '2035-01-05';
   const sentAt = new Date(timestampMs).toISOString();
+  vi.useFakeTimers();
+  vi.setSystemTime(sentAt);
 
   for (const event of ['page_view', 'form_opened']) {
     const response = await postTrack({

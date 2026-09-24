@@ -9,6 +9,7 @@
   const analyticsConsentCookieName = String(cfg.analyticsConsentCookieName || 'site_analytics_consent');
   const scrollDepthSteps = [25, 50, 75, 100];
   const formSessions = new Map();
+  let pageViewSent = false;
 
   const storageKeys = {
     source: 'lead_utm_source',
@@ -40,12 +41,8 @@
       .toLowerCase();
   }
 
-  function isAutomation() {
-    return Boolean(window.__E2E__ || navigator.webdriver);
-  }
-
   function hasAnalyticsConsent() {
-    if (!consentRequired || isAutomation()) return true;
+    if (!consentRequired) return true;
     return resolveConsentState() === 'granted';
   }
 
@@ -54,7 +51,7 @@
   }
 
   function canTrackOps() {
-    return enabled;
+    return canTrack();
   }
 
   function getSafeLeadAttribution() {
@@ -277,19 +274,19 @@
     if (!formSessions.has(key)) {
       formSessions.set(key, {
         key,
-      formId,
-      pageType,
-      placement: placement || 'section',
-      viewed: false,
-      focused: false,
-      firstInputFocused: false,
-      opened: false,
-      started: false,
-      progressed: false,
-      phoneValid: false,
-      submitted: false,
-      abandoned: false,
-      openedAtMs: 0,
+        formId,
+        pageType,
+        placement: placement || 'section',
+        viewed: false,
+        focused: false,
+        firstInputFocused: false,
+        opened: false,
+        started: false,
+        progressed: false,
+        phoneValid: false,
+        submitted: false,
+        abandoned: false,
+        openedAtMs: 0,
         openId: '',
         abandonTimer: 0,
       });
@@ -773,6 +770,16 @@
     };
   }
 
+  function emitPageView() {
+    if (pageViewSent || !canTrack()) return;
+    pageViewSent = true;
+    emit('page_view', {
+      page_type: resolvePageType(window.location.pathname),
+      path: window.location.pathname + window.location.search,
+      device_type: getDeviceType(),
+    });
+  }
+
   function initLeadTracking() {
     if (window.__leadTrackingInit) return;
     if (!enabled) return;
@@ -780,11 +787,7 @@
 
     ensureFirstTouch();
 
-    emit('page_view', {
-      page_type: resolvePageType(window.location.pathname),
-      path: window.location.pathname + window.location.search,
-      device_type: getDeviceType(),
-    });
+    emitPageView();
 
     initTTFITracking();
     initScrollDepthTracking();
@@ -877,6 +880,8 @@
   maybeInitLeadTracking();
   window.addEventListener('analytics-consent-change', function (event) {
     if (event && event.detail && event.detail.state === 'granted') {
+      ensureFirstTouch();
+      emitPageView();
       maybeInitLeadTracking();
     }
   });

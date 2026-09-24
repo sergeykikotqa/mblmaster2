@@ -5,8 +5,4 @@ import GoogleAnalytics from './GoogleAnalytics.astro';
 const googleAnalyticsId = ANALYTICS?.vendors?.googleAnalytics?.id || import.meta.env.PUBLIC_GA4_ID || null;
 ---
 
-{
-  googleAnalyticsId ? (
-    <GoogleAnalytics id={String(googleAnalyticsId)} partytown={ANALYTICS?.vendors?.googleAnalytics?.partytown} />
-  ) : null
-}
+{googleAnalyticsId ? <GoogleAnalytics id={String(googleAnalyticsId)} /> : null}
