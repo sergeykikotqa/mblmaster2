@@ -56,6 +56,8 @@ redisDescribe('native Redis lead pipeline integration', () => {
   let appendHealthTransition: typeof import('../src/server/metrics/state-store').appendHealthTransition;
   let getHealthTransitionHistory: typeof import('../src/server/metrics/state-store').getHealthTransitionHistory;
   let generateDailyConversionSnapshot: typeof import('../src/server/metrics/snapshot').generateDailyConversionSnapshot;
+  let probeRedisReadiness: typeof import('../src/server/health/runtime').probeRedisReadiness;
+  let resetRedisReadinessCacheForTests: typeof import('../src/server/health/runtime').resetRedisReadinessCacheForTests;
   const originalEnv = new Map<string, string | undefined>();
 
   beforeAll(async () => {
@@ -74,6 +76,8 @@ redisDescribe('native Redis lead pipeline integration', () => {
       'ADMIN_AUTH_FORCE_PROD_MODE',
       'ADMIN_AUTH_FAIL_MAX_ATTEMPTS',
       'ADMIN_AUTH_FAIL_BLOCK_SEC',
+      'REDIS_READINESS_SUCCESS_CACHE_MS',
+      'REDIS_READINESS_FAILURE_CACHE_MS',
     ]) {
       originalEnv.set(key, process.env[key]);
     }
@@ -110,6 +114,9 @@ redisDescribe('native Redis lead pipeline integration', () => {
     appendHealthTransition = healthState.appendHealthTransition;
     getHealthTransitionHistory = healthState.getHealthTransitionHistory;
     generateDailyConversionSnapshot = (await import('../src/server/metrics/snapshot')).generateDailyConversionSnapshot;
+    const redisReadiness = await import('../src/server/health/runtime');
+    probeRedisReadiness = redisReadiness.probeRedisReadiness;
+    resetRedisReadinessCacheForTests = redisReadiness.resetRedisReadinessCacheForTests;
     expect((await store.ping()).ok).toBe(true);
     expect(store.mode).toBe('redis');
     expect(store.hasDurableStorage).toBe(true);
@@ -290,13 +297,124 @@ redisDescribe('native Redis lead pipeline integration', () => {
     expect(await store.getQueueDepth()).toBe(0);
     expect(deliverLeadWebhookMock).toHaveBeenCalledTimes(2);
 
-    const dlq = await redisCommand<string[]>('LRANGE', `${prefix}:delivery:dlq`, 0, -1);
+    const dlq = await redisCommand<string[]>('ZREVRANGE', `${prefix}:delivery:dlq:v2`, 0, -1);
     expect(dlq.map((item) => JSON.parse(item).leadId)).toContain(leadId);
     const health = await store.getLeadPipelineHealth();
     expect(health.counters.delivery_retry_total).toBe(1);
     expect(health.counters.delivery_failed_total).toBe(1);
     expect(health.counters.delivery_dlq_total).toBe(1);
   }, 15_000);
+
+  test('DLQ entries expire by individual age without affecting active leads', async () => {
+    const nowMs = Date.now();
+    const activeLeadId = randomUUID();
+    const activeLead = createLead(activeLeadId, nowMs);
+    await store.enqueueLeadWithIdempotency({
+      idempotencyHash: activeLead.idempotencyHash,
+      idempotencyTtlSec: 120,
+      successResponse: successResponse(activeLeadId),
+      leadRecord: activeLead,
+      leadRecordTtlSec: 120,
+    });
+    const deliveredLeadId = randomUUID();
+    const deliveredAt = new Date(nowMs).toISOString();
+    await store.markDeliveryFence(deliveredLeadId, deliveredAt, 120);
+
+    const oldEntry = {
+      leadId: randomUUID(),
+      failedAt: new Date(nowMs - 30_000).toISOString(),
+      retryCount: 2,
+      maxRetries: 2,
+      errorCode: 'SYNTHETIC_OLD_FAILURE',
+      webhookPayload: { lead: { leadId: 'synthetic-old' } },
+    };
+    const freshEntry = {
+      ...oldEntry,
+      leadId: randomUUID(),
+      failedAt: new Date(nowMs).toISOString(),
+      errorCode: 'SYNTHETIC_FRESH_FAILURE',
+      webhookPayload: { lead: { leadId: 'synthetic-fresh' } },
+    };
+
+    try {
+      await store.pushDeadLetter(oldEntry, 60);
+      await store.pushDeadLetter(freshEntry, 60);
+      const beforeBoundary = await redisCommand<string[]>('ZREVRANGE', `${prefix}:delivery:dlq:v2`, 0, -1);
+      expect(beforeBoundary.map((item) => JSON.parse(item).leadId)).toEqual(
+        expect.arrayContaining([oldEntry.leadId, freshEntry.leadId])
+      );
+
+      await store.pruneDeadLetters(nowMs + 30_000, 60);
+      const atBoundary = await redisCommand<string[]>('ZREVRANGE', `${prefix}:delivery:dlq:v2`, 0, -1);
+      const boundaryLeadIds = atBoundary.map((item) => JSON.parse(item).leadId);
+      expect(boundaryLeadIds).not.toContain(oldEntry.leadId);
+      expect(boundaryLeadIds).toContain(freshEntry.leadId);
+      expect(await store.getLeadRecord(activeLeadId)).toMatchObject({ leadId: activeLeadId, status: 'pending' });
+      expect(await store.listDueLeadIds(nowMs + 30_000, 10)).toContain(activeLeadId);
+      expect(
+        await redisCommand<string | null>('GET', `${prefix}:idempotency:${activeLead.idempotencyHash}`)
+      ).toBeTruthy();
+      expect(await store.getDeliveryFence(deliveredLeadId)).toBe(deliveredAt);
+
+      await store.pruneDeadLetters(nowMs + 60_001, 60);
+      const afterExpiry = await redisCommand<string[]>('ZREVRANGE', `${prefix}:delivery:dlq:v2`, 0, -1);
+      expect(afterExpiry.map((item) => JSON.parse(item).leadId)).not.toContain(freshEntry.leadId);
+      expect(await store.getLeadRecord(activeLeadId)).toMatchObject({ leadId: activeLeadId, status: 'pending' });
+      expect(
+        await redisCommand<string | null>('GET', `${prefix}:idempotency:${activeLead.idempotencyHash}`)
+      ).toBeTruthy();
+      expect(await store.getDeliveryFence(deliveredLeadId)).toBe(deliveredAt);
+    } finally {
+      await store.removeFromSchedule(activeLeadId);
+    }
+  });
+
+  test('migrates the legacy DLQ list without dropping replayable entries', async () => {
+    const nowMs = Date.now();
+    const legacyEntry = {
+      leadId: randomUUID(),
+      failedAt: new Date(nowMs).toISOString(),
+      retryCount: 2,
+      maxRetries: 2,
+      errorCode: 'SYNTHETIC_LEGACY_FAILURE',
+      webhookPayload: { lead: { leadId: 'synthetic-legacy' } },
+    };
+    await redisCommand('LPUSH', `${prefix}:delivery:dlq`, JSON.stringify(legacyEntry));
+    await redisCommand('EXPIRE', `${prefix}:delivery:dlq`, 60);
+
+    await store.pruneDeadLetters(nowMs, 60);
+
+    expect(await redisCommand<string>('TYPE', `${prefix}:delivery:dlq`)).toBe('none');
+    const migrated = await redisCommand<string[]>('ZREVRANGE', `${prefix}:delivery:dlq:v2`, 0, -1);
+    expect(migrated.map((item) => JSON.parse(item).leadId)).toContain(legacyEntry.leadId);
+  });
+
+  test('bounds the DLQ and leaves no successful readiness probe keys behind', async () => {
+    const dlqKey = `${prefix}:delivery:dlq:v2`;
+    const nowMs = Date.now();
+    const bulk: Array<string | number> = [];
+    for (let index = 0; index < 1005; index += 1) {
+      bulk.push(
+        nowMs + index,
+        JSON.stringify({
+          leadId: `bulk-${index}`,
+          failedAt: new Date(nowMs).toISOString(),
+          retryCount: 1,
+          maxRetries: 1,
+          errorCode: 'SYNTHETIC_BULK_FAILURE',
+          webhookPayload: { lead: { leadId: `bulk-${index}` } },
+        })
+      );
+    }
+    await redisCommand('ZADD', dlqKey, ...bulk);
+    await store.pruneDeadLetters(nowMs, 3600);
+    expect(await redisCommand<number>('ZCARD', dlqKey)).toBe(1000);
+
+    resetRedisReadinessCacheForTests();
+    await expect(probeRedisReadiness()).resolves.toEqual({ ok: true });
+    const probeKeys = await redisCommand<string[]>('KEYS', `${prefix}:health:write-read-probe:*`);
+    expect(probeKeys).toEqual([]);
+  });
 
   test('persists worker heartbeat and exposes stale cycles plus oldest pending age', async () => {
     const nowMs = Date.now();

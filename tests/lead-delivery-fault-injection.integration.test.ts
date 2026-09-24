@@ -200,8 +200,8 @@ test('R02-6: DLQ replay preserves leadId, resets retry state and delivers after 
   expect(await processLeadQueue(1)).toMatchObject({ failed: 1, deadLettered: 1 });
   expect((await store.getLeadRecord(leadId))?.status).toBe('failed');
   expect(await store.getQueueDepth()).toBe(0);
-  const dlqKey = `${redisPrefix}:delivery:dlq`;
-  const dlqBefore = await redisCommand<string[]>('LRANGE', dlqKey, 0, -1);
+  const dlqKey = `${redisPrefix}:delivery:dlq:v2`;
+  const dlqBefore = await redisCommand<string[]>('ZREVRANGE', dlqKey, 0, -1);
   expect(dlqBefore.map((item) => JSON.parse(item).leadId)).toContain(leadId);
 
   const replay = await execFileAsync(process.execPath, ['scripts/dlq-cli.mjs', 'replay', `--lead-id=${leadId}`], {
@@ -217,7 +217,7 @@ test('R02-6: DLQ replay preserves leadId, resets retry state and delivers after 
   const replayedRecord = await store.getLeadRecord(leadId);
   expect(replayedRecord).toMatchObject({ leadId, status: 'pending', retryCount: 0 });
   expect(await store.getQueueDepth()).toBe(1);
-  const dlqAfter = await redisCommand<string[]>('LRANGE', dlqKey, 0, -1);
+  const dlqAfter = await redisCommand<string[]>('ZREVRANGE', dlqKey, 0, -1);
   expect(dlqAfter.map((item) => JSON.parse(item).leadId)).not.toContain(leadId);
 
   await receiverControl('/control/recover', leadId);

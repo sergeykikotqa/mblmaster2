@@ -27,6 +27,27 @@ delivery claim itself is not renewed. If that shorter claim expires, the first
 worker must not commit a false delivered state; the queued lead is retried with the
 same webhook identifier.
 
+## DLQ retention and Redis readiness
+
+New dead-letter entries are stored in an age-scored Redis sorted set. The worker
+removes entries at the configured `CONTACT_DLQ_TTL_SEC` boundary on every active
+cycle, even when no new lead reaches the DLQ, and keeps at most 1000 entries.
+This cleanup touches neither the delivery queue, lead records, idempotency keys
+nor delivery fences. A cleanup command failure fails the worker cycle visibly.
+
+The former `${CONTACT_REDIS_PREFIX}:delivery:dlq` list is migrated atomically on
+the first worker cleanup. Parseable entries retain their original `failedAt`
+age; malformed legacy rows are preserved for one bounded retention window.
+The CLI reads both formats during the transition. Redis cleanup cannot remove
+copies already retained in encrypted external backup snapshots; their retention
+is governed by the separate backup policy.
+
+`/health/ready` uses an isolated technical Redis key and an atomic
+write/read/delete script instead of `PING`. The key has a short safety TTL, a
+successful result is cached for five seconds, a failure for one second, and
+parallel requests share one in-flight probe. Liveness remains independent of
+Redis, while lead acceptance continues to fail closed on its own durable write.
+
 ## Required downstream receiver contract
 
 The component behind `CONTACT_WEBHOOK_URL` must:

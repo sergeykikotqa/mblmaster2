@@ -118,6 +118,7 @@ function createStore(options: {
     pushDeadLetter: async (entry) => {
       options.deadLetters?.push(entry);
     },
+    pruneDeadLetters: async () => {},
     recordDeliveryMetric: async (metric) => {
       options.metrics.push(metric);
     },
@@ -297,6 +298,7 @@ test('worker returns paused summary without touching the store when CONTACT_WORK
 test('worker records a failed cycle without changing the original error', async () => {
   const cycleError = new Error('REDIS_NETWORK_ERROR');
   getLeadStoreMock.mockReturnValue({
+    pruneDeadLetters: vi.fn().mockResolvedValue(undefined),
     listDueLeadIds: vi.fn().mockRejectedValue(cycleError),
   });
 
@@ -306,6 +308,42 @@ test('worker records a failed cycle without changing the original error', async 
     processed: 0,
     delivered: 0,
     error: cycleError,
+  });
+});
+
+test('worker prunes expired DLQ entries even when no leads are due', async () => {
+  const store = createStore({
+    record: { current: null },
+    queued: { current: false },
+    metrics: [],
+    commitResults: [],
+  });
+  const prune = vi.spyOn(store, 'pruneDeadLetters');
+  getLeadStoreMock.mockReturnValue(store);
+
+  await expect(processLeadQueue(1)).resolves.toMatchObject({ processed: 0, deadLettered: 0 });
+
+  expect(prune).toHaveBeenCalledOnce();
+  expect(prune).toHaveBeenCalledWith(expect.any(Number), 60 * 60 * 24 * 30);
+});
+
+test('worker reports Redis cleanup failure instead of silently passing the cycle', async () => {
+  const cleanupError = new Error('REDIS_COMMAND_ERROR');
+  const store = createStore({
+    record: { current: null },
+    queued: { current: false },
+    metrics: [],
+    commitResults: [],
+  });
+  store.pruneDeadLetters = vi.fn().mockRejectedValue(cleanupError);
+  getLeadStoreMock.mockReturnValue(store);
+
+  await expect(processLeadQueue(1)).rejects.toBe(cleanupError);
+  expect(recordWorkerCycleHeartbeatMock).toHaveBeenCalledWith({
+    status: 'error',
+    processed: 0,
+    delivered: 0,
+    error: cleanupError,
   });
 });
 

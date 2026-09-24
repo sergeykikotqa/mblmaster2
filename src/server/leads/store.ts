@@ -45,6 +45,7 @@ export type LeadStore = {
   removeFromSchedule: (leadId: string) => Promise<void>;
   getQueueDepth: () => Promise<number>;
   pushDeadLetter: (entry: DeadLetterEntry, ttlSec: number) => Promise<void>;
+  pruneDeadLetters: (nowMs: number, ttlSec: number) => Promise<void>;
   recordDeliveryMetric: (metric: DeliveryAttemptMetric) => Promise<void>;
   getLeadPipelineHealth: (nowMs?: number) => Promise<LeadPipelineHealth>;
 };
@@ -130,7 +131,55 @@ redis.call('DEL', claimKey)
 return {1, deliveredAtIso}
 `;
 
+const STORE_DEAD_LETTER_SCRIPT = `
+redis.call('ZADD', KEYS[1], ARGV[1], ARGV[2])
+redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[3])
+local count = redis.call('ZCARD', KEYS[1])
+local maxEntries = tonumber(ARGV[4])
+if count > maxEntries then
+  redis.call('ZREMRANGEBYRANK', KEYS[1], 0, count - maxEntries - 1)
+end
+return redis.call('ZCARD', KEYS[1])
+`;
+
+const PRUNE_DEAD_LETTER_SCRIPT = `
+redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
+local count = redis.call('ZCARD', KEYS[1])
+local maxEntries = tonumber(ARGV[2])
+if count > maxEntries then
+  redis.call('ZREMRANGEBYRANK', KEYS[1], 0, count - maxEntries - 1)
+end
+return redis.call('ZCARD', KEYS[1])
+`;
+
+const MIGRATE_LEGACY_DEAD_LETTERS_SCRIPT = `
+local expectedCount = tonumber(ARGV[1])
+local current = redis.call('LRANGE', KEYS[1], 0, -1)
+if #current ~= expectedCount then
+  return 0
+end
+for index = 1, expectedCount do
+  local rawArgIndex = 2 + ((index - 1) * 2)
+  if current[index] ~= ARGV[rawArgIndex] then
+    return 0
+  end
+end
+for index = 1, expectedCount do
+  local rawArgIndex = 2 + ((index - 1) * 2)
+  redis.call('ZADD', KEYS[2], ARGV[rawArgIndex + 1], ARGV[rawArgIndex])
+end
+redis.call('DEL', KEYS[1])
+redis.call('ZREMRANGEBYSCORE', KEYS[2], '-inf', ARGV[2 + (expectedCount * 2)])
+local count = redis.call('ZCARD', KEYS[2])
+local maxEntries = tonumber(ARGV[3 + (expectedCount * 2)])
+if count > maxEntries then
+  redis.call('ZREMRANGEBYRANK', KEYS[2], 0, count - maxEntries - 1)
+end
+return 1
+`;
+
 const METRICS_RETENTION_SEC = 60 * 60 * 24 * 7;
+const DEAD_LETTER_MAX_ENTRIES = 1000;
 const DEFAULT_REDIS_MAX_ATTEMPTS = 2;
 const DEFAULT_REDIS_RETRY_BASE_DELAY_MS = 120;
 const DEFAULT_REDIS_CIRCUIT_FAILURE_THRESHOLD = 3;
@@ -528,12 +577,29 @@ class RedisLeadStore implements LeadStore {
   }
 
   async pushDeadLetter(entry: DeadLetterEntry, ttlSec: number): Promise<void> {
-    const key = this.keyDeadLetter();
-    await this.client.command('LPUSH', key, JSON.stringify(entry));
-    await this.client.command('LTRIM', key, 0, 999);
-    if (ttlSec > 0) {
-      await this.client.command('EXPIRE', key, ttlSec);
-    }
+    const nowMs = Date.now();
+    const normalizedTtlSec = Math.max(1, Math.floor(ttlSec));
+    const cutoffMs = nowMs - normalizedTtlSec * 1000;
+    await this.migrateLegacyDeadLetters(nowMs, cutoffMs);
+    await this.client.eval<number>(
+      STORE_DEAD_LETTER_SCRIPT,
+      1,
+      [this.keyDeadLetterByAge()],
+      [this.deadLetterScore(entry, nowMs), JSON.stringify(entry), cutoffMs, DEAD_LETTER_MAX_ENTRIES]
+    );
+  }
+
+  async pruneDeadLetters(nowMs: number, ttlSec: number): Promise<void> {
+    const normalizedNowMs = Number.isFinite(nowMs) ? Math.floor(nowMs) : Date.now();
+    const normalizedTtlSec = Math.max(1, Math.floor(ttlSec));
+    const cutoffMs = normalizedNowMs - normalizedTtlSec * 1000;
+    await this.migrateLegacyDeadLetters(normalizedNowMs, cutoffMs);
+    await this.client.eval<number>(
+      PRUNE_DEAD_LETTER_SCRIPT,
+      1,
+      [this.keyDeadLetterByAge()],
+      [cutoffMs, DEAD_LETTER_MAX_ENTRIES]
+    );
   }
 
   async recordDeliveryMetric(metric: DeliveryAttemptMetric): Promise<void> {
@@ -643,6 +709,47 @@ class RedisLeadStore implements LeadStore {
     await this.client.command('ZREMRANGEBYSCORE', this.keyMetricLatencyEvents(), '-inf', retentionCutoffMs);
   }
 
+  private deadLetterScore(entry: DeadLetterEntry, nowMs: number): number {
+    const parsed = Date.parse(entry.failedAt);
+    if (!Number.isFinite(parsed) || parsed > nowMs) return nowMs;
+    return Math.floor(parsed);
+  }
+
+  private async migrateLegacyDeadLetters(nowMs: number, cutoffMs: number): Promise<void> {
+    const legacyKey = this.keyDeadLetterLegacy();
+    const keyType = String(await this.client.command<unknown>('TYPE', legacyKey));
+    if (keyType === 'none') return;
+    if (keyType !== 'list') throw new Error('DLQ_LEGACY_KEY_TYPE_INVALID');
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const raw = await this.client.command<unknown[]>('LRANGE', legacyKey, 0, -1);
+      const entries = Array.isArray(raw) ? raw.map(String) : [];
+      if (entries.length === 0) return;
+      const values: RedisArg[] = [entries.length];
+      for (const serialized of entries) {
+        let score = nowMs;
+        try {
+          const parsed = JSON.parse(serialized) as Partial<DeadLetterEntry>;
+          const failedAtMs = Date.parse(String(parsed.failedAt || ''));
+          if (Number.isFinite(failedAtMs) && failedAtMs <= nowMs) score = Math.floor(failedAtMs);
+        } catch {
+          // Preserve malformed legacy entries for one bounded retention window.
+        }
+        values.push(serialized, score);
+      }
+      values.push(cutoffMs, DEAD_LETTER_MAX_ENTRIES);
+      const migrated = await this.client.eval<number>(
+        MIGRATE_LEGACY_DEAD_LETTERS_SCRIPT,
+        2,
+        [legacyKey, this.keyDeadLetterByAge()],
+        values
+      );
+      if (Number(migrated) === 1) return;
+    }
+
+    throw new Error('DLQ_LEGACY_MIGRATION_CONFLICT');
+  }
+
   private keyIdempotency(hash: string) {
     return `${this.prefix}:idempotency:${hash}`;
   }
@@ -675,8 +782,12 @@ class RedisLeadStore implements LeadStore {
     return `${this.prefix}:delivery:fence:${leadId}`;
   }
 
-  private keyDeadLetter() {
+  private keyDeadLetterLegacy() {
     return `${this.prefix}:delivery:dlq`;
+  }
+
+  private keyDeadLetterByAge() {
+    return `${this.prefix}:delivery:dlq:v2`;
   }
 
   private keyMetricCounter(metricName: string) {
@@ -737,7 +848,7 @@ class MemoryLeadStore implements LeadStore {
   private readonly processingLocks = new Map<string, MemoryProcessingLockEntry>();
   private readonly deliveryClaims = new Map<string, MemoryProcessingLockEntry>();
   private readonly deliveryFences = new Map<string, MemoryDeliveryFenceEntry>();
-  private readonly deadLetters: DeadLetterEntry[] = [];
+  private readonly deadLetters: Array<{ entry: DeadLetterEntry; expiresAtMs: number }> = [];
   private readonly attemptEventTimestamps: number[] = [];
   private readonly retryEventTimestamps: number[] = [];
   private readonly dlqEventTimestamps: number[] = [];
@@ -1004,10 +1115,24 @@ class MemoryLeadStore implements LeadStore {
   }
 
   async pushDeadLetter(entry: DeadLetterEntry, ttlSec: number): Promise<void> {
-    void ttlSec;
-    this.deadLetters.unshift(entry);
+    const nowMs = Date.now();
+    const failedAtMs = Date.parse(entry.failedAt);
+    const createdAtMs = Number.isFinite(failedAtMs) && failedAtMs <= nowMs ? failedAtMs : nowMs;
+    this.deadLetters.unshift({
+      entry,
+      expiresAtMs: createdAtMs + Math.max(1, Math.floor(ttlSec)) * 1000,
+    });
+    await this.pruneDeadLetters(nowMs, ttlSec);
     if (this.deadLetters.length > 1000) {
       this.deadLetters.length = 1000;
+    }
+  }
+
+  async pruneDeadLetters(nowMs: number, ttlSec: number): Promise<void> {
+    void ttlSec;
+    const normalizedNowMs = Number.isFinite(nowMs) ? Math.floor(nowMs) : Date.now();
+    for (let index = this.deadLetters.length - 1; index >= 0; index -= 1) {
+      if ((this.deadLetters[index]?.expiresAtMs || 0) <= normalizedNowMs) this.deadLetters.splice(index, 1);
     }
   }
 

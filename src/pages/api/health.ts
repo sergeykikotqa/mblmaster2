@@ -1,4 +1,5 @@
-import { getLeadStore, hasRedisLeadStoreConfig } from '~/server/leads/store';
+import { probeRedisReadiness } from '~/server/health/runtime';
+import { hasRedisLeadStoreConfig } from '~/server/leads/store';
 
 export const prerender = false;
 
@@ -9,18 +10,15 @@ export async function get({ request }: { request: Request }) {
   const redisConfigured = hasRedisLeadStoreConfig();
   const redisRequired = import.meta.env.PROD;
   let redisOk = false;
-  let redisMode: 'redis' | 'memory' = redisConfigured ? 'redis' : 'memory';
+  const redisMode: 'redis' | 'memory' = redisConfigured ? 'redis' : 'memory';
   let redisCode = redisConfigured ? 'REDIS_UNKNOWN' : 'REDIS_NOT_CONFIGURED';
   let redisCircuitOpen = false;
 
   if (redisConfigured) {
     try {
-      const store = getLeadStore();
-      redisMode = store.mode;
-      const ping = await store.ping();
-      redisOk = ping.ok;
-      redisCode = ping.code;
-      redisCircuitOpen = ping.circuitOpen;
+      const readiness = await probeRedisReadiness();
+      redisOk = readiness.ok;
+      redisCode = readiness.ok ? 'REDIS_WRITE_READ_OK' : 'REDIS_WRITE_READ_FAILED';
     } catch (error) {
       redisOk = false;
       redisCode = error instanceof Error ? error.message : 'REDIS_HEALTH_UNKNOWN_ERROR';

@@ -53,7 +53,7 @@ function getLeadRecordTtlSec(): number {
 }
 
 function getDeadLetterTtlSec(): number {
-  return parsePositiveInt(process.env.CONTACT_DLQ_TTL_SEC, DEFAULT_DEAD_LETTER_TTL_SEC, 0);
+  return parsePositiveInt(process.env.CONTACT_DLQ_TTL_SEC, DEFAULT_DEAD_LETTER_TTL_SEC, 60);
 }
 
 function getWorkerProcessingLockTtlSec(): number {
@@ -240,6 +240,7 @@ async function processLeadQueueCycle(limitOverride?: number): Promise<ProcessLea
 
   const store = getLeadStore();
   const nowMs = Date.now();
+  await store.pruneDeadLetters(nowMs, getDeadLetterTtlSec());
   const dueLeadIds = await store.listDueLeadIds(nowMs, getWorkerBatchSize(limitOverride));
   const maxRetries = getMaxRetries();
   const leadRecordTtlSec = getLeadRecordTtlSec();

@@ -144,6 +144,7 @@ function parseJsonOrNull(raw) {
 function buildKeys(prefix) {
   return {
     dlq: `${prefix}:delivery:dlq`,
+    dlqByAge: `${prefix}:delivery:dlq:v2`,
     queue: `${prefix}:delivery:queue`,
     leadRecord: (leadId) => `${prefix}:record:${leadId}`,
     replayLock: (leadId) => `${prefix}:delivery:replay-lock:${leadId}`,
@@ -151,9 +152,18 @@ function buildKeys(prefix) {
   };
 }
 
+async function readDlqEntries(client, keys, limit) {
+  const normalizedLimit = Math.max(0, limit - 1);
+  const [currentRaw, legacyRaw] = await Promise.all([
+    client.command('ZREVRANGE', keys.dlqByAge, 0, normalizedLimit),
+    client.command('LRANGE', keys.dlq, 0, normalizedLimit),
+  ]);
+  const rows = [...(Array.isArray(currentRaw) ? currentRaw : []), ...(Array.isArray(legacyRaw) ? legacyRaw : [])];
+  return [...new Set(rows.map(String))].slice(0, limit);
+}
+
 async function listDlq(client, keys, limit) {
-  const raw = await client.command('LRANGE', keys.dlq, 0, Math.max(0, limit - 1));
-  const rows = Array.isArray(raw) ? raw : [];
+  const rows = await readDlqEntries(client, keys, limit);
   if (rows.length === 0) {
     console.log('DLQ is empty.');
     return;
@@ -228,11 +238,11 @@ async function replayLead(
   await client.command('ZADD', keys.queue, nowMs, leadId);
 
   if (options.removeFromDlq) {
-    const rawDlq = await client.command('LRANGE', keys.dlq, 0, -1);
-    const rows = Array.isArray(rawDlq) ? rawDlq : [];
+    const rows = await readDlqEntries(client, keys, Number.MAX_SAFE_INTEGER);
     for (const item of rows) {
       const parsed = parseJsonOrNull(item);
       if (parsed?.leadId === leadId) {
+        await client.command('ZREM', keys.dlqByAge, item);
         await client.command('LREM', keys.dlq, 1, item);
       }
     }
@@ -246,8 +256,7 @@ async function replayLead(
 }
 
 async function replayAll(client, keys, options) {
-  const raw = await client.command('LRANGE', keys.dlq, 0, Math.max(0, options.limit - 1));
-  const rows = Array.isArray(raw) ? raw : [];
+  const rows = await readDlqEntries(client, keys, options.limit);
   const leadIds = rows
     .map((item) => parseJsonOrNull(item))
     .filter((entry) => entry && typeof entry === 'object' && typeof entry.leadId === 'string')
