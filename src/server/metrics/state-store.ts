@@ -14,6 +14,11 @@ export type HealthStateStoreRuntimeStats = {
   redisFallbackToMemoryLastAtMs: number;
 };
 
+export type HealthStateStoreAvailability = {
+  available: true;
+  legacyPayloadRead: false;
+};
+
 const DEFAULT_TRANSITION_MAXLEN = 5000;
 const DEFAULT_LIST_LIMIT = 200;
 const MAX_LIST_LIMIT = 2000;
@@ -39,6 +44,46 @@ function markFallbackMemory(reason: string) {
 
 export function getHealthStateStoreRuntimeStats(): HealthStateStoreRuntimeStats {
   return { ...runtimeStats };
+}
+
+export async function probeHealthStateStoreAvailability(): Promise<
+  HealthStateStoreResult<HealthStateStoreAvailability>
+> {
+  if (hasRedisConfig()) {
+    try {
+      const [stateKeyType, transitionKeyType] = await Promise.all([
+        redisCommand<string>('TYPE', statesKey()),
+        redisCommand<string>('TYPE', transitionsKey()),
+      ]);
+      if (!['none', 'hash'].includes(String(stateKeyType))) {
+        throw new Error('HEALTH_STATE_STORE_STATES_KEY_TYPE_INVALID');
+      }
+      if (!['none', 'stream'].includes(String(transitionKeyType))) {
+        throw new Error('HEALTH_STATE_STORE_TRANSITIONS_KEY_TYPE_INVALID');
+      }
+      return {
+        value: {
+          available: true,
+          legacyPayloadRead: false,
+        },
+        dataSource: 'redis',
+        degraded: false,
+      };
+    } catch (error) {
+      assertMemoryFallbackAllowed(error);
+      markFallbackMemory(`probe_store:${error instanceof Error ? error.message : 'UNKNOWN'}`);
+    }
+  }
+
+  assertMemoryFallbackAllowed();
+  return {
+    value: {
+      available: true,
+      legacyPayloadRead: false,
+    },
+    dataSource: 'memory',
+    degraded: true,
+  };
 }
 
 function parsePositiveInt(value: string | undefined, fallback: number, min: number): number {

@@ -1,4 +1,4 @@
-import { notifyConversionHealthStoreFallback, notifyConversionHealthTransition } from '~/server/leads/alerts';
+import { notifyConversionHealthStoreFallback } from '~/server/leads/alerts';
 import { evaluateConversionHealth } from '~/server/metrics/health-evaluator';
 import { getHealthStateStoreRuntimeStats } from '~/server/metrics/state-store';
 import { extractBearerToken, parseBooleanEnv, timingSafeCompare } from '~/server/utils/auth';
@@ -107,8 +107,8 @@ async function maybeNotifyHealthStoreFallbackAlert(params: {
     targetDay: params.evaluation.targetDay,
     baselineDays: params.evaluation.baselineDays,
     generatedAtMs: params.evaluation.generatedAtMs,
-    dataSource: params.evaluation.dataSource,
-    metricsDegraded: params.evaluation.metricsDegraded,
+    dataSource: params.evaluation.stateStore.dataSource,
+    metricsDegraded: params.evaluation.stateStore.degraded,
     fallbackCount,
     fallbackLastAtMs: params.runtimeStats.redisFallbackToMemoryLastAtMs,
     summary: params.evaluation.summary,
@@ -156,56 +156,11 @@ async function handle(request: Request) {
     });
     const runtimeStats = getHealthStateStoreRuntimeStats();
 
-    const transitions = evaluation.states
-      .filter((item) => item.transition && item.transition.to !== 'HEALTHY')
-      .map((item) => ({
-        scope: item.scope,
-        key: item.key,
-        from: item.transition!.from,
-        to: item.transition!.to,
-        at: item.transition!.at,
-        reason: item.transition!.reason,
-        stableDays: item.transition!.stableDays,
-        opened: item.opened,
-        submitted: item.submitted,
-        conversionRate: item.conversionRate,
-        deltaPct: item.deltaPct,
-      }));
-
-    let alertSent = false;
-    if (sendAlert && transitions.length > 0) {
-      alertSent = await notifyConversionHealthTransition({
-        targetDay: evaluation.targetDay,
-        baselineDays: evaluation.baselineDays,
-        generatedAtMs: evaluation.generatedAtMs,
-        dataSource: evaluation.dataSource,
-        metricsDegraded: evaluation.metricsDegraded,
-        summary: evaluation.summary,
-        transitions,
-      });
-    }
     const healthStoreFallbackAlertSent = await maybeNotifyHealthStoreFallbackAlert({
       sendAlert,
       evaluation,
       runtimeStats,
     });
-
-    const problematic = evaluation.states
-      .filter((item) => item.state !== 'HEALTHY')
-      .sort((a, b) => b.opened - a.opened)
-      .slice(0, 20)
-      .map((item) => ({
-        scope: item.scope,
-        key: item.key,
-        state: item.state,
-        previousState: item.previousState,
-        opened: item.opened,
-        submitted: item.submitted,
-        conversionRate: Number(item.conversionRate.toFixed(4)),
-        baselineConversionRate: Number(item.baselineConversionRate.toFixed(4)),
-        deltaPct: Number(item.deltaPct.toFixed(4)),
-        blockedByHysteresis: item.blockedByHysteresis,
-      }));
 
     return jsonResponse(200, {
       success: true,
@@ -213,14 +168,17 @@ async function handle(request: Request) {
         targetDay: evaluation.targetDay,
         baselineDays: evaluation.baselineDays,
         generatedAtMs: evaluation.generatedAtMs,
-        dataSource: evaluation.dataSource,
-        metricsDegraded: evaluation.metricsDegraded,
+        conversion: evaluation.conversion,
+        statisticsSource: evaluation.statisticsSource,
+        stateStore: evaluation.stateStore,
         runtime: runtimeStats,
         summary: evaluation.summary,
-        problematic,
-        transitionsTop: transitions.slice(0, 20),
+        problematic: [],
+        transitionsTop: [],
       },
-      alertSent,
+      alertSent: false,
+      conversionAlertsSuppressed: true,
+      businessTransitions: [],
       healthStoreFallbackAlertSent,
     });
   } catch (error) {
