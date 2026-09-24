@@ -4,10 +4,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import {
-  collectCityHubIssues,
-  extractCommercialNavigationLinks,
-} from '../scripts/check-city-hubs-policy.mjs';
+import { collectCityHubIssues, extractCommercialNavigationLinks } from '../scripts/check-city-hubs-policy.mjs';
 import { validateMoneyPages } from '../scripts/check-geo-signals.mjs';
 import { countServiceCityBlocks } from '../scripts/check-indexable-coverage.mjs';
 import { extractMainPublishedText, findForbiddenSeoJargon } from '../scripts/check-no-seo-jargon.mjs';
@@ -85,7 +82,6 @@ describe('city hub commercial nav guard', () => {
 describe('Irkutsk geo guard', () => {
   it('requires Irkutsk in LocalBusiness.areaServed and rejects Angarsk or Shelekhov', () => {
     const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'geo-gate-'));
-    const cwd = process.cwd();
     const pagePath = path.join(tmpRoot, 'dist', 'kuhni');
     fs.mkdirSync(pagePath, { recursive: true });
     const validHtml = `
@@ -112,11 +108,9 @@ describe('Irkutsk geo guard', () => {
       },
     };
 
-    process.chdir(tmpRoot);
     try {
-      expect(validateMoneyPages(pages, localCityBlocks)).toEqual([]);
+      expect(validateMoneyPages(pages, localCityBlocks, path.join(tmpRoot, 'dist'))).toEqual([]);
     } finally {
-      process.chdir(cwd);
       fs.rmSync(tmpRoot, { recursive: true, force: true });
     }
 
@@ -146,21 +140,23 @@ describe('Irkutsk geo guard', () => {
       },
     };
 
-    process.chdir(wrongRoot);
     try {
-      const issues = validateMoneyPages(pages, wrongLocalCityBlocks);
+      const issues = validateMoneyPages(pages, wrongLocalCityBlocks, path.join(wrongRoot, 'dist'));
       const issueText = issues.join('\n');
       expect(issueText).toContain('Irkutsk');
       expect(issueText).toContain('Angarsk');
       expect(issueText).toContain('Shelekhov');
     } finally {
-      process.chdir(cwd);
       fs.rmSync(wrongRoot, { recursive: true, force: true });
     }
   });
 
   it('requires Irkutsk local-city-block evidence in service HTML', () => {
-    expect(countServiceCityBlocks('<article class="city-block"><div data-geo-mention-layer>Кухни на заказ в Иркутске</div></article>')).toBe(1);
+    expect(
+      countServiceCityBlocks(
+        '<article class="city-block"><div data-geo-mention-layer>Кухни на заказ в Иркутске</div></article>'
+      )
+    ).toBe(1);
     expect(countServiceCityBlocks('<article class="city-block">Шкафы в Ангарске</article>')).toBe(0);
   });
 });

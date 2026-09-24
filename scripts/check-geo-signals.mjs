@@ -28,10 +28,10 @@ function normalizePathname(value) {
   return normalized === '/' ? '/' : normalized;
 }
 
-function toDistHtmlPath(routePath) {
+function toDistHtmlPath(routePath, distDir = DIST_DIR) {
   const normalized = normalizePathname(routePath);
-  if (normalized === '/') return path.join(DIST_DIR, 'index.html');
-  return path.join(DIST_DIR, normalized.slice(1), 'index.html');
+  if (normalized === '/') return path.join(distDir, 'index.html');
+  return path.join(distDir, normalized.slice(1), 'index.html');
 }
 
 function stripHtml(html) {
@@ -50,7 +50,9 @@ function extractLocalCityBlocks(html) {
   let match;
   while ((match = regex.exec(html)) !== null) {
     blocks.push({
-      cityId: String(match[2] || '').trim().toLowerCase(),
+      cityId: String(match[2] || '')
+        .trim()
+        .toLowerCase(),
       html: match[3],
     });
   }
@@ -133,11 +135,11 @@ function parseTypedNodesFromHtml(html) {
   return typedNodes;
 }
 
-function validateMoneyPages(pages, localCityBlocks) {
+function validateMoneyPages(pages, localCityBlocks, distDir = DIST_DIR) {
   const errors = [];
 
   for (const page of pages) {
-    const htmlPath = toDistHtmlPath(page.pageSlug);
+    const htmlPath = toDistHtmlPath(page.pageSlug, distDir);
     if (!fs.existsSync(htmlPath)) {
       errors.push(`- ${page.pageSlug}: missing HTML at ${path.relative(ROOT, htmlPath).replace(/\\/g, '/')}`);
       continue;
@@ -175,7 +177,10 @@ function validateMoneyPages(pages, localCityBlocks) {
       geoMentionTexts.push(geoMention);
     }
 
-    if (geoMentionTexts.length > 0 && new Set(geoMentionTexts.map((item) => item.toLowerCase())).size !== geoMentionTexts.length) {
+    if (
+      geoMentionTexts.length > 0 &&
+      new Set(geoMentionTexts.map((item) => item.toLowerCase())).size !== geoMentionTexts.length
+    ) {
       errors.push(`- ${page.pageSlug}: geo mention layers must be unique across city blocks`);
     }
 
@@ -222,7 +227,9 @@ function validateMoneyPages(pages, localCityBlocks) {
         continue;
       }
       if (block.city && block.city !== city.id) {
-        errors.push(`- ${page.pageSlug}: local-city-blocks[${page.serviceId}].${city.id}.city must be "${city.label || city.id}"`);
+        errors.push(
+          `- ${page.pageSlug}: local-city-blocks[${page.serviceId}].${city.id}.city must be "${city.label || city.id}"`
+        );
       }
       if (block.cases.length < city.minCases) {
         errors.push(
@@ -234,11 +241,15 @@ function validateMoneyPages(pages, localCityBlocks) {
         const caseCityKey = caseCityValue.toLowerCase();
 
         if (caseCityValue !== city.id) {
-          errors.push(`- ${page.pageSlug}: ${city.label || city.id}.cases[${index}] must contain explicit city="${city.id}"`);
+          errors.push(
+            `- ${page.pageSlug}: ${city.label || city.id}.cases[${index}] must contain explicit city="${city.id}"`
+          );
         }
         if (FORBIDDEN_SERVICE_CITY_ALIASES.has(caseCityKey)) {
           const forbiddenLabel = FORBIDDEN_SERVICE_CITY_LABELS[caseCityKey] || caseCityValue;
-          errors.push(`- ${page.pageSlug}: ${city.label || city.id}.cases[${index}] must not include ${forbiddenLabel} city data`);
+          errors.push(
+            `- ${page.pageSlug}: ${city.label || city.id}.cases[${index}] must not include ${forbiddenLabel} city data`
+          );
         }
         if (!Array.isArray(item.photos) || item.photos.length < 2) {
           errors.push(`- ${page.pageSlug}: ${city.label || city.id}.cases[${index}] must contain photos.length >= 2`);
@@ -276,12 +287,7 @@ function main() {
   );
 }
 
-export {
-  extractGeoMentionLayer,
-  extractLocalCityBlocks,
-  normalizeAreaToken,
-  validateMoneyPages,
-};
+export { extractGeoMentionLayer, extractLocalCityBlocks, normalizeAreaToken, validateMoneyPages };
 
 const isDirectExecution = () => {
   const currentFilePath = process.argv[1] ? path.resolve(process.argv[1]) : '';

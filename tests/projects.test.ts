@@ -29,6 +29,7 @@ const APPROVED_PROJECT_MIGRATION_MAP: Record<string, string> = {
 };
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const EXPECTED_CANONICAL_ORIGIN = new URL(String(process.env.PUBLIC_SITE_URL || 'https://example.com').trim()).origin;
 
 function parseRedirectRules(): Array<{ source: string; target: string; status: string }> {
   const file = path.join(process.cwd(), 'config', 'redirects.rules');
@@ -243,7 +244,7 @@ test('approved semantic project migration has no chains and canonical HTML seman
 
     const canonicalMatch = html.match(/<link\s+[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/i);
     expect(canonicalMatch).not.toBeNull();
-    expect(canonicalMatch![1].trim()).toBe(`https://example.com${newPath}`);
+    expect(canonicalMatch![1].trim()).toBe(`${EXPECTED_CANONICAL_ORIGIN}${newPath}`);
 
     const hrefs = [...html.matchAll(/href=["']([^"']+)["']/gi)].map((match) => normalizeUrl(match[1]));
     expect(hrefs.some((href) => href === oldPath)).toBe(false);

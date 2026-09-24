@@ -92,15 +92,15 @@ jobs:
       - run: npm run generate:runtime-redirects
       - run: npm run check
       - run: npm run typecheck
-      - run: npm test
+      - run: npm run check:release-policy
+      - run: npm run check:public-build-env
+      - run: npm run build
       - name: Check Metrics Health State Store
         env:
           METRICS_HEALTH_STATE_SMOKE_ALLOW_REDIS: 'true'
           METRICS_HEALTH_STATE_SMOKE_REDIS_URL: redis://127.0.0.1:6379/15
         run: npm run check:metrics-health-state-store
-      - run: npm run check:release-policy
-      - run: npm run check:public-build-env
-      - run: npm run build
+      - run: npm test
 
   pr-gate:
     if: github.event_name == 'pull_request'
@@ -120,8 +120,10 @@ jobs:
       - name: Export CHROME_PATH
         run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
       - run: npm ci
+      - run: npm run generate:runtime-redirects
       - run: npm run check
       - run: npm run typecheck
+      - run: npm run build
       - run: npm test
       - run: npm run check:external-monitor
       - run: npm run check:telegram-monitor
@@ -178,11 +180,16 @@ jobs:
       - run: npm run generate:runtime-redirects
       - run: npm run check
       - run: npm run typecheck
+      - run: npm run build
+      - name: Check Metrics Health State Store
+        env:
+          METRICS_HEALTH_STATE_SMOKE_ALLOW_REDIS: 'true'
+          METRICS_HEALTH_STATE_SMOKE_REDIS_URL: redis://127.0.0.1:6379/15
+        run: npm run check:metrics-health-state-store
       - run: npm test
       - run: npm run check:external-monitor
       - run: npm run check:telegram-monitor
       - run: npm run check:image-policy
-      - run: npm run build
       - run: npm run check:performance-budgets
       - run: npm run check:redirects-sitemap
       - run: npm run check:no-admin-in-sitemap
@@ -196,11 +203,6 @@ jobs:
           METRICS_ADMIN_TOKEN: ci-metrics-token
         run: npm run check:metrics-smoke
       - run: npm run check:metrics-health-smoke
-      - name: Check Metrics Health State Store
-        env:
-          METRICS_HEALTH_STATE_SMOKE_ALLOW_REDIS: 'true'
-          METRICS_HEALTH_STATE_SMOKE_REDIS_URL: redis://127.0.0.1:6379/15
-        run: npm run check:metrics-health-state-store
       - run: npm run check:metrics-health-fallback
       - run: npm run check:metrics-health-fallback-alert
       - run: npm run check:lead-api
