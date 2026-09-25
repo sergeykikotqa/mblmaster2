@@ -64,6 +64,13 @@ npm run check:lighthouse
 npm run check:audit
 ```
 
+`npm run check:audit` is a read-only production dependency security gate. It
+runs the current audit and applies the strict, expiring allowlist without
+changing tracked repository files. To deliberately refresh the tracked audit
+snapshot after a successful policy verdict, run
+`npm run audit:security:update-baseline`. The baseline is evidence only: it is
+not an allowlist and does not permit any vulnerability.
+
 ## CI Policy
 
 - PR workflows should stay fast and deterministic.

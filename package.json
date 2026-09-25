@@ -117,6 +117,7 @@
     "check:nap-consistency": "node scripts/check-nap-consistency.mjs",
     "check:privacy-disclosure": "node scripts/check-privacy-disclosure.mjs",
     "check:audit": "node scripts/security-audit-gate.mjs",
+    "audit:security:update-baseline": "node scripts/security-audit-gate.mjs --update-baseline",
     "check:e2e:admin-auth": "node scripts/check-admin-auth-e2e.mjs",
     "check:e2e:analytics-consent": "node scripts/check-analytics-consent-e2e.mjs",
     "check:e2e": "playwright test",
