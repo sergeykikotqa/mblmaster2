@@ -412,7 +412,6 @@ async function prepareIsolatedRedis(redisConfig) {
     disableOfflineQueue: true,
     socket: {
       connectTimeout: redisConnectTimeoutMs,
-      socketTimeout: redisConnectTimeoutMs,
       reconnectStrategy: false,
     },
   });
