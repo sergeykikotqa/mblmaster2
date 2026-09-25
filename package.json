@@ -1,7 +1,7 @@
 {
-  "name": "yes",
+  "name": "mblmaster",
   "version": "1.0.0-beta.52",
-  "description": "AstroWind: A free template using Astro 5.0 and Tailwind CSS. Astro starter theme.",
+  "description": "MBL furniture company website, lead delivery runtime, and protected operations tooling.",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"

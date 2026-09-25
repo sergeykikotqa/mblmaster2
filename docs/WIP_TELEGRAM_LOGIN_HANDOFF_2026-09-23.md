@@ -1,5 +1,17 @@
 # WIP checkpoint: Telegram web-admin login
 
+> **SUPERSEDED / HISTORICAL — NOT CURRENT BACKLOG**
+>
+> Этот файл описывает промежуточный checkpoint. Локальная реализация была
+> завершена позднее коммитом
+> `6872efa2065417a5cce9e283d2003033e3281ef0`
+> (`fix(admin): complete local Telegram session authentication`). Связанное
+> замечание по idempotency заявок закрыто коммитом
+> `6814e810071bb91a44e881d9efb18902b858d427`
+> (`fix(leads): avoid idempotency collisions without client key`). Раздел
+> remaining work ниже не является текущим backlog. Актуальный source of truth —
+> [`README.md`](../README.md), текущий код, тесты, конфигурация и runbooks.
+
 Status: incomplete, not validated for release or deployment. Development stopped
 at the owner's request to save work before the Codex limit.
 
