@@ -55,7 +55,8 @@ redisDescribe('native Redis lead pipeline integration', () => {
   let getHealthState: typeof import('../src/server/metrics/state-store').getHealthState;
   let appendHealthTransition: typeof import('../src/server/metrics/state-store').appendHealthTransition;
   let getHealthTransitionHistory: typeof import('../src/server/metrics/state-store').getHealthTransitionHistory;
-  let generateDailyConversionSnapshot: typeof import('../src/server/metrics/snapshot').generateDailyConversionSnapshot;
+  let generateDailyMetricsSnapshotV2: typeof import('../src/server/metrics/snapshot').generateDailyMetricsSnapshotV2;
+  let getStoredDailyMetricsSnapshotV2: typeof import('../src/server/metrics/snapshot').getStoredDailyMetricsSnapshotV2;
   let probeRedisReadiness: typeof import('../src/server/health/runtime').probeRedisReadiness;
   let resetRedisReadinessCacheForTests: typeof import('../src/server/health/runtime').resetRedisReadinessCacheForTests;
   const originalEnv = new Map<string, string | undefined>();
@@ -113,7 +114,9 @@ redisDescribe('native Redis lead pipeline integration', () => {
     getHealthState = healthState.getHealthState;
     appendHealthTransition = healthState.appendHealthTransition;
     getHealthTransitionHistory = healthState.getHealthTransitionHistory;
-    generateDailyConversionSnapshot = (await import('../src/server/metrics/snapshot')).generateDailyConversionSnapshot;
+    const metricsSnapshot = await import('../src/server/metrics/snapshot');
+    generateDailyMetricsSnapshotV2 = metricsSnapshot.generateDailyMetricsSnapshotV2;
+    getStoredDailyMetricsSnapshotV2 = metricsSnapshot.getStoredDailyMetricsSnapshotV2;
     const redisReadiness = await import('../src/server/health/runtime');
     probeRedisReadiness = redisReadiness.probeRedisReadiness;
     resetRedisReadinessCacheForTests = redisReadiness.resetRedisReadinessCacheForTests;
@@ -516,8 +519,47 @@ redisDescribe('native Redis lead pipeline integration', () => {
     );
 
     const today = new Date().toISOString().slice(0, 10);
-    const snapshot = await generateDailyConversionSnapshot({ targetDay: today, baselineDays: 1 });
+    const snapshot = await generateDailyMetricsSnapshotV2({ targetDay: today });
     expect(snapshot.storageSource).toBe('redis');
-    expect(await redisCommand<number>('TTL', `${prefix}:metrics:snapshot:day:${today}`)).toBeGreaterThan(0);
+    expect(snapshot.snapshot.schemaVersion).toBe(2);
+    expect(snapshot.snapshot.counters.opened).toBeGreaterThanOrEqual(0);
+    expect(snapshot.snapshot.counters.submitted).toBeGreaterThanOrEqual(0);
+    const snapshotKey = `${prefix}:metrics:snapshot:v2:day:${today}`;
+    const rawSnapshot = await redisCommand<string | null>('GET', snapshotKey);
+    expect(rawSnapshot).not.toBeNull();
+    if (rawSnapshot === null) throw new Error('SNAPSHOT_V2_NOT_PERSISTED');
+    const persistedSnapshot: unknown = JSON.parse(rawSnapshot);
+    expect(persistedSnapshot).toEqual({
+      schemaVersion: 2,
+      targetDay: today,
+      generatedAtMs: snapshot.snapshot.generatedAtMs,
+      dataSource: snapshot.snapshot.dataSource,
+      metricsDegraded: snapshot.snapshot.metricsDegraded,
+      counters: {
+        opened: snapshot.snapshot.counters.opened,
+        submitted: snapshot.snapshot.counters.submitted,
+      },
+    });
+    expect(persistedSnapshot).toEqual(snapshot.snapshot);
+    expect(persistedSnapshot).not.toHaveProperty('storageSource');
+    expect(JSON.stringify(persistedSnapshot)).not.toMatch(
+      /"baselineDays"|"baselineAvgOpened"|"baselineAvgSubmitted"|"volumeDiagnostics"|"conversionRate"|"cr_drop"|"zero_submitted"|"opened_up_submitted_down"/
+    );
+
+    const readSnapshot = await getStoredDailyMetricsSnapshotV2(today);
+    expect(readSnapshot).toEqual({ snapshot: persistedSnapshot, storageSource: 'redis' });
+    expect(await redisCommand<number>('TTL', snapshotKey)).toBeGreaterThan(0);
+    expect(await redisCommand<number>('EXISTS', `${prefix}:metrics:snapshot:day:${today}`)).toBe(0);
+
+    const mismatchedKeyDay = '2000-01-01';
+    const mismatchedPayload = { ...snapshot.snapshot, targetDay: '2000-01-02' };
+    await redisCommand(
+      'SET',
+      `${prefix}:metrics:snapshot:v2:day:${mismatchedKeyDay}`,
+      JSON.stringify(mismatchedPayload),
+      'EX',
+      60
+    );
+    expect(await getStoredDailyMetricsSnapshotV2(mismatchedKeyDay)).toBeNull();
   });
 });
