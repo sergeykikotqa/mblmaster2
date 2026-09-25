@@ -31,6 +31,25 @@ The release overlay removes all build definitions and sets `pull_policy:
 never`. Deployment on the VPS therefore cannot silently rebuild source or pull
 a moving application tag.
 
+`dataContractVersion` and `metricsRuntimeGeneration` are independent
+compatibility axes. The Redis data contract remains version `1`, while current
+application bundles use metrics runtime generation `2`. Rollback to a target
+with a lower or unknown metrics generation is rejected before Docker images,
+Compose services, the active-release link or the operation journal are
+mutated. The only legacy bundle without this field that is accepted as a
+rollback target is the full metrics-contract bootstrap
+`39932acc1faa2446c3b3aa15cae314f20270c9ac`. The earlier `8c34c97` boundary is
+not sufficient for the complete metrics contract. This exception is temporary
+and can be removed once both current and previous production releases carry an
+explicit metrics runtime generation.
+
+Persisted release IDs in manifests and release state use the canonical
+lowercase 40-character SHA form, without whitespace or prefixes. Normal apply
+is permitted with an empty initial state, a generation `2` current release, or
+the exact audited legacy bootstrap above. Any other legacy current release
+requires a separate migration or recovery procedure and is rejected by the
+normal apply path.
+
 Create a bundle on the trusted build host. Populate every key listed in
 `config/public-build-env.json` in a dedicated public build environment file;
 the release command rejects missing values and never forwards unlisted

@@ -13,9 +13,13 @@ const CHECKSUM_FILE = 'SHA256SUMS';
 const STATE_SCHEMA = 1;
 const RELEASE_SCHEMA = 1;
 const FULL_SHA = /^[a-f0-9]{40}$/i;
+const CANONICAL_RELEASE_ID = /^[a-f0-9]{40}$/;
 const DEFAULT_WAIT_MS = 90_000;
 const APPLICATION_SERVICES = ['mbl-web', 'mbl-worker-trigger', 'mbl-nginx'];
 const PUBLIC_BUILD_POLICY_FILE = 'config/public-build-env.json';
+export const SUPPORTED_METRICS_RUNTIME_GENERATION = 2;
+export const METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID = '39932acc1faa2446c3b3aa15cae314f20270c9ac';
+const METRICS_RUNTIME_INCOMPATIBLE_ERROR = 'ROLLBACK_TARGET_METRICS_RUNTIME_INCOMPATIBLE';
 const diagnosticSecrets = new Set();
 
 function assert(condition, message) {
@@ -101,6 +105,14 @@ function normalizeFullSha(value, label = 'release SHA') {
   return normalized;
 }
 
+function assertCanonicalReleaseId(value, label = 'persisted release ID') {
+  assert(
+    typeof value === 'string' && CANONICAL_RELEASE_ID.test(value),
+    `${label} must be an exact lowercase 40-character Git SHA`
+  );
+  return value;
+}
+
 function readJson(filePath, label) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -109,7 +121,13 @@ function readJson(filePath, label) {
   }
 }
 
-export function readReleasePolicy(filePath) {
+function assertSupportedMetricsRuntimeGeneration(value, label) {
+  assert(Number.isSafeInteger(value) && value > 0, `${label} must be a positive safe integer`);
+  assert(value === SUPPORTED_METRICS_RUNTIME_GENERATION, `${label} ${value} is not supported by this release tool`);
+  return value;
+}
+
+export function readReleasePolicy(filePath, options = {}) {
   const policy = readJson(filePath, 'Release policy');
   assert(policy?.schema === 1, 'Unsupported release policy schema');
   assert(/^[a-z0-9][a-z0-9_-]+$/i.test(policy.projectName), 'Unsafe Compose project name in release policy');
@@ -125,6 +143,14 @@ export function readReleasePolicy(filePath) {
     'Redis must be the only stateful service'
   );
   assert(policy.dataContractVersion === 1, 'Unsupported Redis data contract version');
+  if (Object.hasOwn(policy, 'metricsRuntimeGeneration')) {
+    assertSupportedMetricsRuntimeGeneration(
+      policy.metricsRuntimeGeneration,
+      'Release policy metrics runtime generation'
+    );
+  } else {
+    assert(options.allowLegacyMetricsRuntimeGeneration === true, 'Release policy metricsRuntimeGeneration is required');
+  }
   assert(
     JSON.stringify([...policy.applicationServices].sort()) === JSON.stringify([...APPLICATION_SERVICES].sort()),
     'Release policy application services differ from the approved application layer'
@@ -216,7 +242,7 @@ function assertNoSecretLikeFiles(files) {
   }
 }
 
-export function verifyReleaseBundle(bundleDirectory) {
+export function verifyReleaseBundle(bundleDirectory, options = {}) {
   const bundleDir = path.resolve(bundleDirectory);
   assert(fs.existsSync(bundleDir) && fs.statSync(bundleDir).isDirectory(), 'Release bundle directory is missing');
   const files = walkBundle(bundleDir);
@@ -231,13 +257,32 @@ export function verifyReleaseBundle(bundleDirectory) {
 
   const manifest = readJson(path.join(bundleDir, MANIFEST_FILE), 'Release manifest');
   assert(manifest?.schema === RELEASE_SCHEMA, 'Unsupported release manifest schema');
-  const releaseId = normalizeFullSha(manifest.releaseId);
-  assert(normalizeFullSha(manifest.gitSha, 'manifest Git SHA') === releaseId, 'Manifest releaseId and gitSha differ');
-  const policy = readReleasePolicy(path.join(bundleDir, 'config', 'release-policy.json'));
+  const releaseId = assertCanonicalReleaseId(manifest.releaseId, 'Manifest releaseId');
+  assert(
+    assertCanonicalReleaseId(manifest.gitSha, 'Manifest Git SHA') === releaseId,
+    'Manifest releaseId and gitSha differ'
+  );
+  const allowLegacyMetricsRuntimeGeneration = options.allowLegacyMetricsRuntimeGeneration === true;
+  const policy = readReleasePolicy(path.join(bundleDir, 'config', 'release-policy.json'), {
+    allowLegacyMetricsRuntimeGeneration,
+  });
   assert(
     manifest.dataContractVersion === policy.dataContractVersion,
     'Manifest and policy data-contract versions differ'
   );
+  if (Object.hasOwn(manifest, 'metricsRuntimeGeneration')) {
+    assertSupportedMetricsRuntimeGeneration(manifest.metricsRuntimeGeneration, 'Manifest metrics runtime generation');
+    assert(
+      manifest.metricsRuntimeGeneration === policy.metricsRuntimeGeneration,
+      'Manifest and policy metrics runtime generations differ'
+    );
+  } else {
+    assert(allowLegacyMetricsRuntimeGeneration, 'Manifest metricsRuntimeGeneration is required');
+    assert(
+      !Object.hasOwn(policy, 'metricsRuntimeGeneration'),
+      'Manifest and policy metrics runtime generations differ'
+    );
+  }
   for (const name of ['web', 'nginx', 'backup']) {
     const image = manifest.images?.[name];
     assert(image?.ref === `${policy.imageRepositories[name]}:${releaseId}`, `Unexpected ${name} image reference`);
@@ -573,6 +618,7 @@ export function createReleaseBundle(options = {}) {
       canonicalOrigin: publicSiteUrl,
       publicBuildConfigSha256: publicConfigDigest,
       dataContractVersion: policy.dataContractVersion,
+      metricsRuntimeGeneration: policy.metricsRuntimeGeneration,
       platform: `${images.web.os}/${images.web.architecture}`,
       images,
       archives: {
@@ -805,10 +851,17 @@ function clearActiveReleaseLink(runtimeRoot) {
 }
 
 export function assertBundleMatchesRecord(bundle, record, label) {
-  assert(record?.releaseId === bundle.manifest.releaseId, `${label} release ID does not match its stored bundle`);
+  const recordReleaseId = assertCanonicalReleaseId(record?.releaseId, `${label} state release ID`);
+  const bundleReleaseId = assertCanonicalReleaseId(bundle.manifest.releaseId, `${label} bundle release ID`);
+  assert(recordReleaseId === bundleReleaseId, `${label} release ID does not match its stored bundle`);
   assert(
     record.dataContractVersion === bundle.manifest.dataContractVersion,
     `${label} data-contract version does not match its stored bundle`
+  );
+  assert(
+    Object.hasOwn(record, 'metricsRuntimeGeneration') === Object.hasOwn(bundle.manifest, 'metricsRuntimeGeneration') &&
+      record.metricsRuntimeGeneration === bundle.manifest.metricsRuntimeGeneration,
+    `${label} metrics runtime generation does not match its stored bundle`
   );
   for (const name of ['web', 'nginx', 'backup']) {
     assert(record.images?.[name]?.id === bundle.manifest.images[name].id, `${label} ${name} image ID does not match`);
@@ -1100,13 +1153,61 @@ async function switchApplication(bundle, envFile, baseUrl, timeoutMs, onPhase = 
   return redisAfter;
 }
 
-function releaseRecord(bundle) {
-  return {
+export function releaseRecord(bundle) {
+  const record = {
     releaseId: bundle.manifest.releaseId,
     appliedAt: new Date().toISOString(),
     dataContractVersion: bundle.manifest.dataContractVersion,
     images: bundle.manifest.images,
   };
+  if (Object.hasOwn(bundle.manifest, 'metricsRuntimeGeneration')) {
+    record.metricsRuntimeGeneration = bundle.manifest.metricsRuntimeGeneration;
+  }
+  return record;
+}
+
+function releaseCompatibilityRecord(value, label, errorCode) {
+  const record = value?.manifest || value;
+  let releaseId;
+  try {
+    releaseId = assertCanonicalReleaseId(record?.releaseId, `${label} release ID`);
+  } catch (error) {
+    throw new Error(`${errorCode}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  const hasGeneration = Object.hasOwn(record, 'metricsRuntimeGeneration');
+  if (!hasGeneration) {
+    assert(
+      releaseId === METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID,
+      `${errorCode}: ${label} legacy release ${releaseId} is not the approved metrics bootstrap`
+    );
+    return { releaseId, metricsRuntimeGeneration: undefined };
+  }
+  assert(
+    Number.isSafeInteger(record.metricsRuntimeGeneration) &&
+      record.metricsRuntimeGeneration === SUPPORTED_METRICS_RUNTIME_GENERATION,
+    `${errorCode}: ${label} generation ${String(record.metricsRuntimeGeneration)} is not supported`
+  );
+  return { releaseId, metricsRuntimeGeneration: record.metricsRuntimeGeneration };
+}
+
+export function assertMetricsRollbackCompatible(targetRecordOrBundle, currentRecordOrBundle) {
+  releaseCompatibilityRecord(targetRecordOrBundle, 'rollback target', METRICS_RUNTIME_INCOMPATIBLE_ERROR);
+  if (currentRecordOrBundle) {
+    releaseCompatibilityRecord(currentRecordOrBundle, 'current release', METRICS_RUNTIME_INCOMPATIBLE_ERROR);
+  }
+  return true;
+}
+
+export function assertMetricsApplyCompatible(currentRecordOrBundle) {
+  if (!currentRecordOrBundle) return true;
+  releaseCompatibilityRecord(currentRecordOrBundle, 'current release', 'APPLY_CURRENT_METRICS_RUNTIME_INCOMPATIBLE');
+  return true;
+}
+
+export function assertCurrentBundleCompatibleForApply(bundle, record, label = 'Current release') {
+  assertBundleMatchesRecord(bundle, record, label);
+  assertMetricsApplyCompatible(bundle);
+  return true;
 }
 
 function createOperationJournal(kind, candidate, stableRecord, redisIdentity) {
@@ -1198,7 +1299,7 @@ async function reconcileInterruptedOperation({ runtimeRoot, envFile, baseUrl, ti
   let recoveryError = '';
   if (desiredRecord) {
     const desiredDir = path.join(runtimeRoot, 'releases', desiredRecord.releaseId);
-    const desired = verifyReleaseBundle(desiredDir);
+    const desired = verifyReleaseBundle(desiredDir, { allowLegacyMetricsRuntimeGeneration: true });
     assertBundleMatchesRecord(desired, desiredRecord, 'Interrupted operation recovery');
     const recovery = await recoverStableApplication({ stable: desired, envFile, baseUrl, timeoutMs });
     containment = recovery.containment;
@@ -1207,7 +1308,7 @@ async function reconcileInterruptedOperation({ runtimeRoot, envFile, baseUrl, ti
     syncActiveReleaseLink(runtimeRoot, desiredRecord.releaseId);
   } else {
     const candidateDir = path.join(runtimeRoot, 'releases', journal.candidateReleaseId);
-    const candidate = verifyReleaseBundle(candidateDir);
+    const candidate = verifyReleaseBundle(candidateDir, { allowLegacyMetricsRuntimeGeneration: true });
     assert(candidate.manifest.releaseId === journal.candidateReleaseId, 'Interrupted candidate bundle is misfiled');
     redisIdentity = await stopApplicationLayer(candidate, envFile);
     containment = 'application-layer-stopped';
@@ -1251,7 +1352,7 @@ async function containFailedTransition({
   if (stableRecord?.releaseId) {
     try {
       const stableDir = path.join(runtimeRoot, 'releases', stableRecord.releaseId);
-      const stable = verifyReleaseBundle(stableDir);
+      const stable = verifyReleaseBundle(stableDir, { allowLegacyMetricsRuntimeGeneration: true });
       assertBundleMatchesRecord(stable, stableRecord, 'Stable release');
       recovery = await recoverStableApplication({ stable, envFile, baseUrl, timeoutMs });
       syncActiveReleaseLink(runtimeRoot, stableRecord.releaseId);
@@ -1310,8 +1411,10 @@ async function applyRelease({ bundleDirectory, runtimeRoot, envFile, baseUrl, ti
         'Candidate changes the Redis data contract and cannot use application rollback'
       );
       assert(state.value.current.releaseId !== bundle.manifest.releaseId, 'Candidate release is already active');
-      const stable = verifyReleaseBundle(path.join(resolvedRuntimeRoot, 'releases', state.value.current.releaseId));
-      assertBundleMatchesRecord(stable, state.value.current, 'Current release');
+      const stable = verifyReleaseBundle(path.join(resolvedRuntimeRoot, 'releases', state.value.current.releaseId), {
+        allowLegacyMetricsRuntimeGeneration: true,
+      });
+      assertCurrentBundleCompatibleForApply(stable, state.value.current);
       syncActiveReleaseLink(resolvedRuntimeRoot, state.value.current.releaseId);
     } else {
       assert(
@@ -1413,11 +1516,15 @@ async function rollbackRelease({ runtimeRoot, envFile, baseUrl, timeoutMs = DEFA
       state.value.current.dataContractVersion === state.value.previous.dataContractVersion,
       'Current and previous releases use different Redis data contracts'
     );
+    assertMetricsRollbackCompatible(state.value.previous, state.value.current);
     const targetDir = path.join(resolvedRuntimeRoot, 'releases', state.value.previous.releaseId);
-    const target = verifyReleaseBundle(targetDir);
+    const target = verifyReleaseBundle(targetDir, { allowLegacyMetricsRuntimeGeneration: true });
     assertBundleMatchesRecord(target, state.value.previous, 'Rollback target');
-    const stable = verifyReleaseBundle(path.join(resolvedRuntimeRoot, 'releases', state.value.current.releaseId));
+    const stable = verifyReleaseBundle(path.join(resolvedRuntimeRoot, 'releases', state.value.current.releaseId), {
+      allowLegacyMetricsRuntimeGeneration: true,
+    });
     assertBundleMatchesRecord(stable, state.value.current, 'Current release');
+    assertMetricsRollbackCompatible(target, stable);
     syncActiveReleaseLink(resolvedRuntimeRoot, state.value.current.releaseId);
     loadBundleImages(target, false);
     const compose = composeController(target, privateEnv);

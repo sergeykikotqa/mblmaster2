@@ -7,7 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 
-import { writeReleaseChecksums } from './release-tool.mjs';
+import { METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID, writeReleaseChecksums } from './release-tool.mjs';
 
 const ROOT = process.cwd();
 const PREFIX = `mbl-o24-release-gate-${randomBytes(4).toString('hex')}`;
@@ -15,6 +15,7 @@ const REDIS_IMAGE = 'redis:7.4.7-alpine3.21';
 const RELEASE_A = 'a'.repeat(40);
 const RELEASE_B = 'b'.repeat(40);
 const RELEASE_BAD = 'c'.repeat(40);
+const RELEASE_UNSAFE_LEGACY = '8c34c97a5fed70db90184966fd5868a39aa4f292';
 const TIMEOUT_MS = 10 * 60_000;
 
 function assert(condition, message) {
@@ -269,6 +270,7 @@ function fixturePolicy(repositories) {
     schema: 1,
     projectName: PREFIX,
     dataContractVersion: 1,
+    metricsRuntimeGeneration: 2,
     applicationServices: ['mbl-web', 'mbl-worker-trigger', 'mbl-nginx'],
     statefulServices: ['mbl-redis'],
     expectedServices: ['mbl-web', 'mbl-worker-trigger', 'mbl-nginx', 'mbl-redis'],
@@ -294,6 +296,10 @@ function createBundle(root, releaseId, images, repositories) {
   fs.writeFileSync(path.join(bundle, 'compose.backup.yml'), fixtureBackupCompose(repositories));
   fs.copyFileSync(path.join(ROOT, 'compose.release.yml'), path.join(bundle, 'compose.release.yml'));
   writeJson(path.join(bundle, 'config', 'release-policy.json'), fixturePolicy(repositories));
+  fs.copyFileSync(
+    path.join(ROOT, 'config', 'public-build-env.json'),
+    path.join(bundle, 'config', 'public-build-env.json')
+  );
   fs.copyFileSync(path.join(ROOT, 'scripts', 'release-tool.mjs'), path.join(bundle, 'scripts', 'release-tool.mjs'));
   fs.writeFileSync(path.join(bundle, 'docs', 'release-and-rollback.md'), '# Fixture release runbook\n');
 
@@ -310,6 +316,7 @@ function createBundle(root, releaseId, images, repositories) {
     createdAt: new Date().toISOString(),
     canonicalOrigin: 'https://fixture.mbl.invalid',
     dataContractVersion: 1,
+    metricsRuntimeGeneration: 2,
     platform: `${images.web.os}/${images.web.architecture}`,
     images,
     archives: { application: 'images/app-images.tar', operations: 'images/ops-images.tar' },
@@ -482,6 +489,35 @@ async function assertPublicRelease(baseUrl, releaseId) {
   assert(response.status === 200 && payload.releaseId === releaseId, `Public fixture is not serving ${releaseId}`);
 }
 
+async function assertRejectedRollbackUnchanged({
+  runtimeRoot,
+  expectedState,
+  bundle,
+  envFile,
+  releaseId,
+  manifest,
+  redisBefore,
+  volumeName,
+  queuedLeadId,
+  queuedMarker,
+  baseUrl,
+}) {
+  assert(
+    JSON.stringify(readState(runtimeRoot)) === JSON.stringify(expectedState),
+    'Rejected rollback changed release state'
+  );
+  assert(
+    !fs.existsSync(path.join(runtimeRoot, 'release-operation.json')),
+    'Rejected rollback left an operation journal'
+  );
+  assert(!fs.existsSync(path.join(runtimeRoot, '.release.lock')), 'Rejected rollback left its process lock');
+  assertActiveRelease(runtimeRoot, releaseId);
+  assertApplicationRelease(bundle, envFile, releaseId, manifest);
+  assertRedisIdentity(redisIdentity(bundle, envFile, releaseId, volumeName), redisBefore);
+  assertQueuedLead(bundle, envFile, releaseId, queuedLeadId, queuedMarker);
+  await assertPublicRelease(baseUrl, releaseId);
+}
+
 function readState(runtimeRoot) {
   return JSON.parse(fs.readFileSync(path.join(runtimeRoot, 'release-state.json'), 'utf8'));
 }
@@ -636,6 +672,116 @@ async function main() {
     let state = readState(runtimeRoot);
     assert(state.current.releaseId === RELEASE_B && state.previous.releaseId === RELEASE_A, 'A → B state is incorrect');
 
+    const compatibleState = structuredClone(state);
+    const statePath = path.join(runtimeRoot, 'release-state.json');
+
+    const incompatibleState = structuredClone(state);
+    incompatibleState.previous.releaseId = RELEASE_UNSAFE_LEGACY;
+    delete incompatibleState.previous.metricsRuntimeGeneration;
+    writeJson(statePath, incompatibleState);
+    const rejectedRollback = runRelease('rollback', common, secretMarker, true);
+    assert(
+      rejectedRollback.status !== 0 &&
+        /ROLLBACK_TARGET_METRICS_RUNTIME_INCOMPATIBLE/.test(`${rejectedRollback.stdout}\n${rejectedRollback.stderr}`),
+      'Incompatible legacy rollback target was not rejected by the metrics generation guard'
+    );
+    await assertRejectedRollbackUnchanged({
+      runtimeRoot,
+      expectedState: incompatibleState,
+      bundle: bundleB,
+      envFile,
+      releaseId: RELEASE_B,
+      manifest: manifestB,
+      redisBefore,
+      volumeName,
+      queuedLeadId,
+      queuedMarker,
+      baseUrl,
+    });
+    writeJson(statePath, compatibleState);
+
+    const storedBundleA = path.join(runtimeRoot, 'releases', RELEASE_A);
+    const storedManifestAPath = path.join(storedBundleA, 'manifest.json');
+    const storedPolicyAPath = path.join(storedBundleA, 'config', 'release-policy.json');
+    const storedManifestA = JSON.parse(fs.readFileSync(storedManifestAPath, 'utf8'));
+    const storedPolicyA = JSON.parse(fs.readFileSync(storedPolicyAPath, 'utf8'));
+    const legacyManifestA = structuredClone(storedManifestA);
+    const legacyPolicyA = structuredClone(storedPolicyA);
+    delete legacyManifestA.metricsRuntimeGeneration;
+    delete legacyPolicyA.metricsRuntimeGeneration;
+    writeJson(storedManifestAPath, legacyManifestA);
+    writeJson(storedPolicyAPath, legacyPolicyA);
+    writeReleaseChecksums(storedBundleA);
+    const stateGen2BundleLegacy = readState(runtimeRoot);
+    const rejectedGen2Legacy = runRelease('rollback', common, secretMarker, true);
+    assert(
+      rejectedGen2Legacy.status !== 0 &&
+        /metrics runtime generation does not match its stored bundle/i.test(
+          `${rejectedGen2Legacy.stdout}\n${rejectedGen2Legacy.stderr}`
+        ),
+      'Generation 2 state was not rejected against a verified legacy target bundle'
+    );
+    await assertRejectedRollbackUnchanged({
+      runtimeRoot,
+      expectedState: stateGen2BundleLegacy,
+      bundle: bundleB,
+      envFile,
+      releaseId: RELEASE_B,
+      manifest: manifestB,
+      redisBefore,
+      volumeName,
+      queuedLeadId,
+      queuedMarker,
+      baseUrl,
+    });
+    writeJson(storedManifestAPath, storedManifestA);
+    writeJson(storedPolicyAPath, storedPolicyA);
+    writeReleaseChecksums(storedBundleA);
+
+    const bootstrapBundle = path.join(runtimeRoot, 'releases', METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID);
+    fs.cpSync(storedBundleA, bootstrapBundle, { recursive: true, errorOnExist: true });
+    const bootstrapManifestPath = path.join(bootstrapBundle, 'manifest.json');
+    const bootstrapManifest = JSON.parse(fs.readFileSync(bootstrapManifestPath, 'utf8'));
+    bootstrapManifest.releaseId = METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID;
+    bootstrapManifest.gitSha = METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID;
+    for (const [name, image] of Object.entries(bootstrapManifest.images)) {
+      image.ref = `${repositories[name]}:${METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID}`;
+      image.revision = METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID;
+    }
+    writeJson(bootstrapManifestPath, bootstrapManifest);
+    writeReleaseChecksums(bootstrapBundle);
+    const stateLegacyBundleGen2 = structuredClone(compatibleState);
+    stateLegacyBundleGen2.previous = {
+      ...stateLegacyBundleGen2.previous,
+      releaseId: METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID,
+      images: bootstrapManifest.images,
+    };
+    delete stateLegacyBundleGen2.previous.metricsRuntimeGeneration;
+    writeJson(statePath, stateLegacyBundleGen2);
+    const rejectedLegacyGen2 = runRelease('rollback', common, secretMarker, true);
+    assert(
+      rejectedLegacyGen2.status !== 0 &&
+        /metrics runtime generation does not match its stored bundle/i.test(
+          `${rejectedLegacyGen2.stdout}\n${rejectedLegacyGen2.stderr}`
+        ),
+      'Legacy state was not rejected against a verified generation 2 target bundle'
+    );
+    await assertRejectedRollbackUnchanged({
+      runtimeRoot,
+      expectedState: stateLegacyBundleGen2,
+      bundle: bundleB,
+      envFile,
+      releaseId: RELEASE_B,
+      manifest: manifestB,
+      redisBefore,
+      volumeName,
+      queuedLeadId,
+      queuedMarker,
+      baseUrl,
+    });
+    writeJson(statePath, compatibleState);
+    fs.rmSync(bootstrapBundle, { recursive: true, force: true });
+
     await interruptReleaseAtPhase('rollback', common, 'nginx-updating', secretMarker);
     const reconciledRollback = runRelease('rollback', common, secretMarker, true);
     assert(reconciledRollback.status !== 0, 'Interrupted rollback did not force an explicit retry');
@@ -701,6 +847,10 @@ async function main() {
       interruptedRollbackPhasesRecovered: ['nginx-updating'],
       newWorkerCycleRequired: true,
       activeReleaseLinkVerified: true,
+      compatibleMetricsGenerationRollbackPassed: true,
+      incompatibleLegacyRollbackRejectedBeforeMutation: true,
+      stateGen2BundleLegacyRejectedBeforeMutation: true,
+      stateLegacyBundleGen2RejectedBeforeMutation: true,
       logsSecretFree: true,
       finalRelease: state.current.releaseId,
     });

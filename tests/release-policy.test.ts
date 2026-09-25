@@ -5,12 +5,18 @@ import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 import {
+  METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID,
+  SUPPORTED_METRICS_RUNTIME_GENERATION,
   assertBundleMatchesRecord,
+  assertCurrentBundleCompatibleForApply,
+  assertMetricsApplyCompatible,
+  assertMetricsRollbackCompatible,
   assertProductionPublicSiteUrl,
   assertRedisIdentityUnchanged,
   assertSafeApplicationComposeArgs,
   readReleasePolicy,
   redactReleaseDiagnostic,
+  releaseRecord,
   resolvePublicBuildConfig,
   syncActiveReleaseLink,
   verifyReleaseBundle,
@@ -61,7 +67,16 @@ function copy(root: string, relative: string) {
   fs.copyFileSync(path.join(ROOT, relative), target);
 }
 
-function createBundle() {
+function createBundle(
+  options: {
+    releaseId?: string;
+    legacyPolicy?: boolean;
+    legacyManifest?: boolean;
+    policyGeneration?: unknown;
+    manifestGeneration?: unknown;
+  } = {}
+) {
+  const releaseId = options.releaseId || RELEASE_ID;
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mbl-release-policy-'));
   for (const relative of [
     'compose.production.yml',
@@ -74,47 +89,53 @@ function createBundle() {
   ]) {
     copy(root, relative);
   }
+  const policyPath = path.join(root, 'config', 'release-policy.json');
+  const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8')) as Record<string, unknown>;
+  if (options.legacyPolicy) delete policy.metricsRuntimeGeneration;
+  else if (Object.hasOwn(options, 'policyGeneration')) {
+    policy.metricsRuntimeGeneration = options.policyGeneration;
+  }
+  fs.writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`);
   fs.mkdirSync(path.join(root, 'images'), { recursive: true });
   fs.writeFileSync(path.join(root, 'images', 'app-images.tar'), 'app archive fixture');
   fs.writeFileSync(path.join(root, 'images', 'ops-images.tar'), 'ops archive fixture');
-  fs.writeFileSync(
-    path.join(root, 'manifest.json'),
-    `${JSON.stringify(
-      {
-        schema: 1,
-        releaseId: RELEASE_ID,
-        gitSha: RELEASE_ID,
-        createdAt: '2026-09-20T00:00:00.000Z',
-        canonicalOrigin: 'https://mebel-irkutsk.ru',
+  const manifest: Record<string, unknown> = {
+    schema: 1,
+    releaseId,
+    gitSha: releaseId,
+    createdAt: '2026-09-20T00:00:00.000Z',
+    canonicalOrigin: 'https://mebel-irkutsk.ru',
+    publicBuildConfigSha256: 'e'.repeat(64),
+    dataContractVersion: 1,
+    platform: 'linux/amd64',
+    images: {
+      web: {
+        ref: `mbl-web:${releaseId}`,
+        id: `sha256:${'b'.repeat(64)}`,
+        revision: releaseId,
         publicBuildConfigSha256: 'e'.repeat(64),
-        dataContractVersion: 1,
-        platform: 'linux/amd64',
-        images: {
-          web: {
-            ref: `mbl-web:${RELEASE_ID}`,
-            id: `sha256:${'b'.repeat(64)}`,
-            revision: RELEASE_ID,
-            publicBuildConfigSha256: 'e'.repeat(64),
-          },
-          nginx: {
-            ref: `mbl-nginx:${RELEASE_ID}`,
-            id: `sha256:${'c'.repeat(64)}`,
-            revision: RELEASE_ID,
-            publicBuildConfigSha256: 'e'.repeat(64),
-          },
-          backup: {
-            ref: `mbl-backup:${RELEASE_ID}`,
-            id: `sha256:${'d'.repeat(64)}`,
-            revision: RELEASE_ID,
-            publicBuildConfigSha256: 'e'.repeat(64),
-          },
-        },
-        archives: { application: 'images/app-images.tar', operations: 'images/ops-images.tar' },
       },
-      null,
-      2
-    )}\n`
-  );
+      nginx: {
+        ref: `mbl-nginx:${releaseId}`,
+        id: `sha256:${'c'.repeat(64)}`,
+        revision: releaseId,
+        publicBuildConfigSha256: 'e'.repeat(64),
+      },
+      backup: {
+        ref: `mbl-backup:${releaseId}`,
+        id: `sha256:${'d'.repeat(64)}`,
+        revision: releaseId,
+        publicBuildConfigSha256: 'e'.repeat(64),
+      },
+    },
+    archives: { application: 'images/app-images.tar', operations: 'images/ops-images.tar' },
+  };
+  if (!options.legacyManifest) {
+    manifest.metricsRuntimeGeneration = Object.hasOwn(options, 'manifestGeneration')
+      ? options.manifestGeneration
+      : SUPPORTED_METRICS_RUNTIME_GENERATION;
+  }
+  fs.writeFileSync(path.join(root, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   writeReleaseChecksums(root);
   return root;
 }
@@ -157,6 +178,7 @@ describe('O2.4 application release and rollback policy', () => {
 
   test('limits the mutable release layer to web, worker and Nginx', () => {
     const policy = readReleasePolicy(path.join(ROOT, 'config', 'release-policy.json'));
+    expect(policy.metricsRuntimeGeneration).toBe(SUPPORTED_METRICS_RUNTIME_GENERATION);
     expect(policy.applicationServices).toEqual(['mbl-web', 'mbl-worker-trigger', 'mbl-nginx']);
     expect(policy.statefulServices).toEqual(['mbl-redis']);
     expect(policy.redisDataDestination).toBe('/data');
@@ -214,6 +236,217 @@ describe('O2.4 application release and rollback policy', () => {
       expect(() => assertBundleMatchesRecord(bundle, wrongRecord, 'Fixture')).toThrow(/release ID/i);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    ['generation 1', 1],
+    ['zero generation', 0],
+    ['negative generation', -1],
+    ['fractional generation', 1.5],
+    ['string generation', '2'],
+    ['future generation', 3],
+  ])('rejects an unsupported release-policy %s', (_label, generation) => {
+    const root = createBundle({ policyGeneration: generation, manifestGeneration: generation });
+    try {
+      expect(() => readReleasePolicy(path.join(root, 'config', 'release-policy.json'))).toThrow(
+        /metrics runtime generation/i
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('keeps missing generation distinguishable and rejects it in a new release policy', () => {
+    const root = createBundle({ legacyPolicy: true, legacyManifest: true });
+    try {
+      expect(() => readReleasePolicy(path.join(root, 'config', 'release-policy.json'))).toThrow(
+        /metricsRuntimeGeneration is required/i
+      );
+      const legacy = readReleasePolicy(path.join(root, 'config', 'release-policy.json'), {
+        allowLegacyMetricsRuntimeGeneration: true,
+      });
+      expect(Object.hasOwn(legacy, 'metricsRuntimeGeneration')).toBe(false);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('rejects a manifest generation that does not match its release policy', () => {
+    const root = createBundle({ legacyManifest: true });
+    try {
+      expect(() => verifyReleaseBundle(root, { allowLegacyMetricsRuntimeGeneration: true })).toThrow(
+        /manifest and policy metrics runtime generations differ/i
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    ['uppercase', METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID.toUpperCase()],
+    ['leading whitespace', ` ${METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID}`],
+    ['trailing whitespace', `${METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID} `],
+  ])('rejects a non-canonical %s persisted manifest release ID', (_label, releaseId) => {
+    const root = createBundle({ releaseId });
+    try {
+      expect(() => verifyReleaseBundle(root)).toThrow(/exact lowercase 40-character Git SHA/i);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('persists metrics generation in new release records without upgrading legacy records', () => {
+    const currentRoot = createBundle();
+    const legacyRoot = createBundle({
+      releaseId: METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID,
+      legacyPolicy: true,
+      legacyManifest: true,
+    });
+    try {
+      const current = verifyReleaseBundle(currentRoot);
+      expect(releaseRecord(current).metricsRuntimeGeneration).toBe(SUPPORTED_METRICS_RUNTIME_GENERATION);
+
+      const legacy = verifyReleaseBundle(legacyRoot, { allowLegacyMetricsRuntimeGeneration: true });
+      expect(Object.hasOwn(releaseRecord(legacy), 'metricsRuntimeGeneration')).toBe(false);
+    } finally {
+      fs.rmSync(currentRoot, { recursive: true, force: true });
+      fs.rmSync(legacyRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('allows only generation 2 or the exact legacy bootstrap as rollback targets', () => {
+    const current = { releaseId: 'f'.repeat(40), metricsRuntimeGeneration: 2 };
+    expect(() =>
+      assertMetricsRollbackCompatible({ releaseId: 'a'.repeat(40), metricsRuntimeGeneration: 2 }, current)
+    ).not.toThrow();
+    expect(() =>
+      assertMetricsRollbackCompatible({ releaseId: METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID }, current)
+    ).not.toThrow();
+
+    for (const target of [
+      { releaseId: METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID.toUpperCase() },
+      { releaseId: ` ${METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID}` },
+      { releaseId: `${METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID} ` },
+      { releaseId: METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID.slice(0, 8) },
+      { releaseId: '8c34c97a5fed70db90184966fd5868a39aa4f292' },
+      { releaseId: 'd'.repeat(40) },
+      { releaseId: '1'.repeat(40), metricsRuntimeGeneration: 1 },
+      { releaseId: '2'.repeat(40), metricsRuntimeGeneration: 0 },
+      { releaseId: '3'.repeat(40), metricsRuntimeGeneration: -1 },
+      { releaseId: '4'.repeat(40), metricsRuntimeGeneration: 1.5 },
+      { releaseId: '5'.repeat(40), metricsRuntimeGeneration: '2' },
+      { releaseId: '6'.repeat(40), metricsRuntimeGeneration: 3 },
+    ]) {
+      expect(() => assertMetricsRollbackCompatible(target, current)).toThrow(
+        /ROLLBACK_TARGET_METRICS_RUNTIME_INCOMPATIBLE/
+      );
+    }
+  });
+
+  test('allows normal apply only from no current, generation 2 or the exact legacy bootstrap', () => {
+    expect(() => assertMetricsApplyCompatible(null)).not.toThrow();
+    expect(() =>
+      assertMetricsApplyCompatible({ releaseId: 'a'.repeat(40), metricsRuntimeGeneration: 2 })
+    ).not.toThrow();
+    expect(() => assertMetricsApplyCompatible({ releaseId: METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID })).not.toThrow();
+
+    for (const current of [
+      { releaseId: '8c34c97a5fed70db90184966fd5868a39aa4f292' },
+      { releaseId: 'd'.repeat(40) },
+      { releaseId: METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID.toUpperCase() },
+      { releaseId: ` ${METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID}` },
+      { releaseId: `${METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID} ` },
+      { releaseId: 'e'.repeat(40), metricsRuntimeGeneration: 1 },
+      { releaseId: 'f'.repeat(40), metricsRuntimeGeneration: 3 },
+    ]) {
+      expect(() => assertMetricsApplyCompatible(current)).toThrow(/APPLY_CURRENT_METRICS_RUNTIME_INCOMPATIBLE/);
+    }
+  });
+
+  test('binds canonical release identity and generation presence exactly between state and bundle', () => {
+    const root = createBundle();
+    try {
+      const bundle = verifyReleaseBundle(root);
+      const generationRecord = releaseRecord(bundle);
+      const legacyRecord = structuredClone(generationRecord);
+      delete legacyRecord.metricsRuntimeGeneration;
+      const legacyBundle = structuredClone(bundle);
+      delete legacyBundle.manifest.metricsRuntimeGeneration;
+
+      expect(() => assertBundleMatchesRecord(bundle, legacyRecord, 'Legacy state')).toThrow(
+        /metrics runtime generation does not match/i
+      );
+      expect(() => assertBundleMatchesRecord(legacyBundle, generationRecord, 'Legacy bundle')).toThrow(
+        /metrics runtime generation does not match/i
+      );
+
+      const wrongGeneration = structuredClone(generationRecord);
+      wrongGeneration.metricsRuntimeGeneration = 1;
+      expect(() => assertBundleMatchesRecord(bundle, wrongGeneration, 'Wrong generation')).toThrow(
+        /metrics runtime generation does not match/i
+      );
+
+      const wrongRelease = structuredClone(generationRecord);
+      wrongRelease.releaseId = 'f'.repeat(40);
+      expect(() => assertBundleMatchesRecord(bundle, wrongRelease, 'Wrong release')).toThrow(/release ID/i);
+
+      const uppercaseState = structuredClone(generationRecord);
+      uppercaseState.releaseId = generationRecord.releaseId.toUpperCase();
+      expect(() => assertBundleMatchesRecord(bundle, uppercaseState, 'Uppercase state')).toThrow(
+        /exact lowercase 40-character Git SHA/i
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('keeps bootstrap apply preconditions readable and permits generation 2 rollback to it', () => {
+    const bootstrapRoot = createBundle({
+      releaseId: METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID,
+      legacyPolicy: true,
+      legacyManifest: true,
+    });
+    const candidateRoot = createBundle({ releaseId: 'b'.repeat(40) });
+    try {
+      const bootstrap = verifyReleaseBundle(bootstrapRoot, { allowLegacyMetricsRuntimeGeneration: true });
+      const candidate = verifyReleaseBundle(candidateRoot);
+      const bootstrapRecord = releaseRecord(bootstrap);
+      const candidateRecord = releaseRecord(candidate);
+
+      expect(() =>
+        assertCurrentBundleCompatibleForApply(bootstrap, bootstrapRecord, 'Bootstrap release')
+      ).not.toThrow();
+      expect(candidateRecord.metricsRuntimeGeneration).toBe(2);
+      expect(() => assertMetricsRollbackCompatible(bootstrapRecord, candidateRecord)).not.toThrow();
+    } finally {
+      fs.rmSync(bootstrapRoot, { recursive: true, force: true });
+      fs.rmSync(candidateRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('rejects arbitrary legacy apply and a bootstrap claim that does not match the verified bundle', () => {
+    const arbitraryRoot = createBundle({
+      releaseId: '8c34c97a5fed70db90184966fd5868a39aa4f292',
+      legacyPolicy: true,
+      legacyManifest: true,
+    });
+    try {
+      const arbitrary = verifyReleaseBundle(arbitraryRoot, { allowLegacyMetricsRuntimeGeneration: true });
+      const arbitraryRecord = releaseRecord(arbitrary);
+      expect(() => assertCurrentBundleCompatibleForApply(arbitrary, arbitraryRecord)).toThrow(
+        /APPLY_CURRENT_METRICS_RUNTIME_INCOMPATIBLE/
+      );
+
+      const spoofedBootstrapRecord = {
+        ...arbitraryRecord,
+        releaseId: METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID,
+      };
+      expect(() => assertCurrentBundleCompatibleForApply(arbitrary, spoofedBootstrapRecord)).toThrow(
+        /release ID does not match its stored bundle/i
+      );
+    } finally {
+      fs.rmSync(arbitraryRoot, { recursive: true, force: true });
     }
   });
 
