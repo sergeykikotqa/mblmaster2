@@ -101,6 +101,10 @@ jobs:
           METRICS_HEALTH_STATE_SMOKE_REDIS_URL: redis://127.0.0.1:6379/15
         run: npm run check:metrics-health-state-store
       - run: npm test
+      - name: Check Redis Lead Integration
+        env:
+          REDIS_URL: redis://127.0.0.1:6379/14
+        run: npm run check:redis-integration
 
   pr-gate:
     if: github.event_name == 'pull_request'
@@ -187,6 +191,10 @@ jobs:
           METRICS_HEALTH_STATE_SMOKE_REDIS_URL: redis://127.0.0.1:6379/15
         run: npm run check:metrics-health-state-store
       - run: npm test
+      - name: Check Redis Lead Integration
+        env:
+          REDIS_URL: redis://127.0.0.1:6379/14
+        run: npm run check:redis-integration
       - run: npm run check:external-monitor
       - run: npm run check:telegram-monitor
       - run: npm run check:image-policy

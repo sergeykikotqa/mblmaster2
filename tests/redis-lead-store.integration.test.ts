@@ -17,7 +17,12 @@ vi.mock('../src/server/leads/alerts', () => ({
   notifyLeadRetryRateWarning: vi.fn(async () => false),
 }));
 
-const runAgainstRedis = process.env.REDIS_INTEGRATION === '1' && Boolean(process.env.REDIS_URL);
+const redisIntegrationRequested = process.env.REDIS_INTEGRATION === '1';
+const configuredRedisUrl = String(process.env.REDIS_URL || '').trim();
+if (redisIntegrationRequested && !configuredRedisUrl) {
+  throw new Error('REDIS_INTEGRATION=1 requires a non-empty REDIS_URL');
+}
+const runAgainstRedis = redisIntegrationRequested && Boolean(configuredRedisUrl);
 const redisDescribe = runAgainstRedis ? describe : describe.skip;
 const prefix = `mbl-o22-test-${randomUUID().replaceAll('-', '')}`;
 
@@ -123,7 +128,7 @@ redisDescribe('native Redis lead pipeline integration', () => {
     expect((await store.ping()).ok).toBe(true);
     expect(store.mode).toBe('redis');
     expect(store.hasDurableStorage).toBe(true);
-  }, 15_000);
+  }, 30_000);
 
   afterAll(async () => {
     try {

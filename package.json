@@ -84,7 +84,7 @@
     "test:seo": "node scripts/seo-tests/run.mjs",
     "check:lead-api": "node scripts/check-contact-api.mjs",
     "check:redis-outage": "node scripts/check-redis-outage-fallback.mjs",
-    "check:redis-integration": "vitest run tests/redis-lead-store.integration.test.ts",
+    "check:redis-integration": "node scripts/check-redis-integration.mjs",
     "check:webhook-delivery": "node scripts/check-webhook-delivery.mjs",
     "check:lead-faults": "node scripts/check-lead-delivery-fault-injection.mjs",
     "check:lead-process-kills": "node scripts/check-lead-delivery-process-kill.mjs",

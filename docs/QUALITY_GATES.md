@@ -24,6 +24,15 @@ Notes:
 - `npm run check:prettier` stays available as a separate style cleanup task until the legacy formatting backlog is reduced.
 - Keep `PUBLIC_SITE_URL` explicit in any environment that runs `npm run build`, including CI.
 
+## Redis Integration Gate
+
+`npm test` stays hermetic and skips the native Redis integration suite. Run
+`npm run check:redis-integration` as a separate named gate with an explicit,
+isolated loopback `REDIS_URL` selecting database `/1` through `/15`. A missing
+or unsafe URL is a gate failure, never a skipped PASS. The working-branch and
+full-audit CI jobs use `/14` for this gate and keep the metrics state-store
+smoke isolated on `/15`.
+
 ## Nightly / Full Audit Baseline
 
 Use this command set for main-branch or scheduled full audits:
@@ -37,6 +46,7 @@ npm run check:secrets-scope
 npm run check
 npm run typecheck
 npm test
+$env:REDIS_URL='redis://127.0.0.1:6379/14'; npm run check:redis-integration
 npm run check:external-monitor
 npm run check:telegram-monitor
 npm run check:image-policy
