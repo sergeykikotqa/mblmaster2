@@ -30,6 +30,25 @@ const APPROVED_PROJECT_MIGRATION_MAP: Record<string, string> = {
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const EXPECTED_CANONICAL_ORIGIN = new URL(String(process.env.PUBLIC_SITE_URL || 'https://example.com').trim()).origin;
+const UNIT_TEST_DIST_DIR = String(process.env.MBL_UNIT_TEST_DIST_DIR || '').trim();
+
+function requireHermeticBuild(): string {
+  if (!UNIT_TEST_DIST_DIR) {
+    throw new Error('MBL_UNIT_TEST_DIST_DIR is required; run this suite through npm test.');
+  }
+  const markerPath = path.join(UNIT_TEST_DIST_DIR, '.mbl-unit-test-build.json');
+  if (!fs.existsSync(markerPath)) throw new Error('Hermetic unit-test build marker is missing.');
+  const marker: unknown = JSON.parse(fs.readFileSync(markerPath, 'utf8'));
+  if (
+    typeof marker !== 'object' ||
+    marker === null ||
+    (marker as Record<string, unknown>).schemaVersion !== 1 ||
+    (marker as Record<string, unknown>).publicSiteUrl !== EXPECTED_CANONICAL_ORIGIN
+  ) {
+    throw new Error('Hermetic unit-test build marker does not match PUBLIC_SITE_URL.');
+  }
+  return UNIT_TEST_DIST_DIR;
+}
 
 function parseRedirectRules(): Array<{ source: string; target: string; status: string }> {
   const file = path.join(process.cwd(), 'config', 'redirects.rules');
@@ -64,10 +83,7 @@ function normalizeUrl(value: string): string {
 }
 
 function readSitemapUrls(): Set<string> {
-  const sitemapPaths = [
-    path.join(process.cwd(), 'public', 'sitemap.xml'),
-    path.join(process.cwd(), 'dist', 'sitemap.xml'),
-  ];
+  const sitemapPaths = [path.join(requireHermeticBuild(), 'sitemap.xml')];
   const urls = new Set<string>();
 
   for (const filePath of sitemapPaths) {
@@ -214,6 +230,7 @@ test('approved project slug migration map is present in redirect policy', () => 
 });
 
 test('approved semantic project migration has no chains and canonical HTML semantics', () => {
+  const distDir = requireHermeticBuild();
   const rules = parseRedirectRules();
   const sitemapUrls = readSitemapUrls();
 
@@ -226,7 +243,7 @@ test('approved semantic project migration has no chains and canonical HTML seman
     expect(direct).toHaveLength(1);
     expect(incoming).toHaveLength(0);
 
-    const htmlPath = path.join(process.cwd(), 'dist', 'projects', newSlug, 'index.html');
+    const htmlPath = path.join(distDir, 'projects', newSlug, 'index.html');
     expect(fs.existsSync(htmlPath)).toBe(true);
 
     const html = fs.readFileSync(htmlPath, 'utf8');

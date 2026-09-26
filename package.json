@@ -123,7 +123,7 @@
     "check:e2e": "playwright test",
     "check:no-legacy-project-fields": "node scripts/check-no-legacy-project-fields.mjs",
     "migrate:projects-blocks": "node scripts/migrate-project-to-blocks.mjs",
-    "test": "vitest run --exclude tests/lead-delivery-fault-injection.integration.test.ts --exclude tests/lead-delivery-process-kill.integration.test.ts",
+    "test": "node scripts/run-unit-tests.mjs",
     "check:prettier": "prettier --check .",
     "predeploy:seo": "npm run build:data && npm run check:semantic && npm run check:generated-pages-sync && npm run check:content-duplicates && npm run check:rollout-gates && npm run check:nap-consistency && npm run check:privacy-disclosure && npm run build && npm run check:admin-token-leak && npm run check:no-admin-in-sitemap && npm run check:canonical-absolute && npm run check:canonical-in-sitemap && npm run check:canonical-nav-links && npm run check:sitemap-coverage && npm run check:article-seo-rollout && npm run check:anchors && npm run check:indexability-runtime-consistency && npm run check:decapcms-headers && npm run check:redirects-sitemap && npm run check:redirects-coverage && npm run check:slugs && npm run check:orphan-detection && npm run check:geo-similarity && npm run check:content-length && npm run check:indexable-coverage && npm run check:city-hubs-policy && npm run check:geo-signals && npm run check:no-legacy-index && npm run check:no-seo-jargon && npm run check:schema && npm run check:seo",
     "fix": "npm run fix:eslint && npm run fix:prettier",

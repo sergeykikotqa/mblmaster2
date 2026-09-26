@@ -21,6 +21,9 @@ npm run check:lighthouse:smoke
 Notes:
 
 - `npm run check` is the blocking PR baseline and includes `check:astro`, `check:eslint`, `check:nap-consistency`, and `check:privacy-disclosure`.
+- `npm test` creates and removes an isolated production build with a synthetic
+  `.invalid` origin. HTML-dependent tests never read the repository's existing
+  `dist`; a failed or incomplete build stops the suite before Vitest starts.
 - `npm run check:prettier` stays available as a separate style cleanup task until the legacy formatting backlog is reduced.
 - Keep `PUBLIC_SITE_URL` explicit in any environment that runs `npm run build`, including CI.
 
