@@ -10,8 +10,8 @@
   function hasConsent() {
     return Boolean(
       window.__analyticsConsent &&
-        typeof window.__analyticsConsent.hasConsent === 'function' &&
-        window.__analyticsConsent.hasConsent()
+      typeof window.__analyticsConsent.hasConsent === 'function' &&
+      window.__analyticsConsent.hasConsent()
     );
   }
 
@@ -20,6 +20,7 @@
     const script = document.createElement('script');
     script.async = true;
     script.src = scriptSrc;
+    script.dataset.mblAnalyticsProvider = 'yandex';
     const firstScript = document.getElementsByTagName('script')[0];
     if (firstScript && firstScript.parentNode) {
       firstScript.parentNode.insertBefore(script, firstScript);
@@ -46,6 +47,15 @@
     });
   }
 
+  function disableMetrika() {
+    if (!initialized) return;
+    if (typeof window.ym === 'function') {
+      window.ym(metrikaId, 'destruct');
+    }
+    initialized = false;
+    document.querySelector('script[data-mbl-analytics-provider="yandex"]')?.remove();
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', loadMetrika, { once: true });
   } else {
@@ -55,6 +65,9 @@
   window.addEventListener('analytics-consent-change', (event) => {
     if (event && event.detail && event.detail.state === 'granted') {
       loadMetrika();
+    }
+    if (event && event.detail && event.detail.state === 'denied') {
+      disableMetrika();
     }
   });
 })();

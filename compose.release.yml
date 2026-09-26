@@ -1,0 +1,21 @@
+# Registryless release overlay. The bundle already contains exact image IDs;
+# deployment and rollback must never rebuild or pull a moving tag on the VPS.
+services:
+  mbl-web:
+    build: !reset null
+    pull_policy: never
+
+  mbl-worker-trigger:
+    build: !reset null
+    pull_policy: never
+
+  mbl-nginx:
+    build: !reset null
+    pull_policy: never
+
+  mbl-redis:
+    pull_policy: never
+
+  mbl-backup:
+    build: !reset null
+    pull_policy: never

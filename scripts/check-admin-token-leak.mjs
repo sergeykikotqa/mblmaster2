@@ -4,18 +4,20 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
-const distAdminDir = path.join(repoRoot, 'dist', 'admin');
+const distDir = path.join(repoRoot, 'dist');
 
-const token = String(process.env.METRICS_ADMIN_TOKEN || '').trim();
-if (!token) {
+const metricsToken = String(process.env.METRICS_ADMIN_TOKEN || '').trim();
+const monitoringToken = String(process.env.MBL_MONITORING_TOKEN || '').trim();
+const ownerMetricsToken = String(process.env.MBL_OWNER_METRICS_TOKEN || '').trim();
+if (!metricsToken) {
   console.error(
     'METRICS_ADMIN_TOKEN is required for the admin token leak check. Set METRICS_ADMIN_TOKEN=__SENTINEL__ when running this check.'
   );
   process.exit(1);
 }
 
-if (!fs.existsSync(distAdminDir)) {
-  console.error('dist/admin not found. Run the build before running the admin token leak check.');
+if (!fs.existsSync(distDir)) {
+  console.error('dist not found. Run the build before running the token leak check.');
   process.exit(1);
 }
 
@@ -37,10 +39,10 @@ function collectFiles(dirPath) {
   }
 }
 
-collectFiles(distAdminDir);
+collectFiles(distDir);
 
 if (files.length === 0) {
-  console.error('Admin token leak check failed: no admin build files found to scan.');
+  console.error('Token leak check failed: no public build files found to scan.');
   process.exit(1);
 }
 
@@ -54,15 +56,19 @@ for (const filePath of files) {
     continue;
   }
 
-  if (contents.includes(token)) {
+  if (
+    contents.includes(metricsToken) ||
+    (monitoringToken && contents.includes(monitoringToken)) ||
+    (ownerMetricsToken && contents.includes(ownerMetricsToken))
+  ) {
     violations.push(path.relative(repoRoot, filePath).replace(/\\/g, '/'));
   }
 }
 
 if (violations.length > 0) {
-  console.error('Admin token leak check failed: METRICS_ADMIN_TOKEN value detected in build output.');
+  console.error('Token leak check failed: a private admin/monitoring token value was detected in public build output.');
   violations.forEach((file) => console.error(`- ${file}`));
   process.exit(1);
 }
 
-console.log('Admin token leak check passed: no METRICS_ADMIN_TOKEN found in dist/admin output.');
+console.log('Token leak check passed: no admin/monitoring/owner-metrics token value found in public dist output.');

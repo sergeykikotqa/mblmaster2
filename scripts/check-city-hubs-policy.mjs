@@ -1,11 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const ROOT = process.cwd();
 const DIST_DIR = path.join(ROOT, 'dist');
-const CITY_HUBS = ['/irkutsk', '/angarsk', '/shelekhov'];
+const CITY_HUBS = [];
 const ALLOWED_MAIN_LINKS = new Set(['/kuhni', '/shkafy', '/garderobnye']);
-const SITE_URL = String(process.env.PUBLIC_SITE_URL || 'https://mebel-irkutsk.ru').replace(/\/$/, '');
+const SITE_URL = String(process.env.PUBLIC_SITE_URL || 'https://example.com').replace(/\/$/, '');
 
 function fail(message) {
   throw new Error(message);
@@ -63,9 +64,12 @@ function parseCanonical(html) {
   return '';
 }
 
-function extractMain(html) {
-  const match = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i);
-  return match ? match[1] : '';
+export function extractCommercialNavigationLinks(html, sourcePath) {
+  const navMatches = [...html.matchAll(/<nav\b[^>]*data-city-commercial-nav[^>]*>([\s\S]*?)<\/nav>/gi)].map((match) => match[1]);
+  if (navMatches.length === 0) {
+    return new Set();
+  }
+  return extractInternalLinks(navMatches.join('\n'), sourcePath);
 }
 
 function extractInternalLinks(html, sourcePath) {
@@ -101,6 +105,38 @@ function extractInternalLinks(html, sourcePath) {
   return links;
 }
 
+export function collectCityHubIssues(html, routePath, siteUrl = SITE_URL) {
+  const errors = [];
+  const robots = parseRobotsMeta(html);
+  const canonical = parseCanonical(html);
+  const navLinks = extractCommercialNavigationLinks(html, routePath);
+  const disallowedLinks = [...navLinks].filter((href) => href !== '/privacy' && !ALLOWED_MAIN_LINKS.has(href));
+  const missingMoneyLinks = [...ALLOWED_MAIN_LINKS].filter((href) => !navLinks.has(href));
+
+  if (!robots.includes('index') || !robots.includes('follow')) {
+    errors.push(
+      `- ${routePath}: expected robots to contain "index,follow", got "${robots.join(',') || '(missing)'}"`
+    );
+  }
+
+  const expectedCanonical = `${siteUrl.replace(/\/$/, '')}${routePath}`;
+  if (canonical !== expectedCanonical) {
+    errors.push(`- ${routePath}: expected self-canonical "${expectedCanonical}", got "${canonical || '(missing)'}"`);
+  }
+
+  if (disallowedLinks.length > 0) {
+    errors.push(
+      `- ${routePath}: commercial navigation may link only to money pages, found [${disallowedLinks.join(', ')}]`
+    );
+  }
+
+  if (missingMoneyLinks.length > 0) {
+    errors.push(`- ${routePath}: city hub must link to all money pages, missing [${missingMoneyLinks.join(', ')}]`);
+  }
+
+  return errors;
+}
+
 function main() {
   if (!fs.existsSync(DIST_DIR)) {
     fail('City hub policy gate failed: dist directory is missing. Run `npm run build` first.');
@@ -116,32 +152,7 @@ function main() {
     }
 
     const html = fs.readFileSync(htmlPath, 'utf8');
-    const robots = parseRobotsMeta(html);
-    const canonical = parseCanonical(html);
-    const mainLinks = extractInternalLinks(extractMain(html), routePath);
-    const disallowedLinks = [...mainLinks].filter((href) => !ALLOWED_MAIN_LINKS.has(href));
-    const missingMoneyLinks = [...ALLOWED_MAIN_LINKS].filter((href) => !mainLinks.has(href));
-
-    if (!robots.includes('index') || !robots.includes('follow')) {
-      errors.push(
-        `- ${routePath}: expected robots to contain "index,follow", got "${robots.join(',') || '(missing)'}"`
-      );
-    }
-
-    const expectedCanonical = `${SITE_URL}${routePath}`;
-    if (canonical !== expectedCanonical) {
-      errors.push(`- ${routePath}: expected self-canonical "${expectedCanonical}", got "${canonical || '(missing)'}"`);
-    }
-
-    if (disallowedLinks.length > 0) {
-      errors.push(
-        `- ${routePath}: city hub main content may link only to money pages, found [${disallowedLinks.join(', ')}]`
-      );
-    }
-
-    if (missingMoneyLinks.length > 0) {
-      errors.push(`- ${routePath}: city hub must link to all money pages, missing [${missingMoneyLinks.join(', ')}]`);
-    }
+    errors.push(...collectCityHubIssues(html, routePath, SITE_URL));
   }
 
   if (errors.length > 0) {
@@ -149,13 +160,20 @@ function main() {
   }
 
   console.log(
-    `City hub policy gate passed: ${CITY_HUBS.length} hubs are index,self-canonical and link only to money pages in main content.`
+    `City hub policy gate passed: ${CITY_HUBS.length} hubs are index,self-canonical and link only to money pages in commercial navigation.`
   );
 }
 
-try {
-  main();
-} catch (error) {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
+const isDirectExecution = () => {
+  const currentFilePath = process.argv[1] ? path.resolve(process.argv[1]) : '';
+  return Boolean(currentFilePath) && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+};
+
+if (isDirectExecution()) {
+  try {
+    main();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
 }

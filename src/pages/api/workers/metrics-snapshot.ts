@@ -1,5 +1,4 @@
-import { notifyConversionSnapshotAnomaly } from '~/server/leads/alerts';
-import { generateDailyConversionSnapshot } from '~/server/metrics/snapshot';
+import { generateDailyMetricsSnapshotV2, isValidMetricsSnapshotDay } from '~/server/metrics/snapshot';
 import { extractBearerToken, parseBooleanEnv, timingSafeCompare } from '~/server/utils/auth';
 
 export const prerender = false;
@@ -24,21 +23,6 @@ function resolveWorkerToken(): string {
 
 function isDevBypassEnabled(): boolean {
   return parseBooleanEnv(process.env.ALLOW_DEV_BYPASS, false);
-}
-
-function parseDay(value: unknown): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  const normalized = value.trim();
-  if (!normalized) return undefined;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
-  return undefined;
-}
-
-function parseBaselineDays(value: unknown): number | undefined {
-  if (typeof value !== 'number' && typeof value !== 'string') return undefined;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return undefined;
-  return Math.max(1, Math.floor(parsed));
 }
 
 async function readRequestBody(request: Request): Promise<Record<string, unknown>> {
@@ -80,45 +64,49 @@ async function handle(request: Request) {
   try {
     const query = new URL(request.url).searchParams;
     const body = await readRequestBody(request);
-    const targetDay = parseDay(body.day) || parseDay(query.get('day'));
-    const baselineDays =
-      parseBaselineDays(body.baselineDays) || parseBaselineDays(query.get('baselineDays') || undefined);
-    const sendAlert =
-      parseBooleanEnv(String(body.sendAlert ?? ''), true) &&
-      parseBooleanEnv(query.get('sendAlert') === null ? 'true' : String(query.get('sendAlert')), true);
-
-    const snapshot = await generateDailyConversionSnapshot({
-      targetDay,
-      baselineDays,
-    });
-
-    let alertSent = false;
-    if (sendAlert && snapshot.anomalies.length > 0) {
-      alertSent = await notifyConversionSnapshotAnomaly({
-        targetDay: snapshot.targetDay,
-        baselineDays: snapshot.baselineDays,
-        generatedAtMs: snapshot.generatedAtMs,
-        dataSource: snapshot.dataSource,
-        storageSource: snapshot.storageSource,
-        metricsDegraded: snapshot.metricsDegraded,
-        anomalies: snapshot.anomalies,
-        summary: snapshot.summary,
+    if (Object.hasOwn(body, 'baselineDays') || query.has('baselineDays')) {
+      return jsonResponse(400, {
+        success: false,
+        code: 'BASELINE_DAYS_NOT_SUPPORTED',
       });
     }
+
+    const bodyHasDay = Object.hasOwn(body, 'day');
+    const queryHasDay = query.has('day');
+    const rawDay = bodyHasDay ? body.day : queryHasDay ? query.get('day') : undefined;
+    let targetDay: string | undefined;
+    if (rawDay !== undefined) {
+      const normalizedDay = typeof rawDay === 'string' ? rawDay.trim() : '';
+      if (!isValidMetricsSnapshotDay(normalizedDay)) {
+        return jsonResponse(400, {
+          success: false,
+          code: 'INVALID_DAY',
+        });
+      }
+      targetDay = normalizedDay;
+    }
+
+    const generated = await generateDailyMetricsSnapshotV2({
+      targetDay,
+    });
+    const { snapshot } = generated;
 
     return jsonResponse(200, {
       success: true,
       snapshot: {
+        schemaVersion: snapshot.schemaVersion,
         targetDay: snapshot.targetDay,
-        baselineDays: snapshot.baselineDays,
         generatedAtMs: snapshot.generatedAtMs,
         dataSource: snapshot.dataSource,
-        storageSource: snapshot.storageSource,
+        storageSource: generated.storageSource,
         metricsDegraded: snapshot.metricsDegraded,
-        summary: snapshot.summary,
-        anomaliesTop: snapshot.anomalies.slice(0, 10),
+        raw: {
+          opened: snapshot.counters.opened,
+          submitted: snapshot.counters.submitted,
+        },
       },
-      alertSent,
+      alertSent: false,
+      conversionAlertsSuppressed: true,
     });
   } catch (error) {
     console.error('[metrics-snapshot-worker] unhandled_error', error);

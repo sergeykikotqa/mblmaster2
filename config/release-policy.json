@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "projectName": "mbl-production",
+  "dataContractVersion": 1,
+  "metricsRuntimeGeneration": 2,
+  "applicationServices": ["mbl-web", "mbl-worker-trigger", "mbl-nginx"],
+  "statefulServices": ["mbl-redis"],
+  "expectedServices": ["mbl-web", "mbl-worker-trigger", "mbl-nginx", "mbl-redis"],
+  "redisDataDestination": "/data",
+  "imageRepositories": {
+    "web": "mbl-web",
+    "nginx": "mbl-nginx",
+    "backup": "mbl-backup"
+  },
+  "composeFiles": ["compose.production.yml", "compose.backup.yml", "compose.release.yml"],
+  "smokePaths": ["/health/live", "/health/ready", "/", "/projects", "/robots.txt", "/sitemap-index.xml"]
+}

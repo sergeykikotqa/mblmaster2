@@ -6,15 +6,97 @@ import { generateProjectSlug } from '../src/utils/slugify';
 
 type ProjectFrontmatter = {
   slug?: string;
+  draft?: boolean;
   title?: string;
   city?: string;
   service?: string;
   street?: string;
   images?: string[];
+  imageBaseDir?: string;
   materials?: Record<string, string>;
 };
 
+const APPROVED_PROJECT_MIGRATION_MAP: Record<string, string> = {
+  'garderobnaya-sovetskaya': 'garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk',
+  'kuhnya-baykalskiy-trakt': 'belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk',
+  'kuhnya-bogdana': 'biruzovaya-uglovaya-kuhnya-irkutsk',
+  'kuhnya-dzerzhinskogo': 'belaya-uglovaya-kuhnya-s-barnoy-stoykoy-irkutsk',
+  'kuhnya-krasnokazachya': 'bezhevaya-uglovaya-kuhnya-irkutsk',
+  'kuhnya-piskunova': 'uglovaya-kuhnya-s-podsvetkoy-irkutsk',
+  'kuhnya-trilissera': 'belaya-uglovaya-kuhnya-s-derevyannoy-stoleshnitsey-irkutsk',
+  'kuhnya-verkhnyaya-naberezhnaya': 'pryamaya-kuhnya-s-vysokimi-penalami-irkutsk',
+  'shkaf-deputatskaya': 'vstroennyi-shkaf-s-rabochey-zonoy-irkutsk',
+};
+
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const EXPECTED_CANONICAL_ORIGIN = new URL(String(process.env.PUBLIC_SITE_URL || 'https://example.com').trim()).origin;
+const UNIT_TEST_DIST_DIR = String(process.env.MBL_UNIT_TEST_DIST_DIR || '').trim();
+
+function requireHermeticBuild(): string {
+  if (!UNIT_TEST_DIST_DIR) {
+    throw new Error('MBL_UNIT_TEST_DIST_DIR is required; run this suite through npm test.');
+  }
+  const markerPath = path.join(UNIT_TEST_DIST_DIR, '.mbl-unit-test-build.json');
+  if (!fs.existsSync(markerPath)) throw new Error('Hermetic unit-test build marker is missing.');
+  const marker: unknown = JSON.parse(fs.readFileSync(markerPath, 'utf8'));
+  if (
+    typeof marker !== 'object' ||
+    marker === null ||
+    (marker as Record<string, unknown>).schemaVersion !== 1 ||
+    (marker as Record<string, unknown>).publicSiteUrl !== EXPECTED_CANONICAL_ORIGIN
+  ) {
+    throw new Error('Hermetic unit-test build marker does not match PUBLIC_SITE_URL.');
+  }
+  return UNIT_TEST_DIST_DIR;
+}
+
+function parseRedirectRules(): Array<{ source: string; target: string; status: string }> {
+  const file = path.join(process.cwd(), 'config', 'redirects.rules');
+  const text = fs.readFileSync(file, 'utf8');
+  const parsed: Array<{ source: string; target: string; status: string }> = [];
+
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/^\s*(\S+)\s+(\S+)\s+(\d{3})\s*$/);
+    if (match) {
+      parsed.push({ source: match[1], target: match[2], status: match[3] });
+    }
+  }
+
+  return parsed;
+}
+
+function normalizeUrl(value: string): string {
+  if (!value) return '/';
+  let candidate = value.trim();
+  if (candidate.includes('://')) {
+    candidate = new URL(candidate).pathname;
+  }
+  if (!candidate.startsWith('/')) {
+    candidate = `/${candidate}`;
+  }
+  candidate = candidate.split('#')[0].split('?')[0];
+  candidate = candidate.replace(/\\/g, '/');
+  while (candidate.includes('//')) {
+    candidate = candidate.replace(/\/\//g, '/');
+  }
+  return candidate === '' ? '/' : candidate;
+}
+
+function readSitemapUrls(): Set<string> {
+  const sitemapPaths = [path.join(requireHermeticBuild(), 'sitemap.xml')];
+  const urls = new Set<string>();
+
+  for (const filePath of sitemapPaths) {
+    if (!fs.existsSync(filePath)) continue;
+    const text = fs.readFileSync(filePath, 'utf8');
+    const matches = text.matchAll(/<loc>(.*?)<\/loc>/gi);
+    for (const match of matches) {
+      urls.add(normalizeUrl(match[1]));
+    }
+  }
+
+  return urls;
+}
 
 function readFrontmatter(filePath: string): ProjectFrontmatter {
   const raw = fs.readFileSync(filePath, 'utf8');
@@ -30,10 +112,20 @@ function normalizeSlug(value: string | undefined): string {
     .replace(/\.mdx?$/i, '');
 }
 
+function resolveProjectImagePaths(file: string, data: ProjectFrontmatter): string[] {
+  const baseDir = normalizeSlug(data.imageBaseDir || data.slug || file);
+  return (data.images || [])
+    .map((image) => {
+      const normalized = String(image || '').replaceAll('\\', '/');
+      return normalized.startsWith('/') ? normalized : `/images/projects/${baseDir}/${normalized}`;
+    })
+    .sort();
+}
+
 test('projects content files have valid seo-critical structure', () => {
   const projectsDir = path.join(process.cwd(), 'src/content/projects');
   const files = fs.readdirSync(projectsDir).filter((name) => name.endsWith('.md') || name.endsWith('.mdx'));
-  expect(files.length).toBeGreaterThan(0);
+  expect(files.length).toBe(27);
 
   const seenSlugs = new Set<string>();
 
@@ -41,7 +133,7 @@ test('projects content files have valid seo-critical structure', () => {
     const fullPath = path.join(projectsDir, file);
     const data = readFrontmatter(fullPath);
 
-    expect(data.city).toMatch(/^(irkutsk|angarsk|shelekhov)$/);
+    expect(data.city).toBe('irkutsk');
     expect(data.service).toMatch(/^(kuhni|shkafy|garderobnye)$/);
     if (typeof data.street !== 'undefined') {
       expect(typeof data.street).toBe('string');
@@ -71,5 +163,109 @@ test('projects content files have valid seo-critical structure', () => {
     expect(finalSlug).toMatch(SLUG_PATTERN);
     expect(seenSlugs.has(finalSlug)).toBe(false);
     seenSlugs.add(finalSlug);
+  }
+});
+
+test('published projects do not present one exact gallery as separate projects', () => {
+  const projectsDir = path.join(process.cwd(), 'src/content/projects');
+  const files = fs.readdirSync(projectsDir).filter((name) => /\.mdx?$/i.test(name));
+  const galleryOwner = new Map<string, string>();
+
+  for (const file of files) {
+    const data = readFrontmatter(path.join(projectsDir, file));
+    if (data.draft) continue;
+    const signature = resolveProjectImagePaths(file, data).join('|');
+    expect(signature.length).toBeGreaterThan(0);
+    expect(
+      galleryOwner.get(signature),
+      `${file} duplicates the complete gallery of ${galleryOwner.get(signature)}`
+    ).toBeUndefined();
+    galleryOwner.set(signature, file);
+  }
+});
+
+test('local service cases link to a published project and use only its images', () => {
+  const projectsDir = path.join(process.cwd(), 'src/content/projects');
+  const projects = new Map<string, Set<string>>();
+  for (const file of fs.readdirSync(projectsDir).filter((name) => /\.mdx?$/i.test(name))) {
+    const data = readFrontmatter(path.join(projectsDir, file));
+    if (data.draft) continue;
+    projects.set(normalizeSlug(data.slug || file), new Set(resolveProjectImagePaths(file, data)));
+  }
+
+  const localBlocks = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), 'data/local-city-blocks.json'), 'utf8')
+  ) as Record<string, Record<string, { cases: Array<{ projectSlug?: string; image: string; photos: string[] }> }>>;
+
+  for (const [serviceId, cities] of Object.entries(localBlocks)) {
+    for (const [cityId, block] of Object.entries(cities)) {
+      for (const [index, item] of block.cases.entries()) {
+        expect(item.projectSlug, `${serviceId}.${cityId}.cases[${index}] needs project evidence`).toBeTruthy();
+        const projectImages = projects.get(normalizeSlug(item.projectSlug));
+        expect(projectImages, `${serviceId}.${cityId}.cases[${index}] links to a missing/draft project`).toBeDefined();
+        for (const image of [item.image, ...(item.photos || [])]) {
+          expect(projectImages?.has(image), `${image} is not part of project ${item.projectSlug}`).toBe(true);
+        }
+      }
+    }
+  }
+});
+
+test('public SEO geography is Irkutsk-only without a standalone /irkutsk hub', () => {
+  const policy = fs.readFileSync(path.join(process.cwd(), 'src', 'config', 'indexability-policy.ts'), 'utf8');
+
+  expect(policy).not.toContain("'/irkutsk'");
+  expect(policy).not.toContain("'/angarsk'");
+  expect(policy).not.toContain("'/shelekhov'");
+});
+
+test('approved project slug migration map is present in redirect policy', () => {
+  const redirects = fs.readFileSync(path.join(process.cwd(), 'config', 'redirects.rules'), 'utf8');
+
+  for (const [oldSlug, newSlug] of Object.entries(APPROVED_PROJECT_MIGRATION_MAP)) {
+    const from = `/projects/${oldSlug}`;
+    const to = `/projects/${newSlug}`;
+    expect(redirects).toContain(`${from} ${to} 301`);
+  }
+});
+
+test('approved semantic project migration has no chains and canonical HTML semantics', () => {
+  const distDir = requireHermeticBuild();
+  const rules = parseRedirectRules();
+  const sitemapUrls = readSitemapUrls();
+
+  for (const [oldSlug, newSlug] of Object.entries(APPROVED_PROJECT_MIGRATION_MAP)) {
+    const oldPath = `/projects/${oldSlug}`;
+    const newPath = `/projects/${newSlug}`;
+    const direct = rules.filter((rule) => rule.source === oldPath && rule.target === newPath && rule.status === '301');
+    const incoming = rules.filter((rule) => rule.target === oldPath && rule.status === '301');
+
+    expect(direct).toHaveLength(1);
+    expect(incoming).toHaveLength(0);
+
+    const htmlPath = path.join(distDir, 'projects', newSlug, 'index.html');
+    expect(fs.existsSync(htmlPath)).toBe(true);
+
+    const html = fs.readFileSync(htmlPath, 'utf8');
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    expect(titleMatch).not.toBeNull();
+    expect(titleMatch![1].replace(/<[^>]+>/g, '').trim().length).toBeGreaterThan(0);
+
+    const h1Matches = html.match(/<h1\b/gi) || [];
+    expect(h1Matches).toHaveLength(1);
+
+    const robotsMatch = html.match(/<meta\s+[^>]*name=["']robots["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+    expect(robotsMatch).not.toBeNull();
+    expect(robotsMatch![1].toLowerCase()).toContain('index');
+    expect(robotsMatch![1].toLowerCase()).toContain('follow');
+
+    const canonicalMatch = html.match(/<link\s+[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["'][^>]*>/i);
+    expect(canonicalMatch).not.toBeNull();
+    expect(canonicalMatch![1].trim()).toBe(`${EXPECTED_CANONICAL_ORIGIN}${newPath}`);
+
+    const hrefs = [...html.matchAll(/href=["']([^"']+)["']/gi)].map((match) => normalizeUrl(match[1]));
+    expect(hrefs.some((href) => href === oldPath)).toBe(false);
+    expect(sitemapUrls.has(newPath)).toBe(true);
+    expect(sitemapUrls.has(oldPath)).toBe(false);
   }
 });

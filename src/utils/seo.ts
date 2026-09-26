@@ -1,4 +1,4 @@
-type ProjectCity = 'irkutsk' | 'angarsk' | 'shelekhov';
+type ProjectCity = 'irkutsk';
 type ProjectService = 'kuhni' | 'shkafy' | 'garderobnye';
 
 export interface ServiceLabels {
@@ -10,8 +10,6 @@ export interface ServiceLabels {
 
 const cityNames: Record<ProjectCity, { base: string; inCase: string }> = {
   irkutsk: { base: 'Иркутск', inCase: 'Иркутске' },
-  angarsk: { base: 'Ангарск', inCase: 'Ангарске' },
-  shelekhov: { base: 'Шелехов', inCase: 'Шелехове' },
 };
 
 const serviceLabels: Record<ProjectService, ServiceLabels> = {

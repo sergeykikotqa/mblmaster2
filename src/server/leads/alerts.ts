@@ -21,8 +21,8 @@ type RetryRateAlertPayload = {
 };
 
 type BotProtectionDegradedAlertPayload = {
-  provider: 'turnstile';
-  failureMode: 'open';
+  provider: 'smartcaptcha';
+  failureMode: 'closed';
   code: string;
   message: string;
   generatedAtMs: number;

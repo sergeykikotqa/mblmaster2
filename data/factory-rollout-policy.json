@@ -84,6 +84,6 @@
     "leadValidityRatio": 0.85,
     "forecastWindowMonths": 12,
     "forecastStyle": "P50_P90",
-    "geoScope": ["irkutsk", "angarsk", "shelekhov"]
+    "geoScope": ["irkutsk"]
   }
 }

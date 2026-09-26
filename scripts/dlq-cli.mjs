@@ -3,6 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import os from 'node:os';
 import { setTimeout as delay } from 'node:timers/promises';
+import { createClient } from 'redis';
 
 const DEFAULT_PREFIX = 'lead';
 const DEFAULT_LEAD_RECORD_TTL_SEC = 60 * 60 * 24 * 30;
@@ -100,32 +101,34 @@ async function appendAudit(client, keys, entry) {
   }
 }
 
-class UpstashRedisClient {
-  constructor(endpoint, token) {
-    this.endpoint = endpoint;
-    this.token = token;
+class NativeRedisClient {
+  constructor(url) {
+    this.client = createClient({
+      url,
+      RESP: 2,
+      disableOfflineQueue: true,
+      socket: { connectTimeout: 1200, reconnectStrategy: false },
+    });
+    this.client.on('error', () => {});
+    this.connectPromise = undefined;
   }
 
   async command(...args) {
-    const response = await fetch(this.endpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(args),
-    });
-
-    if (!response.ok) {
-      throw new Error(`REDIS_HTTP_${response.status}`);
+    try {
+      if (!this.client.isReady) {
+        this.connectPromise ||= this.client.connect();
+        await this.connectPromise;
+      }
+      return await this.client.sendCommand(args.map(String));
+    } catch {
+      throw new Error('REDIS_COMMAND_UNAVAILABLE');
     }
+  }
 
-    const payload = await response.json();
-    if (payload?.error) {
-      throw new Error(`REDIS_COMMAND_ERROR:${payload.error}`);
+  async close() {
+    if (this.client.isOpen) {
+      await this.client.close();
     }
-
-    return payload?.result;
   }
 }
 
@@ -141,6 +144,7 @@ function parseJsonOrNull(raw) {
 function buildKeys(prefix) {
   return {
     dlq: `${prefix}:delivery:dlq`,
+    dlqByAge: `${prefix}:delivery:dlq:v2`,
     queue: `${prefix}:delivery:queue`,
     leadRecord: (leadId) => `${prefix}:record:${leadId}`,
     replayLock: (leadId) => `${prefix}:delivery:replay-lock:${leadId}`,
@@ -148,9 +152,18 @@ function buildKeys(prefix) {
   };
 }
 
+async function readDlqEntries(client, keys, limit) {
+  const normalizedLimit = Math.max(0, limit - 1);
+  const [currentRaw, legacyRaw] = await Promise.all([
+    client.command('ZREVRANGE', keys.dlqByAge, 0, normalizedLimit),
+    client.command('LRANGE', keys.dlq, 0, normalizedLimit),
+  ]);
+  const rows = [...(Array.isArray(currentRaw) ? currentRaw : []), ...(Array.isArray(legacyRaw) ? legacyRaw : [])];
+  return [...new Set(rows.map(String))].slice(0, limit);
+}
+
 async function listDlq(client, keys, limit) {
-  const raw = await client.command('LRANGE', keys.dlq, 0, Math.max(0, limit - 1));
-  const rows = Array.isArray(raw) ? raw : [];
+  const rows = await readDlqEntries(client, keys, limit);
   if (rows.length === 0) {
     console.log('DLQ is empty.');
     return;
@@ -225,11 +238,11 @@ async function replayLead(
   await client.command('ZADD', keys.queue, nowMs, leadId);
 
   if (options.removeFromDlq) {
-    const rawDlq = await client.command('LRANGE', keys.dlq, 0, -1);
-    const rows = Array.isArray(rawDlq) ? rawDlq : [];
+    const rows = await readDlqEntries(client, keys, Number.MAX_SAFE_INTEGER);
     for (const item of rows) {
       const parsed = parseJsonOrNull(item);
       if (parsed?.leadId === leadId) {
+        await client.command('ZREM', keys.dlqByAge, item);
         await client.command('LREM', keys.dlq, 1, item);
       }
     }
@@ -243,8 +256,7 @@ async function replayLead(
 }
 
 async function replayAll(client, keys, options) {
-  const raw = await client.command('LRANGE', keys.dlq, 0, Math.max(0, options.limit - 1));
-  const rows = Array.isArray(raw) ? raw : [];
+  const rows = await readDlqEntries(client, keys, options.limit);
   const leadIds = rows
     .map((item) => parseJsonOrNull(item))
     .filter((entry) => entry && typeof entry === 'object' && typeof entry.leadId === 'string')
@@ -294,8 +306,7 @@ function printUsage() {
   node scripts/dlq-cli.mjs replay-all [--limit=20] [--delay-ms=250] [--force] --confirm=${REPLAY_ALL_CONFIRM_VALUE}
 
 Required env:
-  UPSTASH_REDIS_REST_URL
-  UPSTASH_REDIS_REST_TOKEN
+  REDIS_URL (redis:// or rediss://)
 Optional env:
   CONTACT_REDIS_PREFIX (default: lead)
   CONTACT_LEAD_RECORD_TTL_SEC (default: 2592000)
@@ -317,14 +328,20 @@ async function main() {
     return;
   }
 
-  const endpoint = String(process.env.UPSTASH_REDIS_REST_URL || '').trim();
-  const token = String(process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
-  if (!endpoint || !token) {
-    throw new Error('UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are required');
+  const redisUrl = String(process.env.REDIS_URL || '').trim();
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(redisUrl);
+  } catch {
+    throw new Error('REDIS_URL must be a valid redis:// or rediss:// URL');
+  }
+  if (!['redis:', 'rediss:'].includes(parsedUrl.protocol) || !parsedUrl.hostname) {
+    throw new Error('REDIS_URL must be a valid redis:// or rediss:// URL');
   }
 
   const prefix = normalizePrefix(process.env.CONTACT_REDIS_PREFIX);
-  const client = new UpstashRedisClient(endpoint, token);
+  const client = new NativeRedisClient(redisUrl);
+  activeClient = client;
   const keys = buildKeys(prefix);
   const actor = resolveAuditActor();
   const startedAt = new Date().toISOString();
@@ -412,8 +429,13 @@ async function main() {
   throw new Error(`Unknown command: ${command}`);
 }
 
-main().catch((error) => {
-  console.error('DLQ CLI failed.');
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+let activeClient;
+main()
+  .catch((error) => {
+    console.error('DLQ CLI failed.');
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    if (activeClient) await activeClient.close();
+  });

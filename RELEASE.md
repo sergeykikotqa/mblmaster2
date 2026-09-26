@@ -5,16 +5,19 @@
 1. Confirm production env is complete.
    Required:
    - `PUBLIC_SITE_URL`
-   - `UPSTASH_REDIS_REST_URL`
-   - `UPSTASH_REDIS_REST_TOKEN`
+   - `REDIS_URL`
    - `CONTACT_WORKER_URL`
    - `CONTACT_WORKER_TOKEN`
    - `CONTACT_WEBHOOK_URL`
    - `CONTACT_WEBHOOK_SECRET`
    - `CONTACT_ALERT_WEBHOOK_URL` or `CONTACT_ALERT_WEBHOOK_URL_SECONDARY`
-   - `PUBLIC_TURNSTILE_SITE_KEY`
-   - `TURNSTILE_SECRET_KEY`
+   - `CONTACT_SMARTCAPTCHA_REQUIRED=true`
+   - `SMARTCAPTCHA_CLIENT_KEY` (public key served at runtime, never baked into the image)
+   - `SMARTCAPTCHA_SERVER_KEY` (secret, VPS env only)
+   - `SMARTCAPTCHA_ALLOWED_HOSTS` (exact hostnames also enabled in Yandex Cloud)
    - `METRICS_ADMIN_TOKEN`
+   - `MBL_MONITORING_TOKEN` (dedicated external health credential)
+   - `MBL_OWNER_METRICS_TOKEN` (distinct read-only Telegram metrics credential)
    - `DEPLOY_SMOKE_BASE_URL`
 2. Run release gates.
    ```bash
@@ -40,7 +43,7 @@
    Worker pause flag:
    - `CONTACT_WORKER_PAUSED=false`
 2. Deploy the release artifact.
-3. Run post-deploy smoke.
+3. Run post-deploy smoke against an isolated test configuration. A fresh SmartCaptcha token is single-use: never retry a positive submission with the same token, and never use real client data in a smoke test.
    ```bash
    npm run check:deployed-runtime
    ```
@@ -49,6 +52,7 @@
    - `/api/admin/health/worker` reports `webhookSecretConfigured=true`
    - `/api/admin/health/worker` reports `alertChannelConfigured=true`
    - `/api/admin/health/worker` reports `alertEndpointReachable=true`
+   - `/api/admin/health/worker` reports `smartCaptchaRequired=true` and `smartCaptchaReady=true`
    - `/api/admin/health/pipeline` reports `workerPaused=false`
    - `/api/admin/health/pipeline` reports `queueDepth < queueBackpressureThreshold`
    - `/api/admin/health/pipeline` reports `dlqLastHour=0`
@@ -102,7 +106,7 @@ Watch for the first 30-60 minutes:
 - alert endpoint reachability failures
 - retry rate spikes
 - DLQ growth
-- Turnstile failures
+- SmartCaptcha failures (all lead submissions fail closed while the service is unavailable)
 - unexpected `WORKER_PAUSED` or `QUEUE_BACKPRESSURE` responses
 
 If any of the above spikes unexpectedly:

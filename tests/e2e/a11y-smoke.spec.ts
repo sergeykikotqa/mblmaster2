@@ -7,7 +7,7 @@ const routes = [
   { name: 'article', path: '/articles/kak-splanirovat-garderobnuyu' },
   { name: 'service', path: '/kuhni' },
   { name: 'projects', path: '/projects' },
-  { name: 'project', path: '/projects/kuhnya-bogdana' },
+  { name: 'project', path: '/projects/biruzovaya-uglovaya-kuhnya-irkutsk' },
   { name: 'contacts', path: '/contacts' },
   { name: 'guides', path: '/guides?q=кухня' },
 ];
@@ -33,7 +33,10 @@ test.describe('a11y smoke', () => {
       test(`axe scan: ${route.name} (${viewport.name})`, async ({ page }) => {
         test.setTimeout(90_000);
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
-        await page.goto(route.path, { waitUntil: 'domcontentloaded' });
+        const response = await page.goto(route.path, { waitUntil: 'domcontentloaded' });
+        expect(response, `No HTTP response for ${route.path}`).not.toBeNull();
+        expect(response?.status(), `Unexpected HTTP status for ${route.path}`).toBe(200);
+        expect(new URL(page.url()).pathname).toBe(new URL(route.path, 'http://127.0.0.1').pathname);
         await expect(page.locator('html')).not.toHaveAttribute('data-e2e', 'true');
         await page.evaluate(() => document.fonts.ready);
 

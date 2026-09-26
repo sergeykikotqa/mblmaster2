@@ -1,5 +1,6 @@
 import { notifyLeadDeadLetter, notifyLeadRetryRateWarning } from './alerts';
 import { recordFallbackDeliveryMetric } from './metrics-fallback';
+import { recordWorkerCycleHeartbeat, toWorkerHeartbeatErrorCode } from './runtime-health';
 import { getLeadStore, type LeadStore } from './store';
 import type { DeadLetterEntry, DeliveryAttemptMetric, LeadRecord } from './types';
 import { deliverLeadWebhook } from './webhook';
@@ -52,7 +53,7 @@ function getLeadRecordTtlSec(): number {
 }
 
 function getDeadLetterTtlSec(): number {
-  return parsePositiveInt(process.env.CONTACT_DLQ_TTL_SEC, DEFAULT_DEAD_LETTER_TTL_SEC, 0);
+  return parsePositiveInt(process.env.CONTACT_DLQ_TTL_SEC, DEFAULT_DEAD_LETTER_TTL_SEC, 60);
 }
 
 function getWorkerProcessingLockTtlSec(): number {
@@ -162,7 +163,14 @@ function emitLeadEvent(
 }
 
 function isTerminalDeliveryFailure(code: string | undefined): boolean {
-  return code === 'WEBHOOK_NOT_CONFIGURED' || code === 'WEBHOOK_SECRET_NOT_CONFIGURED' || code === 'WEBHOOK_ID_MISSING';
+  return (
+    code === 'WEBHOOK_NOT_CONFIGURED' ||
+    code === 'WEBHOOK_SECRET_NOT_CONFIGURED' ||
+    code === 'WEBHOOK_ID_MISSING' ||
+    code === 'WEBHOOK_URL_INVALID' ||
+    code === 'WEBHOOK_INSECURE_TRANSPORT' ||
+    code === 'WEBHOOK_REDIRECT_BLOCKED'
+  );
 }
 
 async function recordDeliveryMetricSafely(store: LeadStore, metric: DeliveryAttemptMetric): Promise<void> {
@@ -222,7 +230,7 @@ async function maybeNotifyRetryRateWarning(store: LeadStore): Promise<void> {
   );
 }
 
-export async function processLeadQueue(limitOverride?: number): Promise<ProcessLeadQueueResult> {
+async function processLeadQueueCycle(limitOverride?: number): Promise<ProcessLeadQueueResult> {
   if (isLeadWorkerPaused()) {
     emitLeadEvent('lead_worker_paused', {
       limitOverride: typeof limitOverride === 'number' ? limitOverride : undefined,
@@ -232,6 +240,7 @@ export async function processLeadQueue(limitOverride?: number): Promise<ProcessL
 
   const store = getLeadStore();
   const nowMs = Date.now();
+  await store.pruneDeadLetters(nowMs, getDeadLetterTtlSec());
   const dueLeadIds = await store.listDueLeadIds(nowMs, getWorkerBatchSize(limitOverride));
   const maxRetries = getMaxRetries();
   const leadRecordTtlSec = getLeadRecordTtlSec();
@@ -530,7 +539,13 @@ export async function processLeadQueue(limitOverride?: number): Promise<ProcessL
                 ? 'webhook_secret_not_configured'
                 : delivery.code === 'WEBHOOK_ID_MISSING'
                   ? 'webhook_id_missing'
-                  : 'max_retries_exceeded';
+                  : delivery.code === 'WEBHOOK_URL_INVALID'
+                    ? 'webhook_url_invalid'
+                    : delivery.code === 'WEBHOOK_INSECURE_TRANSPORT'
+                      ? 'webhook_insecure_transport'
+                      : delivery.code === 'WEBHOOK_REDIRECT_BLOCKED'
+                        ? 'webhook_redirect_blocked'
+                        : 'max_retries_exceeded';
           const alertSent = await notifyLeadDeadLetter({
             leadId,
             failedAt: deadLetterEntry.failedAt,
@@ -640,4 +655,40 @@ export async function processLeadQueue(limitOverride?: number): Promise<ProcessL
   }
 
   return result;
+}
+
+async function recordHeartbeatWithoutChangingDelivery(
+  input: Parameters<typeof recordWorkerCycleHeartbeat>[0]
+): Promise<void> {
+  try {
+    await recordWorkerCycleHeartbeat(input);
+  } catch (error) {
+    emitLeadEvent(
+      'lead_worker_heartbeat_write_failed',
+      {
+        code: toWorkerHeartbeatErrorCode(error),
+      },
+      'warn'
+    );
+  }
+}
+
+export async function processLeadQueue(limitOverride?: number): Promise<ProcessLeadQueueResult> {
+  try {
+    const result = await processLeadQueueCycle(limitOverride);
+    await recordHeartbeatWithoutChangingDelivery({
+      status: result.paused ? 'paused' : 'ok',
+      processed: result.processed,
+      delivered: result.delivered,
+    });
+    return result;
+  } catch (error) {
+    await recordHeartbeatWithoutChangingDelivery({
+      status: 'error',
+      processed: 0,
+      delivered: 0,
+      error,
+    });
+    throw error;
+  }
 }

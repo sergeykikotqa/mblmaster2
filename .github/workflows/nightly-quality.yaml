@@ -36,7 +36,6 @@ jobs:
         with:
           name: visual-audit-nightly-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            .tmp/design-audit/**
             .tmp/mobile-audit/**
           if-no-files-found: warn
           retention-days: 14

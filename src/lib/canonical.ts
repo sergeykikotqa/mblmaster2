@@ -12,8 +12,7 @@ function normalizePath(pathname: string): string {
 }
 
 function readPublicSiteUrl(): string {
-  const fromProcess =
-    typeof process !== 'undefined' && process.env ? String(process.env.PUBLIC_SITE_URL || '') : '';
+  const fromProcess = typeof process !== 'undefined' && process.env ? String(process.env.PUBLIC_SITE_URL || '') : '';
   if (fromProcess.trim()) return fromProcess.trim();
 
   const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as ImportMeta).env : undefined;
@@ -30,7 +29,9 @@ function isProductionMode(): boolean {
 }
 
 function isNonProductionHost(hostname: string): boolean {
-  const normalized = String(hostname || '').trim().toLowerCase();
+  const normalized = String(hostname || '')
+    .trim()
+    .toLowerCase();
   if (!normalized) return true;
   if (normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '0.0.0.0') return true;
   if (normalized.endsWith('.local') || normalized.endsWith('.localhost')) return true;
@@ -54,6 +55,8 @@ export function getCanonicalUrl(input: URL, config: CanonicalConfig = {}): strin
     const publicUrl = new URL(publicSiteUrl);
     url.protocol = publicUrl.protocol;
     url.host = publicUrl.host;
+    // URL.host assignment does not clear an existing local development port.
+    url.port = publicUrl.port;
   } else if (isProduction && isNonProductionHost(url.hostname)) {
     throw new Error(
       `[canonical] invalid host "${url.hostname}". Set PUBLIC_SITE_URL to enforce production canonical URLs.`

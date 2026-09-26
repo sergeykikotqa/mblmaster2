@@ -6,4 +6,4 @@ Disallow: /decapcms/
 Clean-param: utm_source&utm_medium&utm_campaign&utm_term&utm_content /
 Clean-param: tag /
 
-Sitemap: https://mebel-irkutsk.ru/sitemap-index.xml
+Sitemap: https://example.com/sitemap-index.xml

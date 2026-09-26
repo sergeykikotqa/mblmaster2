@@ -14,7 +14,7 @@ const SITEMAP_ROUTE_PATTERN = /^\/sitemap(?:-(?:index|\d+))?\.xml$/i;
 const TRACKABLE_PREFIXES = ['/_astro', '/.netlify', '/images', '/scripts', '/fonts'];
 const TRACKABLE_FILE_EXTENSION_PATTERN =
   /\.(?:avif|bmp|css|csv|gif|ico|jpeg|jpg|js|json|map|mp4|pdf|png|svg|txt|webm|webp|woff2?|xml)$/i;
-const ALLOWED_NOINDEX_TARGETS = new Set(['/irkutsk', '/angarsk', '/shelekhov', '/privacy']);
+const ALLOWED_NOINDEX_TARGETS = new Set(['/irkutsk', '/privacy']);
 const SUPPORT_WIDGET_PATTERN = /data-support-links|support-widget|support-links|contact-city-links|city-links/i;
 
 function normalizeRoutePath(routePath) {
@@ -168,7 +168,7 @@ function summarizeSchema(html) {
   for (const typed of typedNodes) {
     for (const typeName of typed.typeNames) {
       uniqueTypes.add(typeName);
-      if (typeName === 'KitchenCabinetStore') {
+      if (typeName === 'LocalBusiness') {
         businessCount += 1;
       }
       if (typeName === 'BreadcrumbList') {
@@ -966,7 +966,7 @@ export async function buildSiteGraph() {
         node,
         'fail',
         'schema-duplication',
-        `Page exposes ${node.businessCount} KitchenCabinetStore JSON-LD nodes; expected at most 1.`
+        `Page exposes ${node.businessCount} LocalBusiness JSON-LD nodes; expected at most 1.`
       );
     }
 
@@ -1229,7 +1229,7 @@ export function writeCrawlReport(report) {
         ${renderIssueTable('Orphan Indexable Pages', orphanRows, 'No orphan indexable pages.')}
         ${renderIssueTable('Click Depth Violations', depthRows, 'All indexable pages are within 3 clicks of the homepage.')}
         ${renderIssueTable('Noindex Link Leaks', noindexLeakRows, 'No forbidden main-content links to noindex or canonicalized-away pages.')}
-        ${renderIssueTable('Schema Duplication', schemaRows, 'No duplicate KitchenCabinetStore or BreadcrumbList schema.')}
+        ${renderIssueTable('Schema Duplication', schemaRows, 'No duplicate LocalBusiness or BreadcrumbList schema.')}
         ${renderArticleTable(report)}
       </div>
     </main>

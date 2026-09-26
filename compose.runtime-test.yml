@@ -1,0 +1,10 @@
+# Test-only overlay: production containers may call a mock receiver running on
+# the Docker host. The production base intentionally has no host-gateway route.
+services:
+  mbl-web:
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    environment:
+      # Test-only preload intercepts SmartCaptcha verification while keeping
+      # the production build fail-closed and configured as CAPTCHA-required.
+      NODE_OPTIONS: --require=/run/mbl-backup-status/smartcaptcha-fetch-mock.cjs

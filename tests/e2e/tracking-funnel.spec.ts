@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { mockSmartCaptcha } from './smartcaptcha-mock';
 
 const CANONICAL_FORM_EVENTS = [
   'form_view',
@@ -32,6 +33,7 @@ test.describe('Lead tracking funnel', () => {
   });
 
   test('emits canonical form funnel events in order for a successful money-page submit', async ({ page }) => {
+    await mockSmartCaptcha(page);
     await page.route('**/api/leads', async (route) => {
       await route.fulfill({
         status: 200,
@@ -76,6 +78,9 @@ test.describe('Lead tracking funnel', () => {
     await phoneInput.fill('9123456789');
     await form.locator('input[name="name"]').fill('Tracking Funnel');
     await form.locator('input[name="consent"]').check();
+    const widgetButton = form.locator('[data-smartcaptcha-widget] button');
+    await expect(widgetButton).toBeVisible();
+    await widgetButton.click();
     await form.locator('[data-submit-btn]').click();
     await expect(form.locator('[data-success-box]')).toBeVisible();
 
@@ -111,7 +116,8 @@ test.describe('Lead tracking funnel', () => {
     expect(dataLayerEvents).not.toContain('form_phone_valid');
   });
 
-  test('emits submit_blocked with turnstile_required when anti-bot step is incomplete', async ({ page }) => {
+  test('emits submit_blocked with smartcaptcha_required when anti-bot step is incomplete', async ({ page }) => {
+    await mockSmartCaptcha(page);
     await page.goto('/contacts');
     await page.waitForFunction(() => Boolean((window as { __leadTrackingInit?: boolean }).__leadTrackingInit));
     await page.waitForFunction(() => Boolean((window as { __contactFormsInit?: boolean }).__contactFormsInit));
@@ -120,11 +126,6 @@ test.describe('Lead tracking funnel', () => {
     });
 
     const form = page.locator('form.lead-contact-form').first();
-    await form.evaluate((node) => {
-      (node as HTMLFormElement).dataset.turnstileTestMode = 'required';
-      (window as Window & { turnstile?: Record<string, unknown> }).turnstile = {};
-    });
-
     await form.locator('input[name="phone"]').fill('9123456789');
     await form.locator('input[name="name"]').fill('Blocked Case');
     await form.locator('input[name="consent"]').check();
@@ -136,7 +137,7 @@ test.describe('Lead tracking funnel', () => {
 
     expect(submitAttemptIndex).toBeGreaterThan(-1);
     expect(blockedEntry).toBeTruthy();
-    expect(String(blockedEntry?.reason || '')).toBe('turnstile_required');
+    expect(String(blockedEntry?.reason || '')).toBe('smartcaptcha_required');
     expect(entries.findIndex((entry) => entry.event === 'form_submit_blocked')).toBeGreaterThan(submitAttemptIndex);
   });
 

@@ -1,146 +1,24 @@
 {
-  "generatedAt": "2026-03-20T09:24:00.930Z",
+  "generatedAt": "2026-09-14T03:42:51.861Z",
   "report": {
     "auditReportVersion": 2,
-    "vulnerabilities": {
-      "@astrojs/rss": {
-        "name": "@astrojs/rss",
-        "severity": "moderate",
-        "isDirect": true,
-        "via": [
-          "fast-xml-parser"
-        ],
-        "effects": [],
-        "range": "*",
-        "nodes": [
-          "node_modules/@astrojs/rss"
-        ],
-        "fixAvailable": false
-      },
-      "fast-xml-parser": {
-        "name": "fast-xml-parser",
-        "severity": "moderate",
-        "isDirect": false,
-        "via": [
-          {
-            "source": 1114952,
-            "name": "fast-xml-parser",
-            "dependency": "fast-xml-parser",
-            "title": "Entity Expansion Limits Bypassed When Set to Zero Due to JavaScript Falsy Evaluation in fast-xml-parser",
-            "url": "https://github.com/advisories/GHSA-jp2q-39xq-3w4g",
-            "severity": "moderate",
-            "cwe": [
-              "CWE-1284"
-            ],
-            "cvss": {
-              "score": 5.9,
-              "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
-            },
-            "range": ">=4.0.0-beta.3 <=5.5.6"
-          }
-        ],
-        "effects": [
-          "@astrojs/rss"
-        ],
-        "range": "4.0.0-beta.3 - 5.5.6",
-        "nodes": [
-          "node_modules/fast-xml-parser"
-        ],
-        "fixAvailable": false
-      },
-      "lodash": {
-        "name": "lodash",
-        "severity": "moderate",
-        "isDirect": false,
-        "via": [
-          {
-            "source": 1112455,
-            "name": "lodash",
-            "dependency": "lodash",
-            "title": "Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions",
-            "url": "https://github.com/advisories/GHSA-xxjr-mmjv-4gpg",
-            "severity": "moderate",
-            "cwe": [
-              "CWE-1321"
-            ],
-            "cvss": {
-              "score": 6.5,
-              "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L"
-            },
-            "range": ">=4.0.0 <=4.17.22"
-          }
-        ],
-        "effects": [],
-        "range": "4.0.0 - 4.17.21",
-        "nodes": [
-          "node_modules/lodash"
-        ],
-        "fixAvailable": true
-      },
-      "tar": {
-        "name": "tar",
-        "severity": "high",
-        "isDirect": false,
-        "via": [
-          {
-            "source": 1114200,
-            "name": "tar",
-            "dependency": "tar",
-            "title": "tar has Hardlink Path Traversal via Drive-Relative Linkpath",
-            "url": "https://github.com/advisories/GHSA-qffp-2rhf-9h96",
-            "severity": "high",
-            "cwe": [
-              "CWE-22",
-              "CWE-59"
-            ],
-            "cvss": {
-              "score": 0,
-              "vectorString": null
-            },
-            "range": "<=7.5.9"
-          },
-          {
-            "source": 1114302,
-            "name": "tar",
-            "dependency": "tar",
-            "title": "node-tar Symlink Path Traversal via Drive-Relative Linkpath",
-            "url": "https://github.com/advisories/GHSA-9ppj-qmqm-q256",
-            "severity": "high",
-            "cwe": [
-              "CWE-22"
-            ],
-            "cvss": {
-              "score": 0,
-              "vectorString": null
-            },
-            "range": "<=7.5.10"
-          }
-        ],
-        "effects": [],
-        "range": "<=7.5.10",
-        "nodes": [
-          "node_modules/@mapbox/node-pre-gyp/node_modules/tar",
-          "node_modules/@netlify/edge-bundler/node_modules/tar"
-        ],
-        "fixAvailable": true
-      }
-    },
+    "vulnerabilities": {},
     "metadata": {
       "vulnerabilities": {
         "info": 0,
         "low": 0,
-        "moderate": 3,
-        "high": 1,
+        "moderate": 0,
+        "high": 0,
         "critical": 0,
-        "total": 4
+        "total": 0
       },
       "dependencies": {
-        "prod": 944,
-        "dev": 554,
-        "optional": 210,
-        "peer": 0,
+        "prod": 391,
+        "dev": 609,
+        "optional": 107,
+        "peer": 2,
         "peerOptional": 0,
-        "total": 1676
+        "total": 1104
       }
     }
   }

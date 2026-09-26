@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { getGeneratedPageBySlug } from '~/lib/geo-data';
+import funnelPublicPagesRaw from '../../../data/funnel-public-pages.json';
+import { assertMemoryFallbackAllowed, hasRedisConfig, redisCommand } from '~/server/redis/client';
 
 type FunnelConversionEventName = 'page_view' | 'form_opened' | 'form_submitted';
 type FunnelOpsEventName =
@@ -24,6 +25,10 @@ type FunnelDimensions = {
   service: string;
   pageType: string;
 };
+
+const funnelPublicPages = new Map(
+  (funnelPublicPagesRaw as FunnelDimensions[]).map((page) => [normalizePath(page.pageSlug), page])
+);
 
 type FunnelOpsCounts = {
   formView: number;
@@ -55,7 +60,7 @@ export type FunnelRollupEntry = {
   pageViews: number;
   formOpened: number;
   formSubmitted: number;
-  conversionRate: number;
+  conversionRate: null;
   ops: FunnelOpsCounts;
   opsReasons: FunnelOpsReasonCounts;
 };
@@ -68,7 +73,7 @@ export type FunnelRollup = {
   totalPageViews: number;
   totalOpened: number;
   totalSubmitted: number;
-  conversionRate: number;
+  conversionRate: null;
   totalOps: FunnelOpsCounts;
   totalOpsReasons: FunnelOpsReasonCounts;
   entries: FunnelRollupEntry[];
@@ -94,11 +99,6 @@ type FunnelRollupParams = {
   pageType?: string;
   pageSlug?: string;
   limit?: number;
-};
-
-type UpstashResponse<T> = {
-  result?: T;
-  error?: string;
 };
 
 const DEFAULT_HOUR_RETENTION_SEC = 60 * 60 * 24 * 14;
@@ -145,7 +145,15 @@ function sanitizePageSlug(value: unknown): string {
   if (typeof value !== 'string') return '';
   const input = value.trim();
   if (!input) return '';
-  if (input.startsWith('/')) return normalizePath(input);
+  if (input.startsWith('/')) {
+    try {
+      const url = new URL(input, 'https://local.internal');
+      if (url.origin !== 'https://local.internal') return '';
+      return normalizePath(url.pathname);
+    } catch {
+      return '';
+    }
+  }
   try {
     const url = new URL(input);
     return normalizePath(url.pathname);
@@ -171,19 +179,6 @@ function resolvePrefix(): string {
   return value.replace(/[^a-zA-Z0-9:_-]/g, '-');
 }
 
-function hasRedisConfig(): boolean {
-  const endpoint = (process.env.UPSTASH_REDIS_REST_URL || '').trim();
-  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
-  return Boolean(endpoint && token);
-}
-
-function getRedisConfig() {
-  return {
-    endpoint: (process.env.UPSTASH_REDIS_REST_URL || '').trim(),
-    token: (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim(),
-  };
-}
-
 function keyFor(span: 'hour' | 'day', bucket: string): string {
   return `${resolvePrefix()}:metrics:funnel:${span}:${bucket}`;
 }
@@ -198,6 +193,10 @@ function nowHourBucket(timestampMs: number): string {
 
 function nowDayBucket(timestampMs: number): string {
   return new Date(timestampMs).toISOString().slice(0, 10);
+}
+
+export function resolveFunnelHourRetentionSec(): number {
+  return parsePositiveInt(process.env.LEAD_METRICS_HOUR_RETENTION_SEC, DEFAULT_HOUR_RETENTION_SEC, 60 * 60);
 }
 
 function normalizeBucket(span: 'hour' | 'day', bucket?: string): string {
@@ -218,16 +217,12 @@ function toDimension(params: {
   pageType?: unknown;
 }): FunnelDimensions | null {
   const pageSlug = sanitizePageSlug(params.pageSlug);
-  if (!pageSlug || pageSlug === '/') return null;
-  const generatedPage = getGeneratedPageBySlug(pageSlug);
-  if (!generatedPage) return null;
+  if (!pageSlug) return null;
+  const publicPage = funnelPublicPages.get(pageSlug);
+  if (!publicPage) return null;
 
   return {
-    pageSlug: generatedPage.pageSlug,
-    city: generatedPage.cityId,
-    district: '',
-    service: generatedPage.serviceId,
-    pageType: generatedPage.pageType,
+    ...publicPage,
   };
 }
 
@@ -279,7 +274,9 @@ function encodeField(eventName: FunnelEventName, dimensions: FunnelDimensions, r
   ].join('|');
 }
 
-function decodeField(field: string): { eventName: FunnelEventName; dimensions: FunnelDimensions; reason: string } | null {
+function decodeField(
+  field: string
+): { eventName: FunnelEventName; dimensions: FunnelDimensions; reason: string } | null {
   const parts = String(field || '').split('|');
   if (parts.length !== 6 && parts.length !== 7) return null;
   const eventName = parts[0] as FunnelEventName;
@@ -360,29 +357,6 @@ function incrementOpsCount(target: FunnelOpsCounts, eventName: FunnelOpsEventNam
       target.formAbandoned += count;
       break;
   }
-}
-
-async function redisCommand<T>(...args: Array<string | number>): Promise<T> {
-  const { endpoint, token } = getRedisConfig();
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(args),
-  });
-
-  if (!response.ok) {
-    throw new Error(`REDIS_HTTP_${response.status}`);
-  }
-
-  const payload = (await response.json()) as UpstashResponse<T>;
-  if (payload.error) {
-    throw new Error(`REDIS_COMMAND_ERROR:${payload.error}`);
-  }
-
-  return payload.result as T;
 }
 
 function rememberMemoryHash(key: string, ttlSec: number) {
@@ -541,7 +515,7 @@ function aggregateRollup(params: {
   totalPageViews: number;
   totalOpened: number;
   totalSubmitted: number;
-  conversionRate: number;
+  conversionRate: null;
   totalOps: FunnelOpsCounts;
   totalOpsReasons: FunnelOpsReasonCounts;
 } {
@@ -559,7 +533,7 @@ function aggregateRollup(params: {
     if (!parsed) continue;
 
     const { eventName, dimensions } = parsed;
-    if (!dimensions.pageSlug || dimensions.pageSlug === '/') continue;
+    if (!dimensions.pageSlug) continue;
     if (!matchesFilter(dimensions.pageSlug, params.filters.pageSlug)) continue;
     if (!matchesFilter(dimensions.city, params.filters.city)) continue;
     if (!matchesFilter(dimensions.district, params.filters.district)) continue;
@@ -584,7 +558,7 @@ function aggregateRollup(params: {
         pageViews: 0,
         formOpened: 0,
         formSubmitted: 0,
-        conversionRate: 0,
+        conversionRate: null,
         ops: createEmptyOpsCounts(),
         opsReasons: createEmptyOpsReasonCounts(),
       });
@@ -614,25 +588,16 @@ function aggregateRollup(params: {
     }
   }
 
-  const entries = sortRollupEntries(
-    [...aggregated.values()].map((entry) => ({
-      ...entry,
-      conversionRate:
-        entry.formOpened > 0
-          ? entry.formSubmitted / entry.formOpened
-          : entry.pageViews > 0
-            ? entry.formSubmitted / entry.pageViews
-            : 0,
-    }))
-  );
+  // Page views and form opens require analytics consent, while accepted leads
+  // are recorded server-side. These counters do not form a comparable cohort.
+  const entries = sortRollupEntries([...aggregated.values()]);
 
   return {
     totalPageViews,
     entries,
     totalOpened,
     totalSubmitted,
-    conversionRate:
-      totalOpened > 0 ? totalSubmitted / totalOpened : totalPageViews > 0 ? totalSubmitted / totalPageViews : 0,
+    conversionRate: null,
     totalOps,
     totalOpsReasons,
   };
@@ -653,12 +618,14 @@ async function loadFunnelBucket(
         dataSource: 'redis',
       };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       console.warn('[funnel-metrics] redis_read_failed', {
         code: error instanceof Error ? error.message : 'UNKNOWN',
       });
     }
   }
 
+  assertMemoryFallbackAllowed();
   return {
     hash: readMemoryHash(key),
     dataSource: 'memory',
@@ -674,7 +641,7 @@ function finalizeRollup(params: {
     totalPageViews: number;
     totalOpened: number;
     totalSubmitted: number;
-    conversionRate: number;
+    conversionRate: null;
     totalOps: FunnelOpsCounts;
     totalOpsReasons: FunnelOpsReasonCounts;
   };
@@ -705,7 +672,7 @@ export async function recordFunnelMetric(params: FunnelRecordParams): Promise<{ 
   const field = encodeField(params.eventName, dimensions, params.reason);
   const hourKey = keyFor('hour', hourBucket);
   const dayKey = keyFor('day', dayBucket);
-  const hourTtlSec = parsePositiveInt(process.env.LEAD_METRICS_HOUR_RETENTION_SEC, DEFAULT_HOUR_RETENTION_SEC, 60 * 60);
+  const hourTtlSec = resolveFunnelHourRetentionSec();
   const dayTtlSec = parsePositiveInt(process.env.LEAD_METRICS_DAY_RETENTION_SEC, DEFAULT_DAY_RETENTION_SEC, 60 * 60);
 
   if (hasRedisConfig()) {
@@ -716,12 +683,14 @@ export async function recordFunnelMetric(params: FunnelRecordParams): Promise<{ 
       await redisCommand('EXPIRE', dayKey, dayTtlSec);
       return { dataSource: 'redis' };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       console.warn('[funnel-metrics] redis_write_failed', {
         code: error instanceof Error ? error.message : 'UNKNOWN',
       });
     }
   }
 
+  assertMemoryFallbackAllowed();
   recordMemoryMetric(hourKey, field, hourTtlSec);
   recordMemoryMetric(dayKey, field, dayTtlSec);
   return { dataSource: 'memory' };
@@ -828,12 +797,14 @@ export async function checkTrackRateLimit(params: { ip: string; pageSlug: string
         dataSource: 'redis',
       };
     } catch (error) {
+      assertMemoryFallbackAllowed(error);
       console.warn('[funnel-metrics] track_rate_limit_redis_failed', {
         code: error instanceof Error ? error.message : 'UNKNOWN',
       });
     }
   }
 
+  assertMemoryFallbackAllowed();
   const ip = incrementMemoryTrackRateLimit(ipKey, windowSec);
   const page = incrementMemoryTrackRateLimit(pageKey, windowSec);
   const allowed = ip.count <= ipMax && page.count <= pageMax;

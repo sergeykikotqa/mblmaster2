@@ -18,7 +18,7 @@ import {
   buildProjectCards,
   resolveProjectSlug as resolveProjectSlugFromAdapter,
 } from '~/lib/projects/project-adapters';
-import { buildCityPath, buildServicePath, normalizePath, toAbsoluteUrl, toCanonical } from '~/lib/url-builder';
+import { buildServicePath, normalizePath, toAbsoluteUrl, toCanonical } from '~/lib/url-builder';
 import type { GeneratedGeoPage, LocalCityBlock } from '~/types/geo-seo';
 import { hashString, selectServiceAnchor, SERVICE_CONTEXT_ANCHORS } from '~/utils/anchor-strategy';
 
@@ -55,17 +55,17 @@ type PriceProofCaseCard = {
 
 const SERVICE_VIEW: Record<string, ServiceViewConfig> = {
   'kuhni-na-zakaz': {
-    title: 'Кухни на заказ в Иркутске, Ангарске и Шелехове',
-    subtitle: 'Замер, 3D‑проект, производство и монтаж под ключ по Иркутску, Ангарску и Шелехову.',
+    title: 'Кухни на заказ в Иркутске',
+    subtitle: 'Замер, 3D‑проект, производство и монтаж под ключ в Иркутске.',
     heroBadge: 'Кухни от производителя',
     seoTitle: 'Кухни на заказ в Иркутске — замер, 3D‑проект, монтаж',
     seoDescription:
-      'Проектируем кухни под размеры и бюджет: бесплатный замер, 3D‑проект до старта, производство и монтаж. Работаем в Иркутске, Ангарске и Шелехове.',
+      'Проектируем кухни под размеры и бюджет: замер, 3D‑проект до старта, производство и монтаж в Иркутске.',
     primaryCta: 'Рассчитать стоимость кухни',
     secondaryCta: 'Смотреть примеры кухонь',
     overview: [
       'Берем на себя весь цикл: замеряем помещение, готовим проект, согласовываем материалы и фурнитуру, изготавливаем кухню и монтируем ее под ключ.',
-      'На странице собраны ориентиры по бюджету, реальные кейсы, отзывы клиентов и условия работы по Иркутску, Ангарску и Шелехову, чтобы вы заранее понимали сроки и состав проекта.',
+      'На странице собраны ориентиры по бюджету, реальные кейсы и условия работы в Иркутске, чтобы вы заранее понимали состав проекта.',
     ],
     checklist: [
       'Замерный сценарий под технику, розетки и вентиляцию',
@@ -92,27 +92,22 @@ const SERVICE_VIEW: Record<string, ServiceViewConfig> = {
       },
     ],
     priceTitle: 'Сколько стоит кухня в Иркутске?',
-    priceIntro: 'Ориентиры по бюджету для типовых планировок.',
-    priceEvidence: 'На основе реальных проектов в Иркутске за 2024–2025.',
-    priceRanges: [
-      { label: 'Кухня 5–7 м²', value: 'от 180–260 тыс. ₽' },
-      { label: 'Кухня 8–10 м²', value: 'от 260–380 тыс. ₽' },
-      { label: 'Кухня с островом', value: 'от 400 тыс. ₽' },
-    ],
+    priceIntro: 'Опубликованные проекты с указанной итоговой стоимостью.',
+    priceEvidence: 'Это цены конкретных проектов из портфолио, а не средняя цена по Иркутску.',
     priceNote: 'Точный расчет зависит от планировки и материалов — покажем на примерах ниже.',
   },
   'shkafy-kupe': {
-    title: 'Шкафы-купе на заказ в Иркутске, Ангарске и Шелехове',
+    title: 'Шкафы-купе на заказ в Иркутске',
     subtitle: 'Проект, подбор наполнения и монтаж шкафов‑купе под размеры помещения.',
     heroBadge: 'Шкафы-купе по размерам',
     seoTitle: 'Шкафы-купе на заказ в Иркутске — проект и монтаж',
     seoDescription:
-      'Шкафы-купе под размеры ниши и сценарии хранения: проект, подбор наполнения и монтаж. Работаем в Иркутске, Ангарске и Шелехове.',
+      'Шкафы-купе под размеры ниши и сценарии хранения: проект, подбор наполнения и монтаж в Иркутске.',
     primaryCta: 'Рассчитать стоимость шкафа‑купе',
     secondaryCta: 'Смотреть примеры шкафов',
     overview: [
       'Шкаф-купе должен точно вставать в помещение и работать без перекосов, поэтому начинаем с точного замера, подбора наполнения и расчета полезного объема.',
-      'Ниже собраны примеры работ, отзывы клиентов, ориентиры по стоимости и сроки запуска по каждому городу обслуживания. Это помогает понять, какой формат подойдет именно для вашей квартиры или дома.',
+      'Ниже собраны примеры работ и ориентиры по стоимости опубликованных проектов в Иркутске. Это помогает понять, какой формат подойдет именно для вашей квартиры или дома.',
     ],
     checklist: [
       'Точный замер ниши с учетом геометрии стен и пола',
@@ -139,27 +134,22 @@ const SERVICE_VIEW: Record<string, ServiceViewConfig> = {
       },
     ],
     priceTitle: 'Сколько стоит шкаф-купе в Иркутске?',
-    priceIntro: 'Показываем ориентиры по бюджету для стандартных ниш.',
-    priceEvidence: 'На основе реальных проектов в Иркутске за 2024–2025.',
-    priceRanges: [
-      { label: 'Шкаф-купе 2–2.5 м', value: 'от 90–140 тыс. ₽' },
-      { label: 'Шкаф-купе 3–3.5 м', value: 'от 140–220 тыс. ₽' },
-      { label: 'Угловой шкаф', value: 'от 220 тыс. ₽' },
-    ],
+    priceIntro: 'Опубликованные проекты с указанной итоговой стоимостью.',
+    priceEvidence: 'Это цены конкретных проектов из портфолио, а не универсальный прайс.',
     priceNote: 'Точный расчет зависит от планировки и материалов — покажем на примерах ниже.',
   },
   garderobnye: {
-    title: 'Гардеробные на заказ в Иркутске, Ангарске и Шелехове',
+    title: 'Гардеробные на заказ в Иркутске',
     subtitle: 'Проектируем гардеробные под объем вещей, размеры помещения и сценарии хранения.',
     heroBadge: 'Гардеробные под ключ',
     seoTitle: 'Гардеробные на заказ в Иркутске — проект и монтаж',
     seoDescription:
-      'Гардеробные под ваш объем вещей: планировка секций, материалы и монтаж. Работаем в Иркутске, Ангарске и Шелехове.',
+      'Гардеробные под ваш объем вещей: планировка секций, материалы и монтаж в Иркутске.',
     primaryCta: 'Рассчитать стоимость гардеробной',
     secondaryCta: 'Смотреть примеры гардеробных',
     overview: [
       'Сначала разбираем, что именно нужно хранить: одежду, обувь, бытовые вещи, сезонные позиции. После этого проектируем секции, проходы и наполнение под ваш режим использования.',
-      'На странице собраны ориентиры по стоимости, реальные примеры, отзывы клиентов и условия работы по Иркутску, Ангарску и Шелехову, чтобы вы могли оценить проект до выезда на замер.',
+      'На странице собраны реальные примеры и условия работы в Иркутске, чтобы вы могли оценить состав проекта до выезда на замер.',
     ],
     checklist: [
       'План секций под объем вещей и сценарий использования',
@@ -186,13 +176,8 @@ const SERVICE_VIEW: Record<string, ServiceViewConfig> = {
       },
     ],
     priceTitle: 'Сколько стоит гардеробная в Иркутске?',
-    priceIntro: 'Диапазоны для базовых конфигураций гардеробных.',
-    priceEvidence: 'На основе реальных проектов в Иркутске за 2024–2025.',
-    priceRanges: [
-      { label: 'Гардеробная 2–3 м²', value: 'от 140–200 тыс. ₽' },
-      { label: 'Гардеробная 4–5 м²', value: 'от 220–320 тыс. ₽' },
-      { label: 'Гардеробная с подсветкой', value: 'от 320 тыс. ₽' },
-    ],
+    priceIntro: 'Стоимость зависит от размеров, материалов и состава наполнения.',
+    priceEvidence: 'Точные цены публикуем только для проектов, где итоговая стоимость зафиксирована в данных портфолио.',
     priceNote: 'Точный расчет зависит от планировки и материалов — покажем на примерах ниже.',
   },
 };
@@ -232,21 +217,6 @@ function normalizeToken(value: unknown): string {
     .trim()
     .toLowerCase()
     .replace(/^\/+|\/+$/g, '');
-}
-
-function formatPrice(value: number, currency: string): string {
-  const locale = 'ru-RU';
-  const normalizedCurrency = currency === 'RUB' ? 'RUB' : currency;
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: normalizedCurrency,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatDaysGenitive(value: number): string {
-  const normalized = Math.abs(Math.trunc(value));
-  return normalized === 1 ? 'дня' : 'дней';
 }
 
 const resolveProjectSlug = (project: ProjectEntry): string => resolveProjectSlugFromAdapter(project);
@@ -289,7 +259,21 @@ function buildPriceProofCaseCards(entries: ProjectEntry[]): PriceProofCaseCard[]
       return b.publishedAt - a.publishedAt;
     });
 
-  if (candidates.length < 3) return [];
+  if (candidates.length === 0) return [];
+
+  if (candidates.length < 3) {
+    return candidates.map((record) => ({
+      slug: record.slug,
+      href: String(record.card.href || ''),
+      label: 'Опубликованный проект',
+      title: String(record.card.title || ''),
+      priceLabel: String(record.card.priceLabel || ''),
+      meta: [record.card.areaLabel, formatLayoutLabel(record.card.layoutToken)].filter(Boolean).join(' • '),
+      locationLabel: String(record.card.locationLabel || ''),
+      summary: String(record.card.proofHighlight?.value || record.card.description || '').trim(),
+      note: 'Указана итоговая стоимость этого проекта; это не средняя цена рынка.',
+    }));
+  }
 
   const lowest = candidates[0];
   const highest = candidates.length > 1 ? candidates[candidates.length - 1] : candidates[0];
@@ -324,97 +308,13 @@ function buildPriceProofCaseCards(entries: ProjectEntry[]): PriceProofCaseCard[]
     return {
       slug: String(record?.slug || ''),
       href: String(record?.card.href || ''),
-      label,
+      label: `${label} из портфолио`,
       title: String(record?.card.title || ''),
       priceLabel: String(record?.card.priceLabel || ''),
       meta,
       locationLabel: String(record?.card.locationLabel || ''),
       summary,
-    };
-  });
-}
-
-function buildHybridPriceProofCaseCards(
-  entries: ProjectEntry[],
-  blocks: Array<LocalCityBlock & { cityModel: (typeof cities)[number] }>
-): PriceProofCaseCard[] {
-  const blockByCityId = new Map(blocks.map((block) => [normalizeToken(block.city), block]));
-  const candidates = entries
-    .map((entry) => {
-      const card = buildProjectCardData(entry);
-      const block = blockByCityId.get(normalizeToken(entry.data.city));
-      if (!block) return null;
-      return {
-        entry,
-        block,
-        card,
-        slug: resolveProjectSlugFromAdapter(entry),
-        publishedAt: Number(new Date(entry.data.publishDate || 0)),
-      };
-    })
-    .filter((record): record is NonNullable<typeof record> => Boolean(record));
-
-  if (candidates.length < 3) return [];
-
-  const exactCase =
-    candidates
-      .filter((record) => Number.isFinite(Number(record.entry?.data.price)))
-      .sort((a, b) => {
-        const byPublishedAt = Number(b.publishedAt || 0) - Number(a.publishedAt || 0);
-        if (byPublishedAt !== 0) return byPublishedAt;
-        return Number(a.card.priceValue || 0) - Number(b.card.priceValue || 0);
-      })[0] || null;
-
-  if (!exactCase) return [];
-
-  const rangeCases = candidates
-    .filter((record) => record.slug !== exactCase.slug)
-    .sort((a, b) => {
-      const byArea = Number(a.card.areaValue || 0) - Number(b.card.areaValue || 0);
-      if (byArea !== 0) return byArea;
-      return Number(b.publishedAt || 0) - Number(a.publishedAt || 0);
-    })
-    .slice(0, 2);
-
-  if (rangeCases.length < 2) return [];
-
-  const selected = [exactCase, ...rangeCases].sort((a, b) => {
-    const byArea = Number(a.card.areaValue || 0) - Number(b.card.areaValue || 0);
-    if (byArea !== 0) return byArea;
-    return Number(a.card.priceValue || 0) - Number(b.card.priceValue || 0);
-  });
-
-  return selected.map((record) => {
-    const layoutLabel = formatLayoutLabel(record.card.layoutToken);
-    const meta = [record.card.areaLabel, layoutLabel].filter(Boolean).join(' • ');
-    const summary = String(record.card.proofHighlight?.value || record.card.description || '').trim();
-    const isExactCase = record.slug === exactCase.slug;
-    const hasEstimatedPrice = Boolean(record.card.priceIsEstimated && record.card.priceValue);
-    const cityLabel = record.block.cityModel.name || '';
-
-    return {
-      slug: String(record.slug || ''),
-      href: String(record.card.href || ''),
-      label: isExactCase
-        ? 'Кейс с точной ценой'
-        : hasEstimatedPrice
-          ? 'Оценка по фото и аналогам'
-          : `${cityLabel} - рабочий диапазон`,
-      title: String(record.card.title || ''),
-      priceLabel: isExactCase
-        ? String(record.card.priceLabel || '')
-        : hasEstimatedPrice
-          ? String(record.card.priceLabel || '')
-          : `${formatPrice(record.block.priceRange.from || 0, record.block.priceRange.currency || 'RUB')} - ${formatPrice(record.block.priceRange.to || 0, record.block.priceRange.currency || 'RUB')}`,
-      meta,
-      locationLabel: String(record.card.locationLabel || ''),
-      summary,
-      note: isExactCase
-        ? 'Точная сумма указана по завершенному проекту.'
-        : hasEstimatedPrice
-          ? String(record.card.priceNote || '').trim() ||
-            'Оценка по фото и близким кейсам; точная смета зависит от наполнения и материалов.'
-          : `Диапазон подтвержден для ${record.block.cityModel.nameGenitive || cityLabel}; точная смета зависит от площади и наполнения.`,
+      note: 'Указана итоговая стоимость этого проекта; это не средняя цена рынка.',
     };
   });
 }
@@ -496,19 +396,34 @@ const localBlocks = getLocalCityBlocksForService(service.id).map((block) => {
 });
 const cityNameById = new Map(cities.map((city) => [city.id, city.name]));
 const cityNameInByName = new Map(cities.map((city) => [city.name, city.nameIn || city.name]));
-const geoAnchorLinks = localBlocks.map((block) => ({
-  href: buildCityPath(block.cityModel.id),
-  label: `${block.cityModel.name} — ${service.name}`,
-}));
 const serviceAreas = cities.map((city) => buildAdministrativeArea(city.name));
 
 function buildGeoMentionText(block: LocalCityBlock & { cityModel: (typeof cities)[number] }): string {
-  const [primaryCase, secondaryCase] = block.cases;
-  const firstLocalSignal = primaryCase?.district || primaryCase?.location || block.cityModel.name;
-  const secondLocalSignal =
-    secondaryCase?.district || secondaryCase?.location || block.reviews[0]?.location || block.cityModel.name;
+  const cityLabels = new Set(
+    [block.cityModel.name, block.cityModel.nameIn]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.trim().toLocaleLowerCase('ru-RU'))
+  );
+  const localSignals = [
+    ...new Set(
+      block.cases
+        .map((item) => item.district || item.location)
+        .filter(
+          (value): value is string =>
+            Boolean(value) && !cityLabels.has(String(value).trim().toLocaleLowerCase('ru-RU'))
+        )
+    ),
+  ].slice(0, 2);
+  const evidenceText =
+    localSignals.length > 1
+      ? `Опубликованные кейсы привязаны к локальным ориентирам «${localSignals[0]}» и «${localSignals[1]}».`
+      : localSignals.length === 1
+        ? `${block.cases.length > 1 ? 'Опубликованные кейсы привязаны' : 'Опубликованный кейс привязан'} к локальному ориентиру «${localSignals[0]}».`
+        : block.cases.length > 1
+          ? `География опубликованных кейсов пока указана только как «${block.cityModel.name}», без более точного района.`
+          : `География опубликованного кейса пока указана только как «${block.cityModel.name}», без более точного района.`;
 
-  return `${currentServiceName} в ${block.cityModel.nameIn || block.cityModel.name} чаще всего заказывают для адресов и районов вроде ${firstLocalSignal} и ${secondLocalSignal}. По ${block.cityModel.nameGenitive || block.cityModel.name} держим выезд на замер за ${block.sla.measurementDays} дн., производство около ${block.sla.productionDays} дн. и монтаж за ${block.sla.installationDays} дн. В отзывах по ${block.cityModel.nameGenitive || block.cityModel.name} чаще отмечают понятную смету, аккуратный монтаж и отсутствие лишних выездов после сдачи.`;
+  return `${currentServiceName} в ${block.cityModel.nameIn || block.cityModel.name} проектируем только для конкретного помещения, а не по условному городскому шаблону. ${evidenceText} Фото и описание в блоке берутся из опубликованных карточек проектов; другие районы или адреса не приписываем без подтвержденного кейса.`;
 }
 
 const allProjects = (await getCollection('projects'))
@@ -523,22 +438,13 @@ const allProjects = (await getCollection('projects'))
     if (diff !== 0) return diff;
     return resolveProjectSlugFromAdapter(a).localeCompare(resolveProjectSlugFromAdapter(b));
   });
-const totalProjects = allProjects.length;
 const primaryServiceProjects = allProjects.filter((project) => normalizeToken(project.data.service) === serviceToken);
 const pricedPrimaryServiceProjects = primaryServiceProjects.filter((project) =>
   Number.isFinite(Number(project.data.price))
 );
-const priceProofSourceProjects = pricedPrimaryServiceProjects.length >= 3 ? pricedPrimaryServiceProjects : [];
+const priceProofSourceProjects = pricedPrimaryServiceProjects;
 const exactPriceProofCases = buildPriceProofCaseCards(priceProofSourceProjects);
-const hybridPriceProofCases =
-  service.id === 'garderobnye' &&
-  exactPriceProofCases.length === 0 &&
-  pricedPrimaryServiceProjects.length >= 1 &&
-  primaryServiceProjects.length >= 3
-    ? buildHybridPriceProofCaseCards(primaryServiceProjects, localBlocks)
-    : [];
-const priceProofCases = exactPriceProofCases.length > 0 ? exactPriceProofCases : hybridPriceProofCases;
-const hasHybridPriceProof = exactPriceProofCases.length === 0 && hybridPriceProofCases.length > 0;
+const priceProofCases = exactPriceProofCases;
 const priceProofCaseSlugs = new Set(priceProofCases.map((item) => item.slug));
 const featuredPrimaryServiceEntries = primaryServiceProjects
   .filter((project) => !priceProofCaseSlugs.has(resolveProjectSlugFromAdapter(project)))
@@ -550,34 +456,10 @@ const featuredProjectEntries =
   featuredPrimaryServiceEntries.length > 0 ? featuredPrimaryServiceEntries : featuredFallbackEntries;
 const serviceForms = service.forms;
 const serviceContextLabel = serviceForms.genitive || service.name.toLowerCase();
-const minMeasurementDays = Math.min(...localBlocks.map((block) => block.sla.measurementDays));
-const minProductionDays = Math.min(...localBlocks.map((block) => block.sla.productionDays));
-const minInstallationDays = Math.min(...localBlocks.map((block) => block.sla.installationDays));
-const minPriceFrom = Math.min(...localBlocks.map((block) => block.priceRange.from));
-const priceCurrency = localBlocks[0]?.priceRange.currency || 'RUB';
-const totalReviewCount = localBlocks.reduce((sum, block) => sum + block.reviews.length, 0);
-const averageReviewRatingRaw =
-  totalReviewCount > 0
-    ? localBlocks.reduce((sum, block) => sum + block.reviews.reduce((inner, review) => inner + Number(review.rating), 0), 0) /
-      totalReviewCount
-    : 0;
-const averageReviewRating = averageReviewRatingRaw > 0 ? averageReviewRatingRaw.toFixed(1).replace('.0', '') : '';
-const totalLocalCases = localBlocks.reduce((sum, block) => sum + block.cases.length, 0);
-const priceProofSummary =
-  priceProofCases.length > 0
-    ? hasHybridPriceProof
-      ? `${priceProofCases.length} кейса на странице: один с точной суммой и еще два с подтвержденным диапазоном по городу.`
-      : `${priceProofCases.length} кейса на странице с привязкой к реальным итоговым бюджетам.`
-    : `${localBlocks.length} городских диапазона по бюджету с привязкой к текущим условиям по городам.`;
 const factItems = [
-  totalProjects > 0
-    ? `В портфолио ${totalProjects} реализованных проектов по теме ${serviceForms.genitive}, из них ${totalLocalCases} кейсов используются в городских блоках на этой странице.`
-    : 'На странице используются реальные кейсы и городские ориентиры по услуге.',
-  `География и SLA: ${cities.map((city) => city.name).join(', ')}; замер от ${minMeasurementDays} ${formatDaysGenitive(minMeasurementDays)}, производство от ${minProductionDays} ${formatDaysGenitive(minProductionDays)}, монтаж от ${minInstallationDays} ${formatDaysGenitive(minInstallationDays)}.`,
-  `Бюджет: старт от ${formatPrice(minPriceFrom, priceCurrency)}. ${priceProofSummary}`,
-  totalReviewCount > 0
-    ? `Социальное доказательство: ${totalReviewCount} локальных отзывов, средний рейтинг ${averageReviewRating}/5.`
-    : 'Социальное доказательство: на странице показаны отзывы клиентов по городам обслуживания.',
+  `География работы: ${cities.map((city) => city.name).join(', ')}.`,
+  'Бюджет рассчитываем по размерам, материалам, наполнению и технике конкретного проекта.',
+  'Состав этапов и сроки фиксируем в смете и договоре после согласования проекта.',
 ];
 
 const allArticles = await getCollection('articles');
@@ -654,7 +536,7 @@ const heroTrustItems = (() => {
   if (service.id === 'kuhni-na-zakaz') {
     return [
       'Замер с учетом техники, розеток и вентиляции',
-      `В портфолио ${totalProjects} реализованных проектов по теме кухни`,
+      'Показываем опубликованные проекты и их фактические данные',
       'Смета и сроки фиксируются в договоре до запуска',
     ];
   }
@@ -672,34 +554,13 @@ const heroTrustItems = (() => {
       'Монтаж с проверкой эргономики и доступа к зонам',
     ];
   }
-  return [
-    `Замер от ${minMeasurementDays} ${formatDaysGenitive(minMeasurementDays)}`,
-    `Производство от ${minProductionDays} ${formatDaysGenitive(minProductionDays)}`,
-    `Монтаж от ${minInstallationDays} ${formatDaysGenitive(minInstallationDays)}`,
-  ];
+  return ['Замер под помещение', 'Комплектация по смете', 'Сроки по договору'];
 })();
-const heroProjectLabelByService: Record<string, string> = {
-  'kuhni-na-zakaz': 'реализованных проектов по теме кухни',
-  'shkafy-kupe': 'реализованных проектов по шкафам-купе',
-  garderobnye: 'реализованных проектов по гардеробным',
-};
-const heroMobileProofLabelByService: Record<string, string> = {
-  'kuhni-na-zakaz': 'кейсов по кухням',
-  'shkafy-kupe': 'кейсов по шкафам',
-  garderobnye: 'кейсов по гардеробным',
-};
-const heroStats = (() => {
-  return [
-    {
-      value: `${totalProjects}`,
-      label: heroProjectLabelByService[service.id] || 'реализованных проектов по теме услуги',
-    },
-    totalReviewCount > 0
-      ? { value: `${averageReviewRating}/5`, label: `${totalReviewCount} локальных отзывов` }
-      : { value: `${cities.length}`, label: 'города обслуживания' },
-    { value: `от ${formatPrice(minPriceFrom, priceCurrency)}`, label: 'старт бюджета по реальным кейсам' },
-  ];
-})();
+const heroStats = [
+  { value: 'Иркутск', label: 'география проектов' },
+  { value: 'Под размер', label: 'индивидуальная планировка' },
+  { value: 'По договору', label: 'состав и сроки' },
+];
 const serviceAdvantages = [...serviceConfig.advantages];
 const heroPrimaryCtaText = 'Рассчитать стоимость';
 const heroSecondaryCtaText = 'Смотреть примеры';
@@ -711,24 +572,18 @@ const heroActions = [
     variant: 'secondary',
   },
 ];
-const heroMobileProof = `${totalProjects} ${heroMobileProofLabelByService[service.id] || 'кейсов по услуге'} • от ${formatPrice(minPriceFrom, priceCurrency)}`;
+const heroMobileProof = 'Иркутск • проект под размеры • условия по договору';
 const priceSectionIntro =
   priceProofCases.length > 0
-    ? hasHybridPriceProof
-      ? 'Ниже показываем один кейс с точной ценой и еще два реальных проекта с подтвержденными диапазонами по городам.'
-      : 'Ниже показываем не абстрактные диапазоны, а реальные проекты из текущего портфолио.'
+    ? 'Ниже показываем не абстрактные диапазоны, а опубликованные проекты с указанной итоговой стоимостью.'
     : serviceConfig.priceIntro;
 const priceSectionEvidence =
   priceProofCases.length > 0
-    ? hasHybridPriceProof
-      ? 'Точная сумма указана только там, где она есть в карточке проекта. Для остальных кейсов показываем подтвержденный диапазон по соответствующему городу.'
-      : 'Каждый ориентир привязан к существующему кейсу и его итоговой стоимости.'
+    ? 'Каждая сумма привязана к существующему кейсу. Это данные портфолио, а не средняя цена рынка.'
     : serviceConfig.priceEvidence;
 const priceSectionNote =
   priceProofCases.length > 0
-    ? hasHybridPriceProof
-      ? 'Для кейсов без точной цены не подставляем оценку проекта. Вместо этого показываем рабочий диапазон по городу и ведем на реальную страницу кейса.'
-      : 'Точный расчет зависит от размеров, планировки, наполнения, материалов и техники. Остальные проекты из портфолио показываем ниже без повторения этих кейсов.'
+    ? 'Точный расчет зависит от размеров, планировки, наполнения, материалов и техники. Остальные проекты из портфолио показываем ниже без повторения этих кейсов.'
     : serviceConfig.priceNote;
 const projectsSectionDescription =
   priceProofCases.length > 0
@@ -740,7 +595,7 @@ const midCtaTitle = `Подготовим расчет ${serviceForms.genitive} 
 const midCtaSubtitle = 'Без длинного созвона: достаточно фото, примерных размеров и короткого описания задачи.';
 const localBusinessOfferCatalog = {
   '@type': 'OfferCatalog',
-  name: 'Основные услуги на заказ в Иркутске, Ангарске и Шелехове',
+  name: 'Основные услуги на заказ в Иркутске',
   itemListElement: getMoneyServices().map((moneyService) => ({
     '@type': 'Service',
     name: moneyService.name,
@@ -794,7 +649,7 @@ const leadContext = {
         alt: serviceConfig.title,
         title: serviceConfig.title,
         subtitle: serviceConfig.subtitle,
-        kicker: 'Иркутск, Ангарск, Шелехов',
+        kicker: 'Иркутск',
       },
     ]}
   />
@@ -826,7 +681,7 @@ const leadContext = {
   }
 
   {
-    serviceConfig.priceRanges && serviceConfig.priceRanges.length > 0 && (
+    (priceProofCases.length > 0 || (serviceConfig.priceRanges && serviceConfig.priceRanges.length > 0)) && (
       <section id="service-price" class="section section-inner cv-auto price-block">
         <div class="money-head ds-section-head left">
           <div class="money-pill ds-pill">ОРИЕНТИР ПО БЮДЖЕТУ</div>
@@ -851,7 +706,7 @@ const leadContext = {
               </article>
             ))}
           </div>
-        ) : (
+        ) : serviceConfig.priceRanges ? (
           <div class="price-grid">
             {serviceConfig.priceRanges.map((item) => (
               <div class="price-card ds-card">
@@ -860,7 +715,7 @@ const leadContext = {
               </div>
             ))}
           </div>
-        )}
+        ) : null}
         {priceSectionNote && <p class="price-note">{priceSectionNote}</p>}
         {featuredProjects.length > 0 && (
           <a class="price-next" href="#service-projects">
@@ -885,28 +740,6 @@ const leadContext = {
     </div>
   </section>
 
-  <section class="section section-inner geo-anchor-block cv-auto" data-support-links>
-    <div class="money-head ds-section-head left">
-      <div class="money-pill ds-pill">ГОРОДА ОБСЛУЖИВАНИЯ</div>
-      <h2>Работаем в городах</h2>
-      <p>
-        Если удобнее ориентироваться по городу, используйте быстрые переходы. На каждой странице услуг сохраняем единый
-        стандарт замера, производства и монтажа.
-      </p>
-    </div>
-    <ul class="geo-anchor-list">
-      {
-        geoAnchorLinks.map((item) => (
-          <li>
-            <a href={item.href} class="geo-anchor-link">
-              {item.label}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-  </section>
-
   <section class="section section-inner cv-auto">
     <div class="money-head ds-section-head left">
       <div class="money-pill ds-pill">ДО ЗАПУСКА ПРОЕКТА</div>
@@ -924,17 +757,17 @@ const leadContext = {
 
   <section id="local-city-blocks" class="section section-inner cv-auto-xl">
     <div class="money-head ds-section-head left">
-      <div class="money-pill ds-pill">УСЛОВИЯ ПО ГОРОДАМ</div>
-      <h2>Иркутск, Ангарск, Шелехов</h2>
+      <div class="money-pill ds-pill">УСЛОВИЯ В ИРКУТСКЕ</div>
+      <h2>Проекты в Иркутске</h2>
       <p>
-        Для каждого города показываем реальные кейсы, отзывы клиентов, ориентиры по бюджету и сроки выполнения работ.
+        Показываем опубликованные кейсы и состав работ без сравнения с другими городами.
       </p>
     </div>
 
     <div class="city-blocks-grid">
       {
         localBlocks.map((block) => (
-          <article class="city-block ds-card" data-local-city-block={block.city}>
+          <article class="city-block ds-card">
             <header class="city-block-head">
               <div>
                 <p class="city-block-kicker">{block.cityModel.name}</p>
@@ -952,25 +785,8 @@ const leadContext = {
               {buildGeoMentionText(block)}
             </p>
 
-            <dl class="city-block-stats">
-              <div>
-                <dt>Бюджет</dt>
-                <dd>
-                  {formatPrice(block.priceRange.from, block.priceRange.currency)} -{` `}
-                  {formatPrice(block.priceRange.to, block.priceRange.currency)}
-                </dd>
-              </div>
-              <div>
-                <dt>SLA</dt>
-                <dd>
-                  Замер {block.sla.measurementDays} дн. / Производство {block.sla.productionDays} дн. / Монтаж{' '}
-                  {block.sla.installationDays} дн.
-                </dd>
-              </div>
-            </dl>
-
             <p class="city-block-note">
-              {block.priceRange.note} {block.sla.note}
+              Стоимость и сроки определяем после замера и фиксируем в смете и договоре.
             </p>
 
             <div class="city-block-subsection">
@@ -1019,22 +835,6 @@ const leadContext = {
                     </li>
                   );
                 })}
-              </ul>
-            </div>
-
-            <div class="city-block-subsection">
-              <h4>Отзывы клиентов</h4>
-              <ul class="city-review-list">
-                {block.reviews.map((review) => (
-                  <li class="city-review-item">
-                    <p>{review.text}</p>
-                    <div>
-                      <strong>{review.author}</strong>
-                      <span>{review.location}</span>
-                      <small>Рейтинг: {review.rating}/5</small>
-                    </div>
-                  </li>
-                ))}
               </ul>
             </div>
 
@@ -1423,8 +1223,7 @@ const leadContext = {
     font-size: 1rem;
   }
 
-  .city-case-list,
-  .city-review-list {
+  .city-case-list {
     margin: 0;
     padding: 0;
     list-style: none;
@@ -1432,8 +1231,7 @@ const leadContext = {
     gap: 0.7rem;
   }
 
-  .city-case-item,
-  .city-review-item {
+  .city-case-item {
     border: 1px solid #ebe2db;
     border-radius: 0.85rem;
     background: #fcfaf8;
@@ -1487,22 +1285,18 @@ const leadContext = {
     padding: 0.22rem 0.55rem;
   }
 
-  .city-case-item strong,
-  .city-review-item strong {
+  .city-case-item strong {
     display: block;
     color: #201b17;
   }
 
-  .city-case-location,
-  .city-review-item span,
-  .city-review-item small {
+  .city-case-location {
     display: block;
     margin-top: 0.2rem;
     color: #7a6c61;
   }
 
-  .city-case-item p,
-  .city-review-item p {
+  .city-case-item p {
     margin: 0.45rem 0 0;
     color: #5d5550;
     line-height: 1.6;
@@ -1575,14 +1369,12 @@ const leadContext = {
       padding: 1.3rem;
     }
 
-    .city-case-list,
-    .city-review-list {
+    .city-case-list {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 0.9rem;
     }
 
-    .city-case-item,
-    .city-review-item {
+    .city-case-item {
       height: 100%;
       box-shadow: 0 16px 30px rgba(25, 18, 13, 0.08);
     }

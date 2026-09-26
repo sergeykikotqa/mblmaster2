@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test } from 'vitest';
 import { toCanonical } from '../src/lib/url-builder';
+import { getCanonicalUrl } from '../src/lib/canonical';
 
 type GeneratedPage = {
   pageSlug: string;
@@ -28,4 +29,12 @@ test('canonical URL is relative and clean (no query/hash)', () => {
   expect(canonical).toBe('/kuhni');
   expect(canonical.includes('?')).toBe(false);
   expect(canonical.includes('#')).toBe(false);
+});
+
+test('public canonical origin does not retain a local test-server port', () => {
+  expect(
+    getCanonicalUrl(new URL('http://127.0.0.1:4507/kuhni?utm_source=test'), {
+      publicSiteUrl: 'https://mebel-irkutsk.ru',
+    })
+  ).toBe('https://mebel-irkutsk.ru/kuhni');
 });

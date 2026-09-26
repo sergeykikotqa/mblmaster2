@@ -77,7 +77,6 @@ const analyticsConsentConfig = {
 };
 const showAnalyticsConsent = !isE2E;
 
-const turnstileSiteKey = (import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || '').trim();
 const isMoneyServicePage = pageType === 'service-money';
 const isProjectPage = pageType === 'project';
 const showFloatingCallButton =
@@ -90,7 +89,7 @@ const showMoneyPageStickyCta = isMoneyServicePage && Boolean(businessInfo.phoneH
   <head>
     <link rel="preload" as="style" href={globalStylesUrl} />
     <link rel="preload" as="font" href={golosCyrillicUrl} type="font/woff2" crossorigin />
-    <link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin />
+    <link rel="preconnect" href="https://smartcaptcha.cloud.yandex.ru" crossorigin />
     <CommonMeta />
     <Favicons />
     <CustomStyles />
@@ -133,7 +132,6 @@ const showMoneyPageStickyCta = isMoneyServicePage && Boolean(businessInfo.phoneH
       defer
       data-lead-tracking-init
       data-lead-tracking-config={JSON.stringify(leadTrackingConfig)}
-      data-turnstile-site-key={turnstileSiteKey}
     ></script>
     <WebVitals />
     <BasicScripts />

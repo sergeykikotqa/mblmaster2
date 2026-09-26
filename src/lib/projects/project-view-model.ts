@@ -613,7 +613,7 @@ export async function buildProjectViewModel({
     { key: 'cost', label: hasEstimatedPrice ? 'Оценка' : 'Стоимость', value: summaryPrice, icon: 'tabler:wallet' },
     { key: 'duration', label: 'Срок', value: formattedDuration, icon: 'tabler:clock' },
     { key: 'materials', label: 'Материалы', value: materialsSummary, icon: 'tabler:layers-subtract' },
-    { key: 'warranty', label: 'Гарантия', value: '2 года', icon: 'tabler:shield-check', tone: 'success' },
+    { key: 'warranty', label: 'Гарантия', value: 'По условиям договора', icon: 'tabler:shield-check', tone: 'success' },
     { key: 'video', label: 'Видео', value: hasVideo ? 'Есть' : 'Нет', icon: 'tabler:video', tone: videoFactTone },
     {
       key: 'beforeAfter',
@@ -647,13 +647,9 @@ export async function buildProjectViewModel({
     summaryPrice ? { label: hasEstimatedPrice ? 'оценка под ключ' : 'стоимость под ключ', value: summaryPrice } : null,
     formattedDurationShort ? { label: 'срок изготовления', value: formattedDurationShort } : null,
     formattedArea ? { label: `площадь ${serviceLabels.genitive}`, value: formattedArea } : null,
-    { label: 'гарантия на изделие', value: '2 г.' },
   ].filter(isPresent);
 
   const breadcrumbs: ProjectBreadcrumbItem[] = [];
-
-  const hasQuote = hasBlocks ? blockTypes.has('quote') : false;
-  const heroRating = hasQuote ? { value: '5.0', label: 'отзыв клиента' } : null;
 
   const aboutTitleParts: string[] = [];
   if (data.complex) {
@@ -768,11 +764,11 @@ export async function buildProjectViewModel({
   })();
 
   const railBenefits: ProjectRailBenefit[] = [
-    { icon: 'tabler:shield-check', text: 'Гарантия 2 года на изделие' },
+    { icon: 'tabler:shield-check', text: 'Условия гарантии фиксируются в договоре' },
     { icon: 'tabler:tool', text: 'Монтаж под ключ по Иркутску' },
     { icon: 'tabler:calendar-event', text: 'Замер бесплатно в день обращения' },
-    { icon: 'tabler:users', text: '300+ реализованных проектов' },
-    { icon: 'tabler:map-pin', text: '10+ лет на рынке Иркутска' },
+    { icon: 'tabler:users', text: 'Решения под задачу и планировку' },
+    { icon: 'tabler:map-pin', text: 'Работаем по Иркутску и области' },
   ];
 
   const tocBase = [
@@ -896,8 +892,6 @@ export async function buildProjectViewModel({
   const areaServedName =
     {
       Иркутск: 'Irkutsk',
-      Ангарск: 'Angarsk',
-      Шелехов: 'Shelekhov',
     }[cityLabels.base] || cityLabels.base;
   const creativeWorkSchema = {
     '@context': 'https://schema.org',
@@ -1026,7 +1020,7 @@ export async function buildProjectViewModel({
       heroTags,
       heroStats,
       breadcrumbs,
-      rating: heroRating,
+      rating: null,
     },
     heroBackgroundImage,
     heroBackgroundAlt,

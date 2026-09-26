@@ -57,11 +57,7 @@ const fallbackTrustItems = [
   'Доставка и монтаж под ключ',
 ];
 const trustList = trustItems.length > 0 ? trustItems : fallbackTrustItems;
-const fallbackStats = [
-  { value: '10+', label: 'лет опыта' },
-  { value: '500+', label: 'проектов' },
-  { value: '24/7', label: 'поддержка' },
-];
+const fallbackStats: Array<{ value: string; label: string }> = [];
 const heroStats = Array.isArray(stats) ? stats : fallbackStats;
 const isStaticHero = heroSlides.length === 1;
 ---
@@ -232,12 +228,12 @@ const isStaticHero = heroSlides.length === 1;
     background:
       radial-gradient(circle at top center, rgb(255 247 241 / 92%) 0%, rgb(255 255 255 / 0%) 52%),
       linear-gradient(180deg, #fff 0%, #fff8f2 100%);
-    padding: 0.75rem 0 1.35rem;
+    padding: 5.9rem 0 1.35rem;
   }
   .hm-layout {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 380px);
+    grid-template-columns: minmax(0, 1fr) minmax(23rem, 42%);
     align-items: stretch;
     border: 1px solid #ead8ca;
     border-radius: 1.75rem;
@@ -247,6 +243,7 @@ const isStaticHero = heroSlides.length === 1;
   }
   .hm-media {
     position: relative;
+    min-width: 0;
     min-height: 32.5rem;
     background: #181311;
     isolation: isolate;
@@ -333,14 +330,14 @@ const isStaticHero = heroSlides.length === 1;
   }
   .hm-title {
     margin: 0.82rem 0 0;
-    max-width: 16ch;
+    max-width: none;
     font-size: clamp(1.88rem, 3vw, 3.05rem);
     line-height: 1.04;
     font-weight: 800;
     text-wrap: balance;
   }
   .hm-copy--static .hm-title {
-    max-width: 15ch;
+    max-width: none;
     font-size: clamp(1.95rem, 2.7vw, 2.9rem);
   }
   .hm-subtitle {
@@ -424,6 +421,7 @@ const isStaticHero = heroSlides.length === 1;
   .hm-offer {
     position: relative;
     display: flex;
+    min-width: 0;
     flex-direction: column;
     padding: 1.65rem 1.4rem 1.35rem;
     color: #2f2219;
@@ -454,7 +452,10 @@ const isStaticHero = heroSlides.length === 1;
     font-size: clamp(1.9rem, 2.6vw, 2.8rem);
     line-height: 1.06;
     color: #2d1e15;
-    text-wrap: balance;
+    max-width: none;
+    text-wrap: pretty;
+    overflow-wrap: normal;
+    word-break: normal;
   }
   .hm-offer p {
     margin: 0.82rem 0 0;
@@ -566,7 +567,7 @@ const isStaticHero = heroSlides.length === 1;
     margin-top: auto;
     padding-top: 1.15rem;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(7rem, 1fr));
     gap: 0.55rem;
   }
   .hm-stats > div {
@@ -589,16 +590,27 @@ const isStaticHero = heroSlides.length === 1;
     font-size: 0.74rem;
     line-height: 1.35;
     color: rgb(92 66 49 / 84%);
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+  }
+  @media (min-width: 1181px) {
+    .hm-actions {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
   @media (max-width: 1180px) {
     .hm-layout {
-      grid-template-columns: minmax(0, 1fr) minmax(300px, 348px);
+      grid-template-columns: minmax(0, 1fr) 45%;
     }
     .hm-title {
       font-size: clamp(1.9rem, 3vw, 3rem);
     }
   }
   @media (max-width: 980px) {
+    .hm {
+      padding-top: 5.35rem;
+    }
     .hm-layout {
       grid-template-columns: 1fr;
     }
@@ -619,6 +631,9 @@ const isStaticHero = heroSlides.length === 1;
     }
   }
   @media (max-width: 720px) {
+    .hm {
+      padding-top: 4.65rem;
+    }
     .hm-media {
       min-height: 20.5rem;
     }

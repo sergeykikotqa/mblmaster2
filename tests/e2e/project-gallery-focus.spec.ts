@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('project gallery lightbox is pointer-accessible and restores focus', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1200 });
-  await page.goto('/projects/kuhnya-bogdana', { waitUntil: 'domcontentloaded' });
+  await page.goto('/projects/biruzovaya-uglovaya-kuhnya-irkutsk', { waitUntil: 'domcontentloaded' });
 
   const gallery = page.locator('[data-project-gallery]');
   await expect(gallery).toBeVisible();
@@ -47,7 +47,7 @@ test('project gallery lightbox is pointer-accessible and restores focus', async 
 
 test('project gallery lightbox respects reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/projects/kuhnya-bogdana', { waitUntil: 'domcontentloaded' });
+  await page.goto('/projects/biruzovaya-uglovaya-kuhnya-irkutsk', { waitUntil: 'domcontentloaded' });
 
   const gallery = page.locator('[data-project-gallery]');
   const opener = gallery.locator('[data-gallery-open]').first();
@@ -58,7 +58,8 @@ test('project gallery lightbox respects reduced motion', async ({ page }) => {
   expect(await page.evaluate(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)).toBeTruthy();
   expect(
     await lightbox.evaluate(
-      (element) => element.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running').length
+      (element) =>
+        element.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running').length
     )
   ).toBe(0);
 

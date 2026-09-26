@@ -7,10 +7,9 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["src/*"],
-      "@/*": ["src/*"],
-      "@astrolib/seo": ["src/types/astrolib-seo-typecheck.d.ts"]
+      "@/*": ["src/*"]
     }
   },
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist/", "docs/", "examples/"]
+  "exclude": ["dist/", ".output/", "docs/", "examples/", "playwright-report/", "test-results/", "tmp/"]
 }

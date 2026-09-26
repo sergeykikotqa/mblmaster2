@@ -1,5 +1,10 @@
 import { getFallbackLeadPipelineHealth } from '~/server/leads/metrics-fallback';
 import { hasLeadAlertChannelConfig, probeLeadAlertEndpointReachability } from '~/server/leads/alerts';
+import { getWorkerRuntimeHealth, type WorkerRuntimeHealth } from '~/server/leads/runtime-health';
+import {
+  isSmartCaptchaReady as isSmartCaptchaRuntimeReady,
+  isSmartCaptchaRequired as isSmartCaptchaRuntimeRequired,
+} from '~/server/leads/smartcaptcha';
 import { getLeadStore, hasRedisLeadStoreConfig, isRedisRuntimeError } from '~/server/leads/store';
 import { hasWebhookSecretConfig, isWebhookConfigured } from '~/server/leads/webhook';
 import { getFunnelRollup } from '~/server/metrics/funnel';
@@ -9,8 +14,6 @@ import { getAdminAuthConfigurationSnapshot, type AdminAuthMethod } from './auth'
 
 const DEFAULT_RETRY_RATE_ALERT_THRESHOLD = 0.1;
 const DEFAULT_PIPELINE_STRICT_STATUS = false;
-const DEFAULT_MIN_CONVERSION_RATE = 0.03;
-const DEFAULT_MIN_PAGE_VIEWS = 30;
 const DEFAULT_METRICS_STRICT_STATUS = false;
 const DEFAULT_ADMIN_HEALTH_CHECK_TIMEOUT_MS = 1500;
 const DEFAULT_QUEUE_MAX_DEPTH = 1000;
@@ -64,10 +67,11 @@ export type AdminWorkerHealthPayload = {
     webhookSecretConfigured: boolean;
     alertChannelConfigured: boolean;
     alertEndpointReachable: boolean;
-    turnstileRequired: boolean;
-    turnstileReady: boolean;
+    smartCaptchaRequired: boolean;
+    smartCaptchaReady: boolean;
     workerPaused: boolean;
   };
+  runtime: WorkerRuntimeHealth;
 } & AdminHealthCheckTiming;
 
 export type AdminPipelineHealthPayload =
@@ -100,27 +104,25 @@ export type AdminPipelineHealthPayload =
 
 export type AdminMetricsHealthPayload =
   | ({
-      ok: boolean;
+      ok: true;
       service: 'lead-metrics';
       strictMode: boolean;
       authMethod: AdminAuthMethod;
       city: string | null;
       generatedAtMs: number;
       dataSource: 'redis' | 'memory';
+      sourceAvailable: true;
       bucket: string;
       span: 'day';
       totals: {
         pageViews: number;
         formOpened: number;
         formSubmitted: number;
-        openedRate: number;
-        submitRate: number;
-        conversionRate: number;
+        conversionRate: null;
       };
-      alerts: {
-        lowConversion: boolean;
-        minConversionRate: number;
-        minPageViews: number;
+      conversion: {
+        available: false;
+        reason: 'CONSENT_SCOPE_MISMATCH';
       };
       sampledPages: number;
     } & AdminHealthCheckTiming)
@@ -154,10 +156,17 @@ export type AdminHealthSummary = {
     label: string;
     source: string | null;
   };
+  conversion: {
+    available: false;
+    reason: 'CONSENT_SCOPE_MISMATCH' | 'SOURCE_UNAVAILABLE';
+  };
   worker: {
     ok: boolean;
     label: string;
     status: string | null;
+    heartbeatState: string | null;
+    oldestPendingState: string | null;
+    oldestPendingAgeMs: number | null;
   };
   failOpen: boolean;
   systemAuth: {
@@ -200,14 +209,6 @@ function parseThreshold(value: string | undefined, fallback: number): number {
   return parsed;
 }
 
-function parseFraction(value: string | undefined, fallback: number): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  if (parsed < 0) return 0;
-  if (parsed > 1) return 1;
-  return parsed;
-}
-
 function createCheckTiming(startedAtMs: number, checkedAtMs = Date.now()): AdminHealthCheckTiming {
   return {
     checkedAtMs,
@@ -219,25 +220,13 @@ function hasWorkerTokenConfig(): boolean {
   return Boolean((process.env.CONTACT_WORKER_TOKEN || '').trim());
 }
 
-function hasTurnstileSecretConfig(): boolean {
-  return Boolean((process.env.TURNSTILE_SECRET_KEY || '').trim());
-}
-
-function hasTurnstileSiteKeyConfig(): boolean {
-  return Boolean((process.env.PUBLIC_TURNSTILE_SITE_KEY || '').trim());
-}
-
-function isTurnstileRequired(): boolean {
-  return parseBooleanEnv(process.env.CONTACT_TURNSTILE_REQUIRED, import.meta.env.PROD);
-}
-
 function isWorkerPaused(): boolean {
   return parseBooleanEnv(process.env.CONTACT_WORKER_PAUSED, false);
 }
 
 async function getWorkerDependencyStatus() {
-  const turnstileRequired = isTurnstileRequired();
-  const turnstileReady = !turnstileRequired || (hasTurnstileSecretConfig() && hasTurnstileSiteKeyConfig());
+  const smartCaptchaRequired = isSmartCaptchaRuntimeRequired();
+  const smartCaptchaReady = isSmartCaptchaRuntimeReady();
   const alertReachability = await probeLeadAlertEndpointReachability();
 
   return {
@@ -247,22 +236,26 @@ async function getWorkerDependencyStatus() {
     webhookSecretConfigured: hasWebhookSecretConfig(),
     alertChannelConfigured: hasLeadAlertChannelConfig(),
     alertEndpointReachable: alertReachability.reachable,
-    turnstileRequired,
-    turnstileReady,
+    smartCaptchaRequired,
+    smartCaptchaReady,
     workerPaused: isWorkerPaused(),
   };
 }
 
-function isWorkerRuntimeReady(dependencies: NonNullable<AdminWorkerHealthPayload['dependencies']>): boolean {
+function isWorkerRuntimeReady(
+  dependencies: NonNullable<AdminWorkerHealthPayload['dependencies']>,
+  runtime: WorkerRuntimeHealth
+): boolean {
   return (
     dependencies.workerTokenConfigured &&
     dependencies.redisConfigured &&
     dependencies.webhookConfigured &&
     dependencies.webhookSecretConfigured &&
-    dependencies.turnstileReady &&
+    dependencies.smartCaptchaReady &&
     dependencies.alertChannelConfigured &&
     dependencies.alertEndpointReachable &&
-    !dependencies.workerPaused
+    !dependencies.workerPaused &&
+    runtime.ok
   );
 }
 
@@ -412,8 +405,8 @@ export async function buildWorkerHealthCheck(
   authMethod: AdminAuthMethod
 ): Promise<AdminHealthCheckEntry<AdminWorkerHealthPayload>> {
   const startedAtMs = Date.now();
-  const dependencies = await getWorkerDependencyStatus();
-  const ok = isWorkerRuntimeReady(dependencies);
+  const [dependencies, runtime] = await Promise.all([getWorkerDependencyStatus(), getWorkerRuntimeHealth()]);
+  const ok = isWorkerRuntimeReady(dependencies, runtime);
   const status = import.meta.env.PROD && !ok ? 503 : 200;
   const timing = createCheckTiming(startedAtMs);
 
@@ -426,6 +419,7 @@ export async function buildWorkerHealthCheck(
       authMethod,
       now: timing.checkedAtMs,
       dependencies,
+      runtime,
       ...timing,
     },
   };
@@ -563,49 +557,37 @@ export async function buildMetricsHealthCheck(
   const strictMode = options.strictMode === true || resolveMetricsStrictStatusByEnv();
 
   try {
-    const minConversionRate = parseFraction(process.env.LEAD_METRICS_MIN_CONVERSION_RATE, DEFAULT_MIN_CONVERSION_RATE);
-    const minPageViews = parsePositiveInt(process.env.LEAD_METRICS_MIN_PAGE_VIEWS, DEFAULT_MIN_PAGE_VIEWS, 1);
-
     const rollup = await getFunnelRollup({
       span: 'day',
       city: city || undefined,
       limit: 10,
     });
-
-    const pageViews = rollup.totalPageViews;
-    const opened = rollup.totalOpened;
-    const submitted = rollup.totalSubmitted;
-    const openedRate = pageViews > 0 ? opened / pageViews : 0;
-    const submitRate = opened > 0 ? submitted / opened : 0;
-    const conversionRate = pageViews > 0 ? submitted / pageViews : 0;
-    const lowConversion = pageViews >= minPageViews && conversionRate < minConversionRate;
-    const status = strictMode && import.meta.env.PROD && lowConversion ? 503 : 200;
     const timing = createCheckTiming(startedAtMs);
 
     return {
-      status,
+      status: 200,
       payload: {
-        ok: !lowConversion,
+        ok: true,
         service: 'lead-metrics',
         strictMode,
         authMethod,
         city: city || null,
         generatedAtMs: rollup.generatedAtMs,
         dataSource: rollup.dataSource,
+        sourceAvailable: true,
         bucket: rollup.bucket,
         span: 'day',
         totals: {
-          pageViews,
-          formOpened: opened,
-          formSubmitted: submitted,
-          openedRate: Number(openedRate.toFixed(4)),
-          submitRate: Number(submitRate.toFixed(4)),
-          conversionRate: Number(conversionRate.toFixed(4)),
+          pageViews: rollup.totalPageViews,
+          formOpened: rollup.totalOpened,
+          formSubmitted: rollup.totalSubmitted,
+          // Page views and form opens depend on analytics consent, while accepted
+          // leads are recorded server-side. These counters do not form a cohort.
+          conversionRate: null,
         },
-        alerts: {
-          lowConversion,
-          minConversionRate,
-          minPageViews,
+        conversion: {
+          available: false,
+          reason: 'CONSENT_SCOPE_MISMATCH',
         },
         sampledPages: rollup.entries.length,
         ...timing,
@@ -650,7 +632,12 @@ export function buildAdminHealthSummary(
     typeof metricsPayload === 'object' && metricsPayload && 'dataSource' in metricsPayload
       ? String(metricsPayload.dataSource || '')
       : '';
-  const snapshotOk = metricsStatus < 500 && metricsPayload.ok === true;
+  const snapshotOk =
+    metricsStatus < 500 && 'sourceAvailable' in metricsPayload && metricsPayload.sourceAvailable === true;
+  const conversionReason =
+    'conversion' in metricsPayload && metricsPayload.conversion
+      ? metricsPayload.conversion.reason
+      : 'SOURCE_UNAVAILABLE';
   const snapshotLabel = isTimeoutPayload(metricsPayload)
     ? 'DEGRADED (timeout)'
     : metricsStatus >= 500
@@ -675,9 +662,17 @@ export function buildAdminHealthSummary(
     typeof workerPayload === 'object' && workerPayload && 'dependencies' in workerPayload
       ? workerPayload.dependencies
       : undefined;
+  const workerRuntime =
+    typeof workerPayload === 'object' && workerPayload && 'runtime' in workerPayload
+      ? workerPayload.runtime
+      : undefined;
   const workerPaused = Boolean(workerDependencies?.workerPaused);
   const alertChannelConfigured = Boolean(workerDependencies?.alertChannelConfigured);
   const alertEndpointReachable = Boolean(workerDependencies?.alertEndpointReachable);
+  const heartbeatState = workerRuntime?.heartbeat.state || null;
+  const heartbeatStatus = workerRuntime?.heartbeat.value?.status || null;
+  const oldestPendingState = workerRuntime?.oldestPending.state || null;
+  const oldestPendingAgeMs = workerRuntime?.oldestPending.ageMs ?? null;
 
   const failOpen =
     redisSource === 'fallback_memory' ||
@@ -733,6 +728,12 @@ export function buildAdminHealthSummary(
   const status = degraded ? 'degraded' : warning ? 'warning' : 'ok';
   const workerLabelSuffix = [
     workerPaused ? 'paused' : '',
+    heartbeatState === 'stale' ? 'heartbeat_stale' : '',
+    heartbeatState === 'missing' ? 'heartbeat_missing' : '',
+    heartbeatState === 'unavailable' ? 'redis_unavailable' : '',
+    heartbeatStatus === 'error' ? 'last_cycle_error' : '',
+    oldestPendingState === 'warning' ? 'oldest_pending_warning' : '',
+    oldestPendingState === 'critical' ? 'oldest_pending_critical' : '',
     !alertChannelConfigured ? 'alerts_unconfigured' : '',
     alertChannelConfigured && !alertEndpointReachable ? 'alerts_unreachable' : '',
     pipelineQueueBackpressure ? 'queue_backpressure' : '',
@@ -756,10 +757,17 @@ export function buildAdminHealthSummary(
       label: snapshotLabel,
       source: snapshotSource || null,
     },
+    conversion: {
+      available: false,
+      reason: conversionReason,
+    },
     worker: {
       ok: workerOk,
       label: workerLabelSuffix ? `${workerLabel} (${workerLabelSuffix})` : workerLabel,
       status: workerStatus,
+      heartbeatState,
+      oldestPendingState,
+      oldestPendingAgeMs,
     },
     failOpen,
     systemAuth: {

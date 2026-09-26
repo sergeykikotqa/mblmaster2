@@ -12,7 +12,7 @@ interface Props {
 const { project, useModal = false } = Astro.props as Props;
 const showDescription = !project.proofHighlight;
 const contactHref = `/contacts?from=project&slug=${project.slug}${project.serviceId ? `&service=${project.serviceId}` : ''}`;
-const ctaNote = 'Ответим в течение дня';
+const ctaNote = 'Свяжемся для уточнения деталей';
 const areaLabel = project.areaLabel || '';
 const contextLabel = project.contextLabel || '';
 const audienceLabel = project.audienceLabel || '';
@@ -86,9 +86,9 @@ const calloutText = project.calloutText || 'Рассчитаем похожий 
 
     {
       useModal ? (
-        <button
+        <a
           class="project-cta-primary"
-          type="button"
+          href={contactHref}
           data-cta="project_primary"
           data-cta-type="primary"
           data-project-modal-trigger
@@ -105,7 +105,7 @@ const calloutText = project.calloutText || 'Рассчитаем похожий 
           data-project-contact={contactHref}
         >
           {project.ctaLabel || 'Хочу такую же →'}
-        </button>
+        </a>
       ) : (
         <a class="project-cta-primary" href={contactHref} data-cta="project_primary" data-cta-type="primary">
           {project.ctaLabel || 'Хочу такую же →'}

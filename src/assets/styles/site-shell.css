@@ -154,15 +154,13 @@
   color: #171919;
 }
 
-#header.mbl-site-header .header-phone,
-#header.mbl-site-header .header-search-trigger {
+#header.mbl-site-header .header-phone {
   border-color: rgb(25 27 26 / 16%);
   background: transparent;
   color: #3f4442;
 }
 
-#header.mbl-site-header .header-phone:hover,
-#header.mbl-site-header .header-search-trigger:hover {
+#header.mbl-site-header .header-phone:hover {
   border-color: rgb(25 27 26 / 30%);
   background: rgb(25 27 26 / 6%);
   color: #161918;
@@ -269,12 +267,12 @@ body.mbl-page-home #header.mbl-site-header .header-link.active-link {
   color: #fff;
 }
 
-body.mbl-page-home #header.mbl-site-header :is(.header-phone, .header-search-trigger, .header-mobile-call) {
+body.mbl-page-home #header.mbl-site-header :is(.header-phone, .header-mobile-call) {
   border-color: var(--mbl-color-border-strong);
   color: var(--mbl-color-text-primary);
 }
 
-body.mbl-page-home #header.mbl-site-header :is(.header-phone, .header-search-trigger, .header-mobile-call):hover {
+body.mbl-page-home #header.mbl-site-header :is(.header-phone, .header-mobile-call):hover {
   border-color: rgb(255 255 255 / 30%);
   background: rgb(255 255 255 / 8%);
   color: #fff;
@@ -308,12 +306,6 @@ body.mbl-page-home #header.mbl-site-header .header-mobile-link {
 body.mbl-page-home #header.mbl-site-header .header-mobile-sub-link,
 body.mbl-page-home #header.mbl-site-header .header-mobile-meta {
   color: var(--mbl-color-text-secondary);
-}
-
-body.mbl-page-home #header.mbl-site-header .header-search input {
-  border-color: var(--mbl-color-border-strong);
-  background: rgb(255 255 255 / 6%);
-  color: var(--mbl-color-text-primary);
 }
 
 .mbl-site-footer {

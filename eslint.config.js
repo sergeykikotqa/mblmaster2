@@ -57,6 +57,7 @@ export default [
     ignores: [
       'dist',
       '.netlify',
+      '.output',
       'node_modules',
       '.github',
       'types.generated.d.ts',
@@ -65,6 +66,7 @@ export default [
       'chrome',
       'playwright-report',
       'test-results',
+      'tmp',
     ],
   },
 ];

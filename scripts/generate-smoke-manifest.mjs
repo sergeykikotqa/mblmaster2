@@ -6,8 +6,9 @@ import yaml from 'js-yaml';
 const ROOT = process.cwd();
 const OUTPUT_PATH = path.join(ROOT, 'artifacts', 'smoke-manifest.json');
 const ARTICLE_SEO_STATE_PATH = path.join(ROOT, 'data', 'article-seo-state.json');
+const FUNNEL_PUBLIC_PAGES_PATH = path.join(ROOT, 'data', 'funnel-public-pages.json');
 
-const PROJECT_ANCHOR_ROUTE = '/projects/kuhnya-bogdana';
+const PROJECT_ANCHOR_ROUTE = '/projects/biruzovaya-uglovaya-kuhnya-irkutsk';
 
 const CONTENT_MAP = [
   { dir: path.join('src', 'content', 'articles'), prefix: '/articles' },
@@ -41,23 +42,34 @@ function normalizeRoutePath(value) {
 }
 
 function resolveReadyArticleRoute() {
-  const fallback = '/articles/kak-vybrat-kuhnyu-na-zakaz';
-  if (!fs.existsSync(ARTICLE_SEO_STATE_PATH)) return fallback;
+  if (!fs.existsSync(ARTICLE_SEO_STATE_PATH)) {
+    throw new Error(`[smoke-manifest] Missing article SEO state: ${ARTICLE_SEO_STATE_PATH}`);
+  }
   try {
     const payload = JSON.parse(fs.readFileSync(ARTICLE_SEO_STATE_PATH, 'utf8'));
     const readyRoutes = Array.isArray(payload?.readyArticlePaths)
       ? payload.readyArticlePaths.map((item) => normalizeRoutePath(item)).filter(Boolean)
       : [];
-    return readyRoutes[0] || fallback;
-  } catch {
-    return fallback;
+    if (readyRoutes.length === 0) throw new Error('readyArticlePaths is empty');
+    return readyRoutes[0];
+  } catch (error) {
+    throw new Error(
+      `[smoke-manifest] Invalid article SEO state: ${error instanceof Error ? error.message : 'UNKNOWN'}`
+    );
   }
 }
 
 const READY_ARTICLE_ROUTE = resolveReadyArticleRoute();
 const SEO_DEFAULT_ROUTES = ['/', '/kuhni', READY_ARTICLE_ROUTE];
 const LH_ANCHOR_ROUTES = ['/', '/kuhni', PROJECT_ANCHOR_ROUTE, READY_ARTICLE_ROUTE];
-const LH_GLOBAL_ROUTES = ['/', '/kuhni', PROJECT_ANCHOR_ROUTE, READY_ARTICLE_ROUTE, '/guides/process-izgotovleniya-kuhni', '/contacts'];
+const LH_GLOBAL_ROUTES = [
+  '/',
+  '/kuhni',
+  PROJECT_ANCHOR_ROUTE,
+  READY_ARTICLE_ROUTE,
+  '/guides/process-izgotovleniya-kuhni',
+  '/contacts',
+];
 
 const PAGE_SAMPLE_MAP = [
   { match: /src[\\/]+pages[\\/]+projects[\\/]+\[slug\]\.astro$/i, routes: [PROJECT_ANCHOR_ROUTE] },
@@ -65,9 +77,6 @@ const PAGE_SAMPLE_MAP = [
   { match: /src[\\/]+pages[\\/]+guides[\\/]+\[slug\]\.astro$/i, routes: ['/guides/process-izgotovleniya-kuhni'] },
   { match: /src[\\/]+pages[\\/]+faq[\\/]+\[slug\]\.astro$/i, routes: ['/faq/voprosy-ob-ispolzovanii-kuhen'] },
   { match: /src[\\/]+pages[\\/]+\[service\]\.astro$/i, routes: ['/kuhni'] },
-  { match: /src[\\/]+pages[\\/]+irkutsk\.astro$/i, routes: ['/irkutsk'] },
-  { match: /src[\\/]+pages[\\/]+angarsk\.astro$/i, routes: ['/angarsk'] },
-  { match: /src[\\/]+pages[\\/]+shelekhov\.astro$/i, routes: ['/shelekhov'] },
   { match: /src[\\/]+pages[\\/]+contacts\.astro$/i, routes: ['/contacts'] },
 ];
 
@@ -103,6 +112,36 @@ function slugFromFile(filePath, frontmatter) {
   return String(frontmatter?.slug || base).trim();
 }
 
+function resolvePublishedProjectRoute(filePath, frontmatter) {
+  if (frontmatter?.draft) return null;
+  if (!fs.existsSync(FUNNEL_PUBLIC_PAGES_PATH)) {
+    throw new Error(`[smoke-manifest] Missing public route registry: ${FUNNEL_PUBLIC_PAGES_PATH}`);
+  }
+
+  const registry = JSON.parse(fs.readFileSync(FUNNEL_PUBLIC_PAGES_PATH, 'utf8'));
+  const publishedProjectRoutes = Array.isArray(registry)
+    ? registry.map((entry) => normalizeRoutePath(entry?.pageSlug)).filter((route) => route.startsWith('/projects/'))
+    : [];
+  const explicitSlug = String(frontmatter?.slug || '').trim();
+  if (explicitSlug) {
+    const route = normalizeRoutePath(`/projects/${explicitSlug}`);
+    if (!publishedProjectRoutes.includes(route)) {
+      throw new Error(`[smoke-manifest] Project route is not published: ${route}`);
+    }
+    return route;
+  }
+
+  const fileSlug = path.basename(filePath).replace(/\.mdx?$/i, '');
+  const matches = publishedProjectRoutes.filter((route) => {
+    const routeSlug = route.slice('/projects/'.length);
+    return routeSlug === fileSlug || routeSlug.startsWith(`${fileSlug}-`) || routeSlug.endsWith(`-${fileSlug}`);
+  });
+  if (matches.length !== 1) {
+    throw new Error(`[smoke-manifest] Cannot resolve one published route for project content: ${filePath}`);
+  }
+  return matches[0];
+}
+
 function readChangedFiles() {
   const base = process.env.SMOKE_DIFF_BASE || 'origin/main';
   const explicitFiles = String(process.env.SMOKE_DIFF_FILES || '').trim();
@@ -136,13 +175,17 @@ function readChangedFiles() {
 
 function mapContentRoute(filePath) {
   const normalized = filePath.replace(/\\/g, '/');
+  const absolute = path.join(ROOT, filePath);
+  if (!fs.existsSync(absolute)) return null;
   for (const entry of CONTENT_MAP) {
     const dir = entry.dir.replace(/\\/g, '/');
     if (!normalized.startsWith(dir)) continue;
     if (!/\.mdx?$/i.test(normalized)) return null;
 
-    const absolute = path.join(ROOT, filePath);
     const frontmatter = parseMarkdownFrontmatter(absolute);
+    if (entry.prefix === '/projects') {
+      return resolvePublishedProjectRoute(absolute, frontmatter);
+    }
     if (entry.prefix === '/articles') {
       if (frontmatter?.draft) return null;
       if (frontmatter?.seoReady === false) return null;
@@ -159,6 +202,7 @@ function mapContentRoute(filePath) {
 
 function mapPageRoute(filePath) {
   const normalized = filePath.replace(/\\/g, '/');
+  if (!fs.existsSync(path.join(ROOT, filePath))) return null;
   if (normalized.startsWith('src/pages/api/')) return null;
   if (!/\.astro$/i.test(normalized)) return null;
 

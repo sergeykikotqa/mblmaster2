@@ -1,6 +1,10 @@
 ---
 import PageLayout from '~/layouts/PageLayout.astro';
 
+// A prerendered file is served by standalone Node with HTTP 200. Keep the
+// deliberate Gone status when this error route is requested.
+export const prerender = false;
+
 const metadata = {
   title: 'Страница удалена',
   description: 'Запрошенная страница больше недоступна.',

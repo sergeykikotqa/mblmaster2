@@ -13,6 +13,7 @@ const SERVICES_PATH = path.join(DATA_DIR, 'services.json');
 const FAQ_TEMPLATES_PATH = path.join(DATA_DIR, 'faq-templates.json');
 const GENERATED_PAGES_PATH = path.join(DATA_DIR, 'generated-pages.json');
 const ARTICLE_SEO_STATE_PATH = path.join(DATA_DIR, 'article-seo-state.json');
+const FUNNEL_PUBLIC_PAGES_PATH = path.join(DATA_DIR, 'funnel-public-pages.json');
 const ARTICLE_CONTENT_DIR = path.join(ROOT, 'src', 'content', 'articles');
 const GUIDES_CONTENT_DIR = path.join(ROOT, 'src', 'content', 'guides');
 const FAQ_CONTENT_DIR = path.join(ROOT, 'src', 'content', 'faq');
@@ -483,6 +484,67 @@ async function buildArticleSeoState() {
   };
 }
 
+async function buildFunnelPublicPages({ cities, services, generatedPages }) {
+  const orderedCities = [...cities].sort((a, b) => Number(a.priority) - Number(b.priority));
+  const primaryCityId = String(orderedCities[0]?.id || '').trim();
+  const serviceByPathSegment = new Map(
+    services.map((service) => [normalizeToken(service.pathSegment || service.id), service])
+  );
+  const knownCityIds = new Set(cities.map((city) => String(city.id || '').trim()).filter(Boolean));
+  const dimensionsByPath = new Map();
+
+  const addPage = ({ pageSlug, city = '', district = '', service = '', pageType }) => {
+    const normalizedSlug = normalizePath(pageSlug);
+    if (dimensionsByPath.has(normalizedSlug)) {
+      throw new Error(`[build-data] duplicate funnel page route "${normalizedSlug}"`);
+    }
+    dimensionsByPath.set(normalizedSlug, {
+      pageSlug: normalizedSlug,
+      city: String(city || '').trim(),
+      district: String(district || '').trim(),
+      service: String(service || '').trim(),
+      pageType: String(pageType || '').trim(),
+    });
+  };
+
+  addPage({ pageSlug: '/', city: primaryCityId, pageType: 'homepage' });
+  addPage({ pageSlug: '/contacts', city: primaryCityId, pageType: 'site' });
+  addPage({ pageSlug: '/projects', city: primaryCityId, pageType: 'projects' });
+
+  for (const page of generatedPages) {
+    addPage({
+      pageSlug: page.pageSlug,
+      city: page.cityId,
+      service: page.serviceId,
+      pageType: page.pageType,
+    });
+  }
+
+  const projects = await loadMarkdownEntries(PROJECTS_CONTENT_DIR);
+  for (const entry of projects) {
+    const data = entry.frontmatter || {};
+    if (data.draft) continue;
+
+    const slug = String(entry.slug || '').trim();
+    const city = String(data.city || '').trim();
+    const projectService = serviceByPathSegment.get(normalizeToken(data.service));
+    if (!slug || !knownCityIds.has(city) || !projectService) {
+      throw new Error(
+        `[build-data] published project "${path.basename(entry.filePath)}" has unresolved funnel dimensions`
+      );
+    }
+
+    addPage({
+      pageSlug: `/projects/${slug}`,
+      city,
+      service: projectService.id,
+      pageType: 'project',
+    });
+  }
+
+  return [...dimensionsByPath.values()].sort((a, b) => a.pageSlug.localeCompare(b.pageSlug));
+}
+
 function escapeXml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -669,6 +731,7 @@ async function main() {
 
   const generatedPages = buildGeneratedPages({ cities, services, faqTemplates });
   const articleSeoState = await buildArticleSeoState();
+  const funnelPublicPages = await buildFunnelPublicPages({ cities, services, generatedPages });
 
   if (generatedPages.length > MAX_GENERATED_PAGES) {
     throw new Error(
@@ -683,6 +746,7 @@ async function main() {
 
   await fs.writeFile(GENERATED_PAGES_PATH, stringifyJson(generatedPages), 'utf8');
   await fs.writeFile(ARTICLE_SEO_STATE_PATH, stringifyJson(articleSeoState), 'utf8');
+  await fs.writeFile(FUNNEL_PUBLIC_PAGES_PATH, stringifyJson(funnelPublicPages), 'utf8');
 
   await generateSeoArtifacts({ generatedPages });
 
@@ -690,6 +754,7 @@ async function main() {
   console.log(
     `[build-data] wrote article seo state: ready=${articleSeoState.readyArticlePaths.length}, archived=${articleSeoState.archivedArticlePaths.length}, noindex=${articleSeoState.noindexArticlePaths.length}, hasReadyArticles=${articleSeoState.hasReadyArticles}`
   );
+  console.log(`[build-data] wrote ${funnelPublicPages.length} trusted funnel pages`);
   console.log('[build-data] model: service-only money pages');
 }
 

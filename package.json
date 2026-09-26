@@ -1,22 +1,23 @@
 {
-  "name": "yes",
+  "name": "mblmaster",
   "version": "1.0.0-beta.52",
-  "description": "AstroWind: A free template using Astro 5.0 and Tailwind CSS. Astro starter theme.",
+  "description": "MBL furniture company website, lead delivery runtime, and protected operations tooling.",
   "type": "module",
   "engines": {
-    "node": "^18.17.1 || ^20.3.0 || >= 21.0.0"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "astro dev",
-    "start": "astro dev",
+    "start": "node scripts/start-node.mjs",
+    "start:node": "node scripts/start-node.mjs",
     "build:data": "node scripts/build-data.mjs",
-    "build": "npm run build:data && astro build && node scripts/prepare-netlify-routing.mjs",
+    "build": "npm run generate:runtime-redirects && npm run build:data && node scripts/prepare-node-build.mjs && astro build && node scripts/minify-public-scripts.mjs && node scripts/prepare-netlify-routing.mjs && npm run check:public-origin-contract",
     "preview": "astro preview",
     "astro": "astro",
     "lint": "npm run check:eslint",
     "format": "npm run check:prettier",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
-    "check": "npm run check:astro && npm run check:eslint && npm run check:nap-consistency && npm run check:privacy-disclosure",
+    "check": "npm run check:astro && npm run check:eslint && npm run check:runtime-redirects && npm run check:nap-consistency && npm run check:privacy-disclosure",
     "check:astro": "astro check",
     "check:eslint": "eslint .",
     "check:content": "node scripts/content-lint.mjs",
@@ -83,18 +84,46 @@
     "test:seo": "node scripts/seo-tests/run.mjs",
     "check:lead-api": "node scripts/check-contact-api.mjs",
     "check:redis-outage": "node scripts/check-redis-outage-fallback.mjs",
+    "check:redis-integration": "node scripts/check-redis-integration.mjs",
     "check:webhook-delivery": "node scripts/check-webhook-delivery.mjs",
-    "check:prod-runtime": "node scripts/check-production-runtime.mjs",
+    "check:lead-faults": "node scripts/check-lead-delivery-fault-injection.mjs",
+    "check:lead-process-kills": "node scripts/check-lead-delivery-process-kill.mjs",
+    "check:dev-runtime": "node scripts/check-production-runtime.mjs --mode=dev",
+    "check:prod-runtime": "node scripts/check-compose-runtime.mjs",
+    "check:node-runtime": "node scripts/check-node-runtime.mjs",
     "check:deployed-runtime": "node scripts/check-deployed-runtime.mjs",
     "check:runtime-config": "node scripts/check-runtime-config.mjs",
+    "generate:runtime-redirects": "node scripts/generate-runtime-redirects.mjs",
+    "check:runtime-redirects": "node scripts/generate-runtime-redirects.mjs --check",
+    "check:public-origin-contract": "node scripts/check-public-origin-contract.mjs",
+    "check:public-build-env": "node scripts/check-public-build-env.mjs",
+    "check:nginx-clean-build": "node scripts/check-clean-nginx-build.mjs",
+    "check:compose-runtime": "node scripts/check-compose-runtime.mjs",
+    "check:backup-policy": "vitest run tests/backup-policy.test.ts",
+    "check:backup-restore": "node scripts/check-backup-restore.mjs",
+    "release:bundle": "node scripts/release-tool.mjs create-bundle",
+    "release:verify": "node scripts/release-tool.mjs verify-bundle",
+    "release:apply": "node scripts/release-tool.mjs apply",
+    "release:rollback": "node scripts/release-tool.mjs rollback",
+    "check:release-policy": "vitest run tests/release-policy.test.ts",
+    "check:release-rollback": "node scripts/check-release-rollback.mjs",
+    "monitor:external": "node scripts/external-monitor.mjs",
+    "check:external-monitor": "node scripts/check-external-monitor.mjs",
+    "check:telegram-monitor": "node scripts/check-telegram-monitor.mjs",
+    "telegram:admin": "node scripts/telegram-admin.mjs",
+    "check:telegram-admin": "node scripts/check-telegram-admin.mjs",
+    "check:owner-metrics-runtime": "node scripts/check-owner-metrics-runtime.mjs",
+    "monitor:telegram:test": "node scripts/test-telegram-delivery.mjs",
     "check:nap-consistency": "node scripts/check-nap-consistency.mjs",
     "check:privacy-disclosure": "node scripts/check-privacy-disclosure.mjs",
     "check:audit": "node scripts/security-audit-gate.mjs",
+    "audit:security:update-baseline": "node scripts/security-audit-gate.mjs --update-baseline",
     "check:e2e:admin-auth": "node scripts/check-admin-auth-e2e.mjs",
+    "check:e2e:analytics-consent": "node scripts/check-analytics-consent-e2e.mjs",
     "check:e2e": "playwright test",
     "check:no-legacy-project-fields": "node scripts/check-no-legacy-project-fields.mjs",
     "migrate:projects-blocks": "node scripts/migrate-project-to-blocks.mjs",
-    "test": "vitest run",
+    "test": "node scripts/run-unit-tests.mjs",
     "check:prettier": "prettier --check .",
     "predeploy:seo": "npm run build:data && npm run check:semantic && npm run check:generated-pages-sync && npm run check:content-duplicates && npm run check:rollout-gates && npm run check:nap-consistency && npm run check:privacy-disclosure && npm run build && npm run check:admin-token-leak && npm run check:no-admin-in-sitemap && npm run check:canonical-absolute && npm run check:canonical-in-sitemap && npm run check:canonical-nav-links && npm run check:sitemap-coverage && npm run check:article-seo-rollout && npm run check:anchors && npm run check:indexability-runtime-consistency && npm run check:decapcms-headers && npm run check:redirects-sitemap && npm run check:redirects-coverage && npm run check:slugs && npm run check:orphan-detection && npm run check:geo-similarity && npm run check:content-length && npm run check:indexable-coverage && npm run check:city-hubs-policy && npm run check:geo-signals && npm run check:no-legacy-index && npm run check:no-seo-jargon && npm run check:schema && npm run check:seo",
     "fix": "npm run fix:eslint && npm run fix:prettier",
@@ -102,24 +131,24 @@
     "fix:prettier": "prettier -w ."
   },
   "dependencies": {
-    "@astrojs/netlify": "^6.6.4",
-    "@astrojs/rss": "^4.0.15",
-    "@astrojs/sitemap": "^3.7.0",
-    "@astrolib/analytics": "^0.6.1",
-    "@astrolib/seo": "^1.0.0-beta.8",
+    "@astrojs/node": "11.1.5",
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
     "@fontsource-variable/golos-text": "^5.2.8",
-    "astro": "^5.18.0",
-    "astro-embed": "^0.9.0",
-    "astro-icon": "^1.1.5",
+    "astro": "^7.3.2",
+    "astro-embed": "^0.14.0",
+    "astro-icon": "^1.2.0",
+    "jose": "6.1.3",
     "limax": "4.1.0",
     "lodash.merge": "^4.6.2",
+    "redis": "6.2.1",
     "web-vitals": "^4.2.4"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.4",
-    "@astrojs/mdx": "^4.3.13",
-    "@astrojs/partytown": "^2.1.4",
-    "@astrojs/tailwind": "^5.1.5",
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/markdown-remark": "^7.3.1",
+    "@astrojs/mdx": "^8.0.1",
+    "@astrojs/partytown": "^2.1.7",
     "@axe-core/playwright": "^4.11.1",
     "@eslint/js": "^9.33.0",
     "@iconify-json/flat-color-icons": "^1.2.1",
@@ -132,9 +161,10 @@
     "@types/mdx": "^2.0.13",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
-    "astro-compress": "2.3.9",
     "astro-eslint-parser": "^1.2.2",
+    "autoprefixer": "^10.6.0",
     "cheerio": "^1.2.0",
+    "esbuild": "0.28.2",
     "eslint": "^9.33.0",
     "eslint-plugin-astro": "^1.3.1",
     "globals": "^16.3.0",
@@ -143,50 +173,44 @@
     "prettier": "^3.6.2",
     "prettier-plugin-astro": "^0.14.1",
     "reading-time": "^1.5.0",
-    "sharp": "0.34.3",
+    "sharp": "0.35.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.39.0",
     "unist-util-visit": "^5.0.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.11"
   },
   "overrides": {
-    "h3": "1.15.6",
-    "fast-xml-parser": "5.5.6",
-    "undici": "7.24.4",
-    "rollup": "4.59.0",
-    "tar": "7.5.11",
+    "h3": "1.15.11",
+    "fast-xml-parser": "5.11.1",
+    "undici": "7.29.1",
+    "rollup": "4.63.2",
+    "tar": "7.5.22",
     "astro": {
-      "svgo": "4.0.1"
-    },
-    "astro-compress": {
-      "svgo": "4.0.1"
+      "svgo": "4.1.0"
     },
     "ipx": {
-      "svgo": "4.0.1"
+      "svgo": "4.1.0"
     },
     "@iconify/tools": {
-      "axios": "1.13.6",
-      "svgo": "3.3.3",
-      "tar": "7.5.11"
+      "axios": "1.20.0",
+      "svgo": "4.1.0",
+      "tar": "7.5.22"
     },
     "@mapbox/node-pre-gyp": {
-      "tar": "7.5.11"
-    },
-    "@netlify/edge-bundler": {
-      "tar": "7.5.11"
+      "tar": "7.5.22"
     },
     "@vercel/nft": {
       "glob": {
         "minimatch": "9.0.7"
       }
     },
-    "@netlify/zip-it-and-ship-it": {
-      "minimatch": "9.0.7"
-    },
     "readdir-glob": {
       "minimatch": "5.1.8"
     }
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }

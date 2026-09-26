@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { hasRedisConfig, redisCommand } from '~/server/redis/client';
 
 import type {
   ContactSuccessResponse,
@@ -44,6 +45,7 @@ export type LeadStore = {
   removeFromSchedule: (leadId: string) => Promise<void>;
   getQueueDepth: () => Promise<number>;
   pushDeadLetter: (entry: DeadLetterEntry, ttlSec: number) => Promise<void>;
+  pruneDeadLetters: (nowMs: number, ttlSec: number) => Promise<void>;
   recordDeliveryMetric: (metric: DeliveryAttemptMetric) => Promise<void>;
   getLeadPipelineHealth: (nowMs?: number) => Promise<LeadPipelineHealth>;
 };
@@ -59,7 +61,14 @@ else
   redis.call('SET', KEYS[2], ARGV[3])
 end
 redis.call('ZADD', KEYS[3], ARGV[6], ARGV[5])
+redis.call('ZADD', KEYS[4], ARGV[7], ARGV[5])
 return {1}
+`;
+
+const REMOVE_FROM_SCHEDULE_SCRIPT = `
+redis.call('ZREM', KEYS[1], ARGV[1])
+redis.call('ZREM', KEYS[2], ARGV[1])
+return 1
 `;
 
 const RATE_LIMIT_SCRIPT = `
@@ -90,6 +99,7 @@ local claimKey = KEYS[1]
 local fenceKey = KEYS[2]
 local recordKey = KEYS[3]
 local queueKey = KEYS[4]
+local pendingSinceKey = KEYS[5]
 
 local claimId = ARGV[1]
 local deliveredAtIso = ARGV[2]
@@ -116,12 +126,60 @@ else
 end
 
 redis.call('ZREM', queueKey, leadId)
+redis.call('ZREM', pendingSinceKey, leadId)
 redis.call('DEL', claimKey)
 return {1, deliveredAtIso}
 `;
 
+const STORE_DEAD_LETTER_SCRIPT = `
+redis.call('ZADD', KEYS[1], ARGV[1], ARGV[2])
+redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[3])
+local count = redis.call('ZCARD', KEYS[1])
+local maxEntries = tonumber(ARGV[4])
+if count > maxEntries then
+  redis.call('ZREMRANGEBYRANK', KEYS[1], 0, count - maxEntries - 1)
+end
+return redis.call('ZCARD', KEYS[1])
+`;
+
+const PRUNE_DEAD_LETTER_SCRIPT = `
+redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
+local count = redis.call('ZCARD', KEYS[1])
+local maxEntries = tonumber(ARGV[2])
+if count > maxEntries then
+  redis.call('ZREMRANGEBYRANK', KEYS[1], 0, count - maxEntries - 1)
+end
+return redis.call('ZCARD', KEYS[1])
+`;
+
+const MIGRATE_LEGACY_DEAD_LETTERS_SCRIPT = `
+local expectedCount = tonumber(ARGV[1])
+local current = redis.call('LRANGE', KEYS[1], 0, -1)
+if #current ~= expectedCount then
+  return 0
+end
+for index = 1, expectedCount do
+  local rawArgIndex = 2 + ((index - 1) * 2)
+  if current[index] ~= ARGV[rawArgIndex] then
+    return 0
+  end
+end
+for index = 1, expectedCount do
+  local rawArgIndex = 2 + ((index - 1) * 2)
+  redis.call('ZADD', KEYS[2], ARGV[rawArgIndex + 1], ARGV[rawArgIndex])
+end
+redis.call('DEL', KEYS[1])
+redis.call('ZREMRANGEBYSCORE', KEYS[2], '-inf', ARGV[2 + (expectedCount * 2)])
+local count = redis.call('ZCARD', KEYS[2])
+local maxEntries = tonumber(ARGV[3 + (expectedCount * 2)])
+if count > maxEntries then
+  redis.call('ZREMRANGEBYRANK', KEYS[2], 0, count - maxEntries - 1)
+end
+return 1
+`;
+
 const METRICS_RETENTION_SEC = 60 * 60 * 24 * 7;
-const DEFAULT_REDIS_TIMEOUT_MS = 1200;
+const DEAD_LETTER_MAX_ENTRIES = 1000;
 const DEFAULT_REDIS_MAX_ATTEMPTS = 2;
 const DEFAULT_REDIS_RETRY_BASE_DELAY_MS = 120;
 const DEFAULT_REDIS_CIRCUIT_FAILURE_THRESHOLD = 3;
@@ -129,13 +187,7 @@ const DEFAULT_REDIS_CIRCUIT_OPEN_MS = 15_000;
 
 type RedisArg = string | number;
 
-type UpstashResponse<T> = {
-  result?: T;
-  error?: string;
-};
-
 type RedisClientOptions = {
-  timeoutMs: number;
   maxAttempts: number;
   retryBaseDelayMs: number;
   circuitFailureThreshold: number;
@@ -150,7 +202,6 @@ function parsePositiveInt(value: string | undefined, fallback: number, min: numb
 
 function resolveRedisClientOptions(): RedisClientOptions {
   return {
-    timeoutMs: parsePositiveInt(process.env.CONTACT_REDIS_TIMEOUT_MS, DEFAULT_REDIS_TIMEOUT_MS, 200),
     maxAttempts: parsePositiveInt(process.env.CONTACT_REDIS_MAX_ATTEMPTS, DEFAULT_REDIS_MAX_ATTEMPTS, 1),
     retryBaseDelayMs: parsePositiveInt(
       process.env.CONTACT_REDIS_RETRY_BASE_DELAY_MS,
@@ -176,17 +227,7 @@ function toError(error: unknown): Error {
 }
 
 function isRetryableRedisMessage(message: string): boolean {
-  return (
-    message === 'REDIS_TIMEOUT' ||
-    message === 'REDIS_NETWORK_ERROR' ||
-    message === 'REDIS_CIRCUIT_OPEN' ||
-    message.startsWith('REDIS_HTTP_408') ||
-    message.startsWith('REDIS_HTTP_429') ||
-    message.startsWith('REDIS_HTTP_500') ||
-    message.startsWith('REDIS_HTTP_502') ||
-    message.startsWith('REDIS_HTTP_503') ||
-    message.startsWith('REDIS_HTTP_504')
-  );
+  return message === 'REDIS_TIMEOUT' || message === 'REDIS_NETWORK_ERROR' || message === 'REDIS_CIRCUIT_OPEN';
 }
 
 export function isRedisRuntimeError(error: unknown): boolean {
@@ -197,23 +238,17 @@ export function isRedisRuntimeError(error: unknown): boolean {
     message === 'REDIS_TIMEOUT' ||
     message === 'REDIS_NETWORK_ERROR' ||
     message === 'REDIS_CIRCUIT_OPEN' ||
-    message.startsWith('REDIS_HTTP_') ||
-    message.startsWith('REDIS_COMMAND_ERROR:') ||
-    message.startsWith('REDIS_RESPONSE_') ||
-    message.includes('fetch failed')
+    message === 'REDIS_COMMAND_ERROR' ||
+    message.startsWith('REDIS_RESPONSE_')
   );
 }
 
-class UpstashRedisClient {
-  private readonly endpoint: string;
-  private readonly token: string;
+class NativeRedisClient {
   private readonly options: RedisClientOptions;
   private consecutiveFailures = 0;
   private circuitOpenUntilMs = 0;
 
-  constructor(endpoint: string, token: string, options: RedisClientOptions) {
-    this.endpoint = endpoint;
-    this.token = token;
+  constructor(options: RedisClientOptions) {
     this.options = options;
   }
 
@@ -250,41 +285,7 @@ class UpstashRedisClient {
   }
 
   private async executeCommand<T>(args: RedisArg[]): Promise<T> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.options.timeoutMs);
-    try {
-      const response = await fetch(this.endpoint, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(args),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`REDIS_HTTP_${response.status}`);
-      }
-
-      const payload = (await response.json()) as UpstashResponse<T>;
-      if (payload.error) {
-        throw new Error(`REDIS_COMMAND_ERROR:${payload.error}`);
-      }
-
-      return payload.result as T;
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error('REDIS_TIMEOUT');
-      }
-      const normalized = toError(error);
-      if (normalized.message && normalized.message.startsWith('REDIS_')) {
-        throw normalized;
-      }
-      throw new Error('REDIS_NETWORK_ERROR');
-    } finally {
-      clearTimeout(timeout);
-    }
+    return redisCommand<T>(...args);
   }
 
   async command<T>(...args: RedisArg[]): Promise<T> {
@@ -347,10 +348,10 @@ class RedisLeadStore implements LeadStore {
   mode = 'redis' as const;
   hasDurableStorage = true;
 
-  private readonly client: UpstashRedisClient;
+  private readonly client: NativeRedisClient;
   private readonly prefix: string;
 
-  constructor(client: UpstashRedisClient, prefix: string) {
+  constructor(client: NativeRedisClient, prefix: string) {
     this.client = client;
     this.prefix = prefix;
   }
@@ -382,11 +383,14 @@ class RedisLeadStore implements LeadStore {
     const idempotencyKey = this.keyIdempotency(params.idempotencyHash);
     const leadRecordKey = this.keyLeadRecord(params.leadRecord.leadId);
     const queueKey = this.keyQueue();
+    const pendingSinceKey = this.keyPendingSince();
+    const parsedCreatedAtMs = Date.parse(params.leadRecord.createdAt);
+    const pendingSinceMs = Number.isFinite(parsedCreatedAtMs) ? Math.floor(parsedCreatedAtMs) : Date.now();
 
     const raw = await this.client.eval<unknown[]>(
       ENQUEUE_LEAD_WITH_IDEMPOTENCY_SCRIPT,
-      3,
-      [idempotencyKey, leadRecordKey, queueKey],
+      4,
+      [idempotencyKey, leadRecordKey, queueKey, pendingSinceKey],
       [
         JSON.stringify(params.successResponse),
         params.idempotencyTtlSec,
@@ -394,6 +398,7 @@ class RedisLeadStore implements LeadStore {
         params.leadRecordTtlSec,
         params.leadRecord.leadId,
         params.leadRecord.nextRetryAt,
+        pendingSinceMs,
       ]
     );
 
@@ -407,6 +412,10 @@ class RedisLeadStore implements LeadStore {
       (await this.client.command<string | null>('GET', idempotencyKey));
     const existingResponse = parseContactSuccessResponse(existingPayload);
     if (existingResponse) {
+      const existingRecord = await this.getLeadRecord(existingResponse.leadId);
+      if (!existingRecord || existingRecord.payloadFingerprint !== params.leadRecord.payloadFingerprint) {
+        return { duplicate: false, conflict: true };
+      }
       return { duplicate: true, response: { ...existingResponse, duplicate: true } };
     }
 
@@ -522,12 +531,13 @@ class RedisLeadStore implements LeadStore {
   }): Promise<DeliveryCommitResult> {
     const raw = await this.client.eval<unknown[]>(
       COMMIT_DELIVERED_IF_CLAIM_OWNED_SCRIPT,
-      4,
+      5,
       [
         this.keyDeliveryClaim(params.leadId),
         this.keyDeliveryFence(params.leadId),
         this.keyLeadRecord(params.leadId),
         this.keyQueue(),
+        this.keyPendingSince(),
       ],
       [
         params.claimId,
@@ -558,7 +568,7 @@ class RedisLeadStore implements LeadStore {
   }
 
   async removeFromSchedule(leadId: string): Promise<void> {
-    await this.client.command('ZREM', this.keyQueue(), leadId);
+    await this.client.eval<number>(REMOVE_FROM_SCHEDULE_SCRIPT, 2, [this.keyQueue(), this.keyPendingSince()], [leadId]);
   }
 
   async getQueueDepth(): Promise<number> {
@@ -567,12 +577,29 @@ class RedisLeadStore implements LeadStore {
   }
 
   async pushDeadLetter(entry: DeadLetterEntry, ttlSec: number): Promise<void> {
-    const key = this.keyDeadLetter();
-    await this.client.command('LPUSH', key, JSON.stringify(entry));
-    await this.client.command('LTRIM', key, 0, 999);
-    if (ttlSec > 0) {
-      await this.client.command('EXPIRE', key, ttlSec);
-    }
+    const nowMs = Date.now();
+    const normalizedTtlSec = Math.max(1, Math.floor(ttlSec));
+    const cutoffMs = nowMs - normalizedTtlSec * 1000;
+    await this.migrateLegacyDeadLetters(nowMs, cutoffMs);
+    await this.client.eval<number>(
+      STORE_DEAD_LETTER_SCRIPT,
+      1,
+      [this.keyDeadLetterByAge()],
+      [this.deadLetterScore(entry, nowMs), JSON.stringify(entry), cutoffMs, DEAD_LETTER_MAX_ENTRIES]
+    );
+  }
+
+  async pruneDeadLetters(nowMs: number, ttlSec: number): Promise<void> {
+    const normalizedNowMs = Number.isFinite(nowMs) ? Math.floor(nowMs) : Date.now();
+    const normalizedTtlSec = Math.max(1, Math.floor(ttlSec));
+    const cutoffMs = normalizedNowMs - normalizedTtlSec * 1000;
+    await this.migrateLegacyDeadLetters(normalizedNowMs, cutoffMs);
+    await this.client.eval<number>(
+      PRUNE_DEAD_LETTER_SCRIPT,
+      1,
+      [this.keyDeadLetterByAge()],
+      [cutoffMs, DEAD_LETTER_MAX_ENTRIES]
+    );
   }
 
   async recordDeliveryMetric(metric: DeliveryAttemptMetric): Promise<void> {
@@ -682,6 +709,47 @@ class RedisLeadStore implements LeadStore {
     await this.client.command('ZREMRANGEBYSCORE', this.keyMetricLatencyEvents(), '-inf', retentionCutoffMs);
   }
 
+  private deadLetterScore(entry: DeadLetterEntry, nowMs: number): number {
+    const parsed = Date.parse(entry.failedAt);
+    if (!Number.isFinite(parsed) || parsed > nowMs) return nowMs;
+    return Math.floor(parsed);
+  }
+
+  private async migrateLegacyDeadLetters(nowMs: number, cutoffMs: number): Promise<void> {
+    const legacyKey = this.keyDeadLetterLegacy();
+    const keyType = String(await this.client.command<unknown>('TYPE', legacyKey));
+    if (keyType === 'none') return;
+    if (keyType !== 'list') throw new Error('DLQ_LEGACY_KEY_TYPE_INVALID');
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const raw = await this.client.command<unknown[]>('LRANGE', legacyKey, 0, -1);
+      const entries = Array.isArray(raw) ? raw.map(String) : [];
+      if (entries.length === 0) return;
+      const values: RedisArg[] = [entries.length];
+      for (const serialized of entries) {
+        let score = nowMs;
+        try {
+          const parsed = JSON.parse(serialized) as Partial<DeadLetterEntry>;
+          const failedAtMs = Date.parse(String(parsed.failedAt || ''));
+          if (Number.isFinite(failedAtMs) && failedAtMs <= nowMs) score = Math.floor(failedAtMs);
+        } catch {
+          // Preserve malformed legacy entries for one bounded retention window.
+        }
+        values.push(serialized, score);
+      }
+      values.push(cutoffMs, DEAD_LETTER_MAX_ENTRIES);
+      const migrated = await this.client.eval<number>(
+        MIGRATE_LEGACY_DEAD_LETTERS_SCRIPT,
+        2,
+        [legacyKey, this.keyDeadLetterByAge()],
+        values
+      );
+      if (Number(migrated) === 1) return;
+    }
+
+    throw new Error('DLQ_LEGACY_MIGRATION_CONFLICT');
+  }
+
   private keyIdempotency(hash: string) {
     return `${this.prefix}:idempotency:${hash}`;
   }
@@ -698,6 +766,10 @@ class RedisLeadStore implements LeadStore {
     return `${this.prefix}:delivery:queue`;
   }
 
+  private keyPendingSince() {
+    return `${this.prefix}:delivery:pending-since`;
+  }
+
   private keyProcessingLock(leadId: string) {
     return `${this.prefix}:delivery:lock:${leadId}`;
   }
@@ -710,8 +782,12 @@ class RedisLeadStore implements LeadStore {
     return `${this.prefix}:delivery:fence:${leadId}`;
   }
 
-  private keyDeadLetter() {
+  private keyDeadLetterLegacy() {
     return `${this.prefix}:delivery:dlq`;
+  }
+
+  private keyDeadLetterByAge() {
+    return `${this.prefix}:delivery:dlq:v2`;
   }
 
   private keyMetricCounter(metricName: string) {
@@ -737,6 +813,7 @@ class RedisLeadStore implements LeadStore {
 
 type MemoryIdempotencyEntry = {
   response: ContactSuccessResponse;
+  payloadFingerprint: string;
   expiresAt: number;
 };
 
@@ -771,7 +848,7 @@ class MemoryLeadStore implements LeadStore {
   private readonly processingLocks = new Map<string, MemoryProcessingLockEntry>();
   private readonly deliveryClaims = new Map<string, MemoryProcessingLockEntry>();
   private readonly deliveryFences = new Map<string, MemoryDeliveryFenceEntry>();
-  private readonly deadLetters: DeadLetterEntry[] = [];
+  private readonly deadLetters: Array<{ entry: DeadLetterEntry; expiresAtMs: number }> = [];
   private readonly attemptEventTimestamps: number[] = [];
   private readonly retryEventTimestamps: number[] = [];
   private readonly dlqEventTimestamps: number[] = [];
@@ -823,11 +900,15 @@ class MemoryLeadStore implements LeadStore {
     const now = Date.now();
     const current = this.idempotency.get(params.idempotencyHash);
     if (current && current.expiresAt > now) {
+      if (current.payloadFingerprint !== params.leadRecord.payloadFingerprint) {
+        return { duplicate: false, conflict: true };
+      }
       return { duplicate: true, response: { ...current.response, duplicate: true } };
     }
 
     this.idempotency.set(params.idempotencyHash, {
       response: params.successResponse,
+      payloadFingerprint: params.leadRecord.payloadFingerprint,
       expiresAt: now + params.idempotencyTtlSec * 1000,
     });
 
@@ -1034,10 +1115,24 @@ class MemoryLeadStore implements LeadStore {
   }
 
   async pushDeadLetter(entry: DeadLetterEntry, ttlSec: number): Promise<void> {
-    void ttlSec;
-    this.deadLetters.unshift(entry);
+    const nowMs = Date.now();
+    const failedAtMs = Date.parse(entry.failedAt);
+    const createdAtMs = Number.isFinite(failedAtMs) && failedAtMs <= nowMs ? failedAtMs : nowMs;
+    this.deadLetters.unshift({
+      entry,
+      expiresAtMs: createdAtMs + Math.max(1, Math.floor(ttlSec)) * 1000,
+    });
+    await this.pruneDeadLetters(nowMs, ttlSec);
     if (this.deadLetters.length > 1000) {
       this.deadLetters.length = 1000;
+    }
+  }
+
+  async pruneDeadLetters(nowMs: number, ttlSec: number): Promise<void> {
+    void ttlSec;
+    const normalizedNowMs = Number.isFinite(nowMs) ? Math.floor(nowMs) : Date.now();
+    for (let index = this.deadLetters.length - 1; index >= 0; index -= 1) {
+      if ((this.deadLetters[index]?.expiresAtMs || 0) <= normalizedNowMs) this.deadLetters.splice(index, 1);
     }
   }
 
@@ -1196,16 +1291,14 @@ function parseLeadRecord(raw: unknown): LeadRecord | null {
   }
 }
 
-function normalizePrefix(rawValue: string | undefined): string {
+export function resolveLeadRedisPrefix(rawValue = process.env.CONTACT_REDIS_PREFIX): string {
   const value = (rawValue || '').trim();
   if (!value) return 'lead';
   return value.replace(/[^a-zA-Z0-9:_-]/g, '-');
 }
 
 export function hasRedisLeadStoreConfig(): boolean {
-  const endpoint = (process.env.UPSTASH_REDIS_REST_URL || '').trim();
-  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
-  return Boolean(endpoint && token);
+  return hasRedisConfig();
 }
 
 export function getLeadStore(): LeadStore {
@@ -1213,15 +1306,10 @@ export function getLeadStore(): LeadStore {
     return leadStoreSingleton;
   }
 
-  const endpoint = (process.env.UPSTASH_REDIS_REST_URL || '').trim();
-  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
-  const prefix = normalizePrefix(process.env.CONTACT_REDIS_PREFIX);
+  const prefix = resolveLeadRedisPrefix();
 
-  if (endpoint && token) {
-    leadStoreSingleton = new RedisLeadStore(
-      new UpstashRedisClient(endpoint, token, resolveRedisClientOptions()),
-      prefix
-    );
+  if (hasRedisConfig()) {
+    leadStoreSingleton = new RedisLeadStore(new NativeRedisClient(resolveRedisClientOptions()), prefix);
     return leadStoreSingleton;
   }
 

@@ -115,11 +115,9 @@ export function resolvePageType(pathname?: string): PageType {
       .replace(/\/+$/, '') || '/';
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const moneyPaths = new Set(['/kuhni', '/shkafy', '/garderobnye', '/kuhni-3-metra']);
-  const cityHubPaths = new Set(['/irkutsk', '/angarsk', '/shelekhov']);
 
   if (normalizedPath === '/') return 'home';
   if (moneyPaths.has(normalizedPath)) return 'service-money';
-  if (cityHubPaths.has(normalizedPath)) return 'city-hub';
   if (normalizedPath === '/projects' || normalizedPath.startsWith('/projects/')) return 'projects';
   if (normalizedPath === '/guides' || normalizedPath.startsWith('/guides/')) return 'guides';
   if (normalizedPath === '/articles' || normalizedPath.startsWith('/articles/')) return 'articles';

@@ -96,7 +96,7 @@ describe('normalizeProjectContent', () => {
 
   it('resolves legacy donor images to the real project gallery', () => {
     const entry = makeEntry({
-      slug: 'kuhnya-uglovaya-irkutsk-lermontova',
+      slug: 'kuhnya-legacy-demo',
       images: [
         '/images/figma/portfolio-modern-light.jpg',
         '/images/figma/portfolio-detail-wood.png',

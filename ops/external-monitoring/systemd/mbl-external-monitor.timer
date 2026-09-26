@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the independent MBL external monitor every five minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+AccuracySec=30s
+RandomizedDelaySec=30s
+Unit=mbl-external-monitor.service
+
+[Install]
+WantedBy=timers.target

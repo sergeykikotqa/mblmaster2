@@ -1,0 +1,12 @@
+[Unit]
+Description=Run MBL encrypted Redis backup hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=5min
+AccuracySec=1min
+Unit=mbl-redis-backup.service
+
+[Install]
+WantedBy=timers.target

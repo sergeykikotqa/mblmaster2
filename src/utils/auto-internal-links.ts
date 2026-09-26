@@ -125,48 +125,28 @@ const AUTO_LINK_RULES: AutoLinkRule[] = [
     ],
   },
   {
-    href: '/irkutsk',
-    anchors: ['мебель в иркутске', 'мебель на заказ в иркутске', 'изготовление мебели в иркутске'],
-  },
-  {
-    href: '/angarsk',
-    anchors: ['мебель в ангарске', 'мебель на заказ в ангарске', 'изготовление мебели в ангарске'],
-  },
-  {
-    href: '/shelekhov',
-    anchors: ['мебель в шелехове', 'мебель на заказ в шелехове', 'изготовление мебели в шелехове'],
-  },
-  {
-    href: '/projects/kuhnya-bogdana',
+    href: '/projects/biruzovaya-uglovaya-kuhnya-irkutsk',
     anchors: ['кухня на богдана хмельницкого', 'кухня богдана хмельницкого'],
   },
   {
-    href: '/projects/kuhnya-baykalskiy-trakt',
+    href: '/projects/belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk',
     anchors: ['кухня на байкальском тракте', 'кухня байкальский тракт'],
   },
   {
-    href: '/projects/kuhnya-krasnokazachya',
+    href: '/projects/bezhevaya-uglovaya-kuhnya-irkutsk',
     anchors: ['кухня на красноказачьей', 'кухня красноказачья'],
   },
   {
-    href: '/projects/kuhnya-piskunova',
+    href: '/projects/uglovaya-kuhnya-s-podsvetkoy-irkutsk',
     anchors: ['кухня на пискунова', 'кухня пискунова'],
   },
   {
-    href: '/projects/kuhnya-verkhnyaya-naberezhnaya',
+    href: '/projects/pryamaya-kuhnya-s-vysokimi-penalami-irkutsk',
     anchors: ['кухня на верхней набережной', 'кухня верхняя набережная'],
   },
   {
-    href: '/projects/shkaf-deputatskaya',
+    href: '/projects/vstroennyi-shkaf-s-rabochey-zonoy-irkutsk',
     anchors: ['шкаф на депутатской', 'шкаф депутатская'],
-  },
-  {
-    href: '/projects/shkaf-vstroennyi-angarsk-84-i-kvartal',
-    anchors: ['шкаф в 84 квартале', 'шкаф 84 квартал ангарск'],
-  },
-  {
-    href: '/projects/garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion',
-    anchors: ['гардеробная в 5 микрорайоне', 'гардеробная 5 микрорайон шелехов'],
   },
 ];
 
@@ -262,27 +242,22 @@ const inferCityTarget = (frontmatter: FrontmatterLike | undefined): string | nul
     ].join(' ')
   );
   if (!raw) return null;
-  if (raw.includes('ангарск')) return '/angarsk';
-  if (raw.includes('шелехов')) return '/shelekhov';
-  if (raw.includes('иркутск')) return '/irkutsk';
+  if (raw.includes('иркутск')) return '/contacts';
   return null;
 };
 
 const CLUSTER_TARGETS: Record<string, string[]> = {
   kitchen: [
     '/kuhni',
-    '/irkutsk',
-    '/angarsk',
-    '/shelekhov',
-    '/projects/kuhnya-bogdana',
-    '/projects/kuhnya-baykalskiy-trakt',
-    '/projects/kuhnya-krasnokazachya',
-    '/projects/kuhnya-piskunova',
-    '/projects/kuhnya-verkhnyaya-naberezhnaya',
+    '/projects/biruzovaya-uglovaya-kuhnya-irkutsk',
+    '/projects/belaya-uglovaya-kuhnya-zagorodny-dom-irkutsk',
+    '/projects/bezhevaya-uglovaya-kuhnya-irkutsk',
+    '/projects/uglovaya-kuhnya-s-podsvetkoy-irkutsk',
+    '/projects/pryamaya-kuhnya-s-vysokimi-penalami-irkutsk',
   ],
-  storage: ['/shkafy', '/projects/shkaf-deputatskaya', '/projects/shkaf-vstroennyi-angarsk-84-i-kvartal'],
-  wardrobe: ['/garderobnye', '/projects/garderobnaya-p-obraznaya-shelekhov-5-i-mikroraion'],
-  local: ['/irkutsk', '/angarsk', '/shelekhov'],
+  storage: ['/shkafy', '/projects/vstroennyi-shkaf-s-rabochey-zonoy-irkutsk', '/projects/shkaf-kupe-na-vsyu-stenu-irkutsk'],
+  wardrobe: ['/garderobnye', '/projects/garderobnaya-s-muzhskoy-i-zhenskoy-zonoy-irkutsk'],
+  local: [],
 };
 
 const CLUSTER_LIMITS: Record<string, { total: number; perTarget: number }> = {
@@ -312,7 +287,7 @@ const inferClusterId = (frontmatter: FrontmatterLike | undefined): string | null
   if (preferred === '/kuhni') return 'kitchen';
   if (preferred === '/shkafy') return 'storage';
   if (preferred === '/garderobnye') return 'wardrobe';
-  if (raw.includes('иркутск') || raw.includes('ангарск') || raw.includes('шелехов') || raw.includes('город')) {
+  if (raw.includes('иркутск') || raw.includes('город')) {
     return 'local';
   }
   return null;

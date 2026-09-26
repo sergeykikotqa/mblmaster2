@@ -24,7 +24,6 @@ const services = getMoneyServices().map((service) => {
     name: service.name,
     href: buildServicePath(service.id),
     summary: localBlock.offer.description,
-    priceRange: localBlock.priceRange,
     offer: localBlock.offer,
   };
 });
@@ -34,7 +33,7 @@ const metadata = {
   description: `Краткая страница по ${city.name}: выберите кухни, шкафы-купе или гардеробные и перейдите к примерам работ, срокам и расчету стоимости.`,
   canonical: toCanonical(buildCityPath(city.id), Astro.site),
   robots: {
-    index: false,
+    index: true,
     follow: true,
   },
 };
@@ -89,25 +88,27 @@ const cityNotes = [
       </p>
     </div>
 
-    <ul class="city-services-grid">
-      {
-        services.map((service) => (
-          <li class="city-service-card ds-card ds-card-interactive">
-            <h3>{service.name}</h3>
-            <p>{service.summary}</p>
-            <div class="city-service-meta">
-              <span>
-                {service.priceRange.from.toLocaleString('ru-RU')} - {service.priceRange.to.toLocaleString('ru-RU')} ₽
-              </span>
-              <small>{service.offer.title}</small>
-            </div>
-            <a class="city-service-btn ds-action-primary" href={service.href} data-anchor-spam="ignore">
-              Перейти к услуге
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+    <nav data-city-commercial-nav aria-label="Основные услуги по городу">
+      <ul class="city-services-grid">
+        {
+          services.map((service) => (
+            <li class="city-service-card ds-card ds-card-interactive">
+              <h3>{service.name}</h3>
+              <p>{service.summary}</p>
+              <div class="city-service-meta">
+                <span>
+                  Стоимость рассчитывается по проекту
+                </span>
+                <small>{service.offer.title}</small>
+              </div>
+              <a class="city-service-btn ds-action-primary" href={service.href} data-anchor-spam="ignore">
+                Перейти к услуге
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
   </section>
 
   <Contact

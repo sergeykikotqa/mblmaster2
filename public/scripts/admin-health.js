@@ -9,8 +9,6 @@ String(value ?? '-')
 .replaceAll("'", '&#39;');
 const API_PATH = '/api/admin/health';
 const ui = {
-token: $('admin-token'),
-clear: $('admin-token-clear'),
 refresh: $('health-check-button'),
 auto: $('health-auto-refresh'),
 interval: $('health-refresh-interval'),
@@ -106,7 +104,7 @@ const parts = [];
 if (!payload.tokenConfigured) parts.push('admin token missing');
 if (Number(payload.invalidAllowlistEntriesCount || 0) > 0)
 parts.push(`invalid allowlist: ${payload.invalidAllowlistEntriesCount}`);
-return parts.length > 0 ? parts.join(' · ') : 'token and allowlist look valid';
+return parts.length > 0 ? parts.join(' · ') : 'admin auth configuration looks valid';
 };
 const summarizeWorker = (entry) => {
 const payload = payloadOf(entry);
@@ -117,7 +115,7 @@ const missing = [];
 if (deps.workerTokenConfigured === false) missing.push('worker token');
 if (deps.redisConfigured === false) missing.push('redis');
 if (deps.webhookConfigured === false) missing.push('webhook');
-if (deps.turnstileRequired && deps.turnstileReady === false) missing.push('turnstile');
+if (deps.smartCaptchaRequired && deps.smartCaptchaReady === false) missing.push('SmartCaptcha');
 return missing.length > 0 ? `missing: ${missing.join(', ')}` : 'runtime ready';
 };
 const summarizePipeline = (entry) => {
@@ -130,16 +128,19 @@ if (payload.alerts?.retryRateWarning) return `retry rate ${formatPercent(payload
 if (Number.isFinite(payload.p95LatencyMs)) return `p95 delivery ${Math.round(payload.p95LatencyMs)} ms`;
 return payload.metricsDataSource === 'redis' ? 'durable store available' : 'pipeline healthy';
 };
-const summarizeMetrics = (entry) => {
-const payload = payloadOf(entry);
-if (isTimeout(entry)) return `timeout after ${payload.timeoutMs || '?'} ms`;
-if (isInternalError(entry)) return 'internal error';
-if (payload.alerts?.lowConversion) return 'conversion below threshold';
-if (payload.dataSource && payload.dataSource !== 'redis') return `using ${payload.dataSource} snapshot`;
-return Number.isFinite(payload?.totals?.pageViews)
-? `${payload.totals.pageViews} page views today`
-: 'snapshot healthy';
-};
+  const summarizeMetricsSource = (entry) => {
+    const payload = payloadOf(entry);
+    if (isTimeout(entry)) return `timeout after ${payload.timeoutMs || '?'} ms`;
+    if (isInternalError(entry)) return 'internal error';
+    if (payload.dataSource && payload.dataSource !== 'redis') return `statistics available via ${payload.dataSource}`;
+    return Number.isFinite(payload?.totals?.pageViews)
+      ? `${payload.totals.pageViews} page views read`
+      : 'statistics source available';
+  };
+  const summarizeConversion = (summary) =>
+    summary?.conversion?.reason === 'SOURCE_UNAVAILABLE'
+      ? 'Конверсия: источник статистики недоступен'
+      : 'Конверсия: нет сопоставимых данных';
 const deriveCards = (payload) => {
 const summary = payload.summary || {};
 const checks = payload.checks || {};
@@ -170,20 +171,26 @@ tone: isInternalError(checks.worker) ? 'fail' : payloadOf(checks.worker).ok === 
 status: isInternalError(checks.worker) ? 'FAIL' : payloadOf(checks.worker).ok === true ? 'OK' : 'DEGRADED',
 detail: summarizeWorker(checks.worker),
 },
-{
-label: 'Snapshot',
-tone: isInternalError(checks.metrics)
-? 'fail'
-: payloadOf(checks.metrics).ok === true && String(summary.snapshot?.label || '').startsWith('OK')
-? 'ok'
-: 'warning',
-status: isInternalError(checks.metrics)
-? 'FAIL'
-: payloadOf(checks.metrics).ok === true && String(summary.snapshot?.label || '').startsWith('OK')
-? 'OK'
-: 'DEGRADED',
-detail: summarizeMetrics(checks.metrics),
-},
+      {
+        label: 'Statistics source',
+        tone: isInternalError(checks.metrics) || isTimeout(checks.metrics)
+          ? 'fail'
+          : summary.snapshot?.ok === true
+            ? 'ok'
+            : 'warning',
+        status: isInternalError(checks.metrics) || isTimeout(checks.metrics)
+          ? 'FAIL'
+          : summary.snapshot?.ok === true
+            ? 'OK'
+            : 'DEGRADED',
+        detail: summarizeMetricsSource(checks.metrics),
+      },
+      {
+        label: 'Conversion',
+        tone: 'warning',
+        status: 'N/A',
+        detail: summarizeConversion(summary),
+      },
 {
 label: 'Proxy',
 tone: 'ok',
@@ -203,10 +210,11 @@ ui.cards.innerHTML = deriveCards(payload)
 const renderOperations = (payload) => {
 const metrics = payloadOf(payload.checks?.metrics);
 const pipeline = payloadOf(payload.checks?.pipeline);
-const items = [
-['Leads today', metrics?.totals?.formSubmitted ?? '-'],
-['Forms opened', metrics?.totals?.formOpened ?? '-'],
-['Retry rate 1h', formatPercent(pipeline?.retryRateLastHour)],
+    const items = [
+      ['Page views', metrics?.totals?.pageViews ?? '-'],
+      ['Leads today', metrics?.totals?.formSubmitted ?? '-'],
+      ['Forms opened', metrics?.totals?.formOpened ?? '-'],
+      ['Retry rate 1h', formatPercent(pipeline?.retryRateLastHour)],
 ['DLQ 24h', pipeline?.dlqLast24Hours ?? '-'],
 ];
 ui.ops.innerHTML = items
@@ -248,17 +256,24 @@ formatMs(latencyOf(payload.checks.pipeline)),
 checkedAtOf(payload.checks.pipeline) > 0 ? timeFormatter.format(checkedAtOf(payload.checks.pipeline)) : '-',
 summarizePipeline(payload.checks.pipeline),
 ],
-[
-'Snapshot',
-isInternalError(payload.checks.metrics)
-? 'FAIL'
-: payloadOf(payload.checks.metrics).ok === true && String(summary.snapshot?.label || '').startsWith('OK')
-? 'OK'
-: 'DEGRADED',
-formatMs(latencyOf(payload.checks.metrics)),
-checkedAtOf(payload.checks.metrics) > 0 ? timeFormatter.format(checkedAtOf(payload.checks.metrics)) : '-',
-summarizeMetrics(payload.checks.metrics),
-],
+    [
+      'Statistics source',
+      isInternalError(payload.checks.metrics) || isTimeout(payload.checks.metrics)
+        ? 'FAIL'
+        : summary.snapshot?.ok === true
+          ? 'OK'
+          : 'DEGRADED',
+      formatMs(latencyOf(payload.checks.metrics)),
+      checkedAtOf(payload.checks.metrics) > 0 ? timeFormatter.format(checkedAtOf(payload.checks.metrics)) : '-',
+      summarizeMetricsSource(payload.checks.metrics),
+    ],
+    [
+      'Conversion',
+      'N/A',
+      '-',
+      '-',
+      summarizeConversion(summary),
+    ],
 ];
 ui.details.innerHTML = rows
 .map(
@@ -358,7 +373,7 @@ state.inFlight = true;
 if (!background) setStatus('loading', 'Проверка health-состояния...');
 try {
 const response = await fetch(API_PATH, {
-headers: ui.token.value.trim() ? { Authorization: `Bearer ${ui.token.value.trim()}` } : {},
+credentials: 'same-origin',
 });
 const payload = await parseJson(response);
 ui.raw.textContent = JSON.stringify(payload || {}, null, 2);
@@ -387,13 +402,14 @@ return;
 if (response.status === 401 || String(payload?.code || '') === 'UNAUTHORIZED') {
 stopAutoRefresh();
 resetDashboard();
-setStatus('error', 'UNAUTHORIZED: нужен верный admin token или allowlisted IP.');
+setStatus('error', 'UNAUTHORIZED: сессия завершена. Войдите через Telegram повторно.');
+window.location.assign(`/admin/login?next=${encodeURIComponent(window.location.pathname)}`);
 return;
 }
 if (String(payload?.code || '') === 'ADMIN_AUTH_NOT_CONFIGURED') {
 stopAutoRefresh();
 resetDashboard();
-setStatus('error', 'ADMIN_AUTH_NOT_CONFIGURED: на сервере не задан METRICS_ADMIN_TOKEN.');
+setStatus('error', 'ADMIN_AUTH_NOT_CONFIGURED: вход владельца не настроен на сервере.');
 return;
 }
 if (!payload || typeof payload !== 'object' || typeof payload.summary !== 'object') {
@@ -425,17 +441,6 @@ scheduleAutoRefresh();
 if (ui.auto.checked && ui.dashboard.hidden) void checkHealth(false);
 });
 ui.interval.addEventListener('change', scheduleAutoRefresh);
-ui.clear.addEventListener('click', () => {
-ui.token.value = '';
-state.inFlight = false;
-state.rateLimitedUntil = 0;
-stopTimer('rateTimer');
-stopTimer('freshnessTimer');
-stopAutoRefresh();
 resetDashboard();
-setStatus('idle', 'Введите admin token или используйте allowlisted IP, затем нажмите «Refresh now».');
-});
-
-resetDashboard();
-setStatus('idle', 'Введите admin token или используйте allowlisted IP, затем нажмите «Refresh now».');
+setStatus('idle', 'Нажмите «Refresh now», чтобы получить актуальное состояние системы.');
 })();

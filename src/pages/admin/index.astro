@@ -1,36 +1,18 @@
 ---
 import AdminLayout from '~/layouts/AdminLayout.astro';
+import AdminSessionBar from '~/components/admin/AdminSessionBar.astro';
+
+export const prerender = false;
 ---
 
 <AdminLayout title="Admin Dashboard">
   <section class="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
     <h1 class="mb-4 text-3xl font-bold text-slate-900 sm:text-4xl">Admin Dashboard</h1>
     <p class="mb-8 text-slate-600">
-      Компактный операторский обзор runtime и lead pipeline. Используйте admin token или allowlisted IP.
+      Компактный операторский обзор runtime и lead pipeline. Доступ защищён серверной сессией владельца.
     </p>
 
-    <div
-      class="mb-6 grid gap-3 rounded-xl border border-[#e8d8cb] bg-[#f9f4ef] p-4 md:grid-cols-[1fr_auto] md:items-end"
-    >
-      <label class="text-sm font-medium text-slate-700">
-        Admin token (Bearer)
-        <input
-          id="admin-token"
-          name="admin-token"
-          type="password"
-          autocomplete="off"
-          placeholder="METRICS_ADMIN_TOKEN"
-          class="mt-1 block w-full rounded-md border border-[#d9c6b7] px-3 py-2"
-        />
-      </label>
-      <button
-        id="admin-token-clear"
-        type="button"
-        class="inline-flex w-fit items-center rounded-md border border-[#d9c6b7] bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-[#f3ebe4]"
-      >
-        Очистить токен
-      </button>
-    </div>
+    <AdminSessionBar />
 
     <div class="grid gap-4 lg:grid-cols-[280px_1fr]">
       <a
@@ -85,7 +67,7 @@ import AdminLayout from '~/layouts/AdminLayout.astro';
           data-state="idle"
           class="mt-4 rounded-xl border border-[#e8d8cb] bg-[#f9f4ef] px-4 py-3 text-sm text-slate-700"
         >
-          Введите admin token или используйте allowlisted IP, затем нажмите «Refresh now».
+          Нажмите «Refresh now», чтобы получить актуальное состояние системы.
         </div>
       </section>
     </div>

@@ -2,6 +2,10 @@
 dist/
 .output/
 .astro
+nginx/generated/public-origin.conf
+
+# local audit evidence and generated runtime artifacts that are never committed
+artifacts/seo-production-audit/
 
 # dependencies
 node_modules/
@@ -20,9 +24,17 @@ devserver.*
 .pyhttp.*
 
 
-# environment variables
-.env
-.env.production
+# Environment files and private key material must never be staged. Keep the
+# documented, intentionally public template available to Git.
+.env*
+!.env.example
+prod.env
+*.pem
+*.key
+*.crt
+secrets/
+var/
+releases/
 
 # macOS-specific files
 .DS_Store

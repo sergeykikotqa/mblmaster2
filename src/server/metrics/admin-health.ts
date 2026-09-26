@@ -1,10 +1,6 @@
 import { authorizeAdminRequest } from '~/server/admin/auth';
-import {
-  getHealthStateStoreRuntimeStats,
-  getHealthTransitionHistory,
-  listHealthStates,
-} from '~/server/metrics/state-store';
-import type { HealthScope, HealthState, HealthStateRecord } from '~/server/metrics/health-types';
+import { getHealthStateStoreRuntimeStats, probeHealthStateStoreAvailability } from '~/server/metrics/state-store';
+import type { HealthScope, HealthState } from '~/server/metrics/health-types';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -21,24 +17,7 @@ function parseView(value: string | null): AdminHealthView {
   return 'summary';
 }
 
-function parseLimit(value: string | null): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 200;
-  return Math.max(1, Math.min(2000, Math.floor(parsed)));
-}
-
-function parseScope(value: string | null): HealthScope | undefined {
-  const normalized = String(value || '').trim();
-  if (!normalized) return undefined;
-  if (normalized === 'global') return normalized;
-  if (normalized === 'city') return normalized;
-  if (normalized === 'service') return normalized;
-  if (normalized === 'city_service') return normalized;
-  if (normalized === 'page_type') return normalized;
-  return undefined;
-}
-
-function summarizeStates(states: HealthStateRecord[]) {
+function emptySummary() {
   const byState: Record<HealthState, number> = {
     HEALTHY: 0,
     DEGRADED: 0,
@@ -53,20 +32,12 @@ function summarizeStates(states: HealthStateRecord[]) {
     page_type: 0,
   };
 
-  for (const state of states) {
-    byState[state.state] += 1;
-    byScope[state.scope] += 1;
-  }
-
   return {
+    statesTracked: 0,
+    transitionsSampled: 0,
     byState,
     byScope,
   };
-}
-
-function mergeSource(left: 'redis' | 'memory' | 'mixed', right: 'redis' | 'memory'): 'redis' | 'memory' | 'mixed' {
-  if (left === right) return left;
-  return 'mixed';
 }
 
 export async function handleAdminHealthStateRequest(
@@ -84,27 +55,8 @@ export async function handleAdminHealthStateRequest(
   }
 
   try {
-    const url = new URL(request.url);
-    const view = parseView(url.searchParams.get('view'));
-    const limit = parseLimit(url.searchParams.get('limit'));
-    const requestedScope = parseScope(url.searchParams.get('scope'));
-
-    const states = await listHealthStates({
-      limit,
-      scope: requestedScope,
-    });
-    const transitions =
-      view === 'transitions' || view === 'summary'
-        ? await getHealthTransitionHistory({ limit })
-        : {
-            value: [],
-            dataSource: states.dataSource,
-            degraded: states.degraded,
-          };
-
-    const combinedSource = mergeSource(states.dataSource, transitions.dataSource);
-    const degraded = states.degraded || transitions.degraded;
-    const summary = summarizeStates(states.value);
+    const view = parseView(new URL(request.url).searchParams.get('view'));
+    const stateStoreProbe = await probeHealthStateStoreAvailability();
     const runtime = getHealthStateStoreRuntimeStats();
 
     return new Response(
@@ -112,17 +64,25 @@ export async function handleAdminHealthStateRequest(
         ok: true,
         view,
         authMethod: auth.method,
-        dataSource: combinedSource,
-        degraded,
-        runtime,
-        summary: {
-          statesTracked: states.value.length,
-          transitionsSampled: transitions.value.length,
-          byState: summary.byState,
-          byScope: summary.byScope,
+        conversion: {
+          available: false,
+          reason: 'CONSENT_SCOPE_MISMATCH',
         },
-        states: view === 'states' ? states.value : undefined,
-        transitions: view === 'transitions' ? transitions.value : undefined,
+        statisticsSource: {
+          status: 'NOT_CHECKED',
+          reason: 'CONVERSION_ASSESSMENT_UNAVAILABLE',
+        },
+        stateStore: {
+          available: stateStoreProbe.value.available,
+          dataSource: stateStoreProbe.dataSource,
+          degraded: stateStoreProbe.degraded,
+          legacyPayloadRead: stateStoreProbe.value.legacyPayloadRead,
+        },
+        runtime,
+        legacyStateDataSuppressed: true,
+        summary: emptySummary(),
+        states: view === 'states' ? [] : undefined,
+        transitions: view === 'transitions' ? [] : undefined,
       }),
       {
         status: 200,

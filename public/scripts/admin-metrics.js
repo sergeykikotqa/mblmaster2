@@ -4,8 +4,6 @@ const form = document.getElementById('metrics-filter');
 const submitButton = document.getElementById('metrics-submit');
 const tableBody = document.getElementById('metrics-table-body');
 const summary = document.getElementById('metrics-summary');
-const tokenInput = document.getElementById('admin-token');
-const clearTokenButton = document.getElementById('admin-token-clear');
 const UI_STATE = Object.freeze({
 IDLE: 'idle',
 LOADING: 'loading',
@@ -21,13 +19,10 @@ if (
 !(form instanceof HTMLFormElement) ||
 !(submitButton instanceof HTMLButtonElement) ||
 !(tableBody instanceof HTMLElement) ||
-!(summary instanceof HTMLElement) ||
-!(tokenInput instanceof HTMLInputElement) ||
-!(clearTokenButton instanceof HTMLButtonElement)
+!(summary instanceof HTMLElement)
 )
 return;
 
-const formatPct = (value) => `${(Number(value || 0) * 100).toFixed(2)}%`;
 const formatDuration = (totalSeconds) => {
 const safe = Math.max(0, Math.floor(totalSeconds));
 const hours = Math.floor(safe / 3600);
@@ -82,7 +77,7 @@ return 0;
 };
 
 const renderEmptyRows = (message = 'Нет данных для отображения.') => {
-tableBody.innerHTML = `<tr><td colspan="10" class="px-4 py-6 text-center text-slate-500">${message}</td></tr>`;
+tableBody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">${message}</td></tr>`;
 };
 
 const renderRows = (entries) => {
@@ -96,9 +91,6 @@ for (const entry of entries) {
 const views = Number(entry.pageViews || 0);
 const opened = Number(entry.formOpened || 0);
 const submitted = Number(entry.formSubmitted || 0);
-const openedRate = views > 0 ? opened / views : 0;
-const submitRate = opened > 0 ? submitted / opened : 0;
-const cr = views > 0 ? submitted / views : 0;
 
 const row = document.createElement('tr');
 row.className = 'border-t border-[#f0e6de]';
@@ -109,23 +101,9 @@ row.innerHTML = `
 <td class="px-4 py-3">${views}</td>
 <td class="px-4 py-3">${opened}</td>
 <td class="px-4 py-3">${submitted}</td>
-<td class="px-4 py-3">${formatPct(openedRate)}</td>
-<td class="px-4 py-3">${formatPct(submitRate)}</td>
-<td class="px-4 py-3 font-semibold">${formatPct(cr)}</td>
 `;
 tableBody.appendChild(row);
 }
-};
-
-const readToken = () => {
-return tokenInput.value.trim();
-};
-
-const buildAuthHeaders = (token) => {
-if (!token) return {};
-return {
-Authorization: `Bearer ${token}`,
-};
 };
 
 const updateRateLimitedSummary = () => {
@@ -158,7 +136,7 @@ const message = options.message || '';
 if (nextState === UI_STATE.IDLE) {
 stopRateLimitTimer();
 setSubmitDisabled(false);
-setSummaryText(message || 'Введите admin token или используйте allowlisted IP, затем нажмите «Обновить».');
+setSummaryText(message || 'Настройте фильтры и нажмите «Обновить».');
 return;
 }
 
@@ -211,7 +189,6 @@ updateRateLimitedSummary();
 return;
 }
 
-const token = readToken();
 const fd = new FormData(form);
 const params = new URLSearchParams();
 for (const [key, value] of fd.entries()) {
@@ -223,16 +200,17 @@ params.set(key, normalized);
 setState(UI_STATE.LOADING);
 try {
 const response = await fetch(`${API_PATH}?${params.toString()}`, {
-headers: buildAuthHeaders(token),
+credentials: 'same-origin',
 });
 const payload = await parseResponseJson(response);
 if (!response.ok || !payload?.ok) {
 const code = payload?.code || `HTTP_${response.status}`;
 if (code === 'UNAUTHORIZED') {
-renderEmptyRows('Доступ запрещён: нужен верный admin token или allowlisted IP.');
+renderEmptyRows('Сессия завершена. Войдите через Telegram повторно.');
 setState(UI_STATE.ERROR, {
-message: 'UNAUTHORIZED: нужен верный admin token или allowlisted IP.',
+message: 'UNAUTHORIZED: сессия завершена.',
 });
+window.location.assign(`/admin/login?next=${encodeURIComponent(window.location.pathname)}`);
 return;
 }
 
@@ -249,7 +227,7 @@ return;
 if (code === 'ADMIN_AUTH_NOT_CONFIGURED') {
 renderEmptyRows('Сервер не настроен для admin auth.');
 setState(UI_STATE.ERROR, {
-message: 'ADMIN_AUTH_NOT_CONFIGURED: на сервере не задан METRICS_ADMIN_TOKEN.',
+message: 'ADMIN_AUTH_NOT_CONFIGURED: вход владельца не настроен на сервере.',
 });
 return;
 }
@@ -273,10 +251,10 @@ const summaryHtml = `
 <strong>Bucket:</strong> ${payload.bucket} |
 <strong>Auth:</strong> ${payload.authMethod || '-'} |
 <strong>Source:</strong> ${payload.dataSource} |
-<strong>Page views:</strong> ${payload.report?.pageViews ?? payload.totalPageViews ?? 0} |
-<strong>Opened:</strong> ${payload.report?.opened ?? payload.totalOpened ?? 0} |
-<strong>Submitted:</strong> ${payload.report?.submitted ?? payload.totalSubmitted ?? 0} |
-<strong>CR (submit/view):</strong> ${formatPct(payload.report?.conversionRate ?? payload.conversionRate ?? 0)}
+<strong>Просмотры (с согласием):</strong> ${payload.report?.pageViews ?? payload.totalPageViews ?? 0} |
+<strong>Открытия (с согласием):</strong> ${payload.report?.opened ?? payload.totalOpened ?? 0} |
+<strong>Принятые заявки (server):</strong> ${payload.report?.submitted ?? payload.totalSubmitted ?? 0} |
+<strong>Конверсия:</strong> Нет сопоставимых данных
 `;
 renderRows(payload.entries);
 setState(UI_STATE.SUCCESS, { html: summaryHtml });
@@ -291,12 +269,6 @@ message: `Ошибка загрузки: ${error instanceof Error ? error.messag
 form.addEventListener('submit', (event) => {
 event.preventDefault();
 void loadMetrics();
-});
-
-clearTokenButton.addEventListener('click', () => {
-tokenInput.value = '';
-renderEmptyRows('Данные появятся после успешной загрузки.');
-setState(UI_STATE.IDLE);
 });
 
 renderEmptyRows('Данные появятся после успешной загрузки.');

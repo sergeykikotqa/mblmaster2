@@ -3,12 +3,11 @@ import { fileURLToPath } from 'url';
 
 import { defineConfig } from 'astro/config';
 
-import tailwind from '@astrojs/tailwind';
 import mdx from '@astrojs/mdx';
 import partytown from '@astrojs/partytown';
-import netlify from '@astrojs/netlify';
+import { unified } from '@astrojs/markdown-remark';
+import node from '@astrojs/node';
 import icon from 'astro-icon';
-import compress from 'astro-compress';
 import type { AstroIntegration } from 'astro';
 
 import astrowind from './vendor/integration';
@@ -22,31 +21,41 @@ import {
 import { autoInternalLinksRehypePlugin } from './src/utils/auto-internal-links';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PUBLIC_SITE_URL = String(process.env.PUBLIC_SITE_URL || '').trim();
+const PUBLIC_SITE_URL = String(process.env.PUBLIC_SITE_URL || 'https://example.com').trim();
 const IS_E2E = String(process.env.PUBLIC_E2E || '').trim() === '1';
-const NETLIFY_IMAGE_CDN_ENV = String(process.env.NETLIFY_IMAGE_CDN || '').trim().toLowerCase();
-const USE_NETLIFY_IMAGE_CDN =
-  NETLIFY_IMAGE_CDN_ENV === '' ? true : !['0', 'false', 'no'].includes(NETLIFY_IMAGE_CDN_ENV);
+const RUNTIME_SITE_URL = new URL(PUBLIC_SITE_URL);
 
 const hasExternalScripts = false;
 const whenExternalScripts = (items: (() => AstroIntegration) | (() => AstroIntegration)[] = []) =>
   hasExternalScripts ? (Array.isArray(items) ? items.map((item) => item()) : [items()]) : [];
 
 export default defineConfig({
-  // P0 decision: keep static output and deploy /api/* as platform functions.
-  // Current adapter: Netlify Functions. If platform changes, switch adapter accordingly.
+  // Public pages stay prerendered; routes with prerender=false run in Node.
   output: 'static',
   trailingSlash: 'never',
-  adapter: netlify({ imageCDN: USE_NETLIFY_IMAGE_CDN }),
+  adapter: node({
+    mode: 'standalone',
+    bodySizeLimit: 1024 * 1024,
+  }),
+  session: false,
+  // Preserve Astro 6 whitespace semantics during the framework migration.
+  compressHTML: true,
+  // Keep the established public artifact path used by SEO/image/a11y gates.
+  // Server code must be outside the public directory, never served as an asset.
+  build: {
+    client: './',
+    server: '../.output/server/',
+  },
+  security: {
+    // Only the canonical reverse-proxy host may influence Astro.url.
+    allowedDomains: [{ protocol: RUNTIME_SITE_URL.protocol.slice(0, -1), hostname: RUNTIME_SITE_URL.hostname }],
+  },
   site: PUBLIC_SITE_URL || undefined,
   devToolbar: {
     enabled: !IS_E2E,
   },
 
   integrations: [
-    tailwind({
-      applyBaseStyles: false,
-    }),
     mdx(),
     icon({
       include: {
@@ -71,19 +80,6 @@ export default defineConfig({
       })
     ),
 
-    compress({
-      CSS: true,
-      HTML: {
-        'html-minifier-terser': {
-          removeAttributeQuotes: false,
-        },
-      },
-      Image: false,
-      JavaScript: true,
-      SVG: false,
-      Logger: 1,
-    }),
-
     astrowind({
       config: './src/config.yaml',
     }),
@@ -97,13 +93,16 @@ export default defineConfig({
   },
 
   markdown: {
-    remarkPlugins: [readingTimeRemarkPlugin],
-    rehypePlugins: [
-      normalizeMarkdownHeadingsRehypePlugin,
-      responsiveTablesRehypePlugin,
-      lazyImagesRehypePlugin,
-      autoInternalLinksRehypePlugin,
-    ],
+    // Astro 7 defaults to Satteri. These existing plugins use the unified pipeline.
+    processor: unified({
+      remarkPlugins: [readingTimeRemarkPlugin],
+      rehypePlugins: [
+        normalizeMarkdownHeadingsRehypePlugin,
+        responsiveTablesRehypePlugin,
+        lazyImagesRehypePlugin,
+        autoInternalLinksRehypePlugin,
+      ],
+    }),
   },
 
   vite: {

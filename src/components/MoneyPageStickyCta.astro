@@ -5,7 +5,7 @@ const businessInfo = getBusinessInfo();
 const phoneHref = `tel:${businessInfo.phoneHref}`;
 ---
 
-<div id="money-page-sticky-cta" class="money-sticky" data-visible="false" hidden>
+<aside id="money-page-sticky-cta" class="money-sticky" aria-label="Быстрые действия" data-visible="false" hidden>
   <div class="money-sticky__inner">
     <a
       href="#contact"
@@ -27,7 +27,7 @@ const phoneHref = `tel:${businessInfo.phoneHref}`;
       Позвонить
     </a>
   </div>
-</div>
+</aside>
 
 <script is:inline>
   const initMoneyPageStickyCta = () => {

@@ -62,8 +62,8 @@ function parseBoolean(value, fallback) {
   return fallback;
 }
 
-function isTurnstileExpected() {
-  return parseBoolean(process.env.DEPLOY_SMOKE_EXPECT_TURNSTILE, false);
+function isSmartCaptchaExpected() {
+  return parseBoolean(process.env.DEPLOY_SMOKE_EXPECT_SMARTCAPTCHA, false);
 }
 
 function allowDegradedResult() {
@@ -82,8 +82,8 @@ function resolveRetryBaseDelayMs() {
   return parsePositiveInt(process.env.DEPLOY_SMOKE_RETRY_BASE_DELAY_MS, DEFAULT_RETRY_BASE_DELAY_MS, 50);
 }
 
-function resolveTurnstileToken() {
-  return String(process.env.DEPLOY_SMOKE_TURNSTILE_TOKEN || '').trim();
+function resolveSmartCaptchaToken() {
+  return String(process.env.DEPLOY_SMOKE_SMARTCAPTCHA_TOKEN || '').trim();
 }
 
 function assert(condition, message) {
@@ -427,11 +427,11 @@ function createContactPayload() {
   };
 }
 
-async function postContact(context, baseUrl, options = { includeTurnstileToken: true }) {
+async function postContact(context, baseUrl, options = { includeSmartCaptchaToken: true }) {
   const payload = createContactPayload();
-  const turnstileToken = resolveTurnstileToken();
-  if (options.includeTurnstileToken && turnstileToken) {
-    payload.turnstileToken = turnstileToken;
+  const smartCaptchaToken = resolveSmartCaptchaToken();
+  if (options.includeSmartCaptchaToken && smartCaptchaToken) {
+    payload.smartCaptchaToken = smartCaptchaToken;
   }
 
   const response = await fetchWithTimeout(context, `${baseUrl}/api/contact`, {
@@ -478,28 +478,28 @@ async function checkInvalidPayload(context, baseUrl) {
   assert(body?.success === false, 'Invalid payload response must return success=false');
 }
 
-async function checkTurnstileNegative(context, baseUrl) {
-  if (!isTurnstileExpected()) return;
+async function checkSmartCaptchaNegative(context, baseUrl) {
+  if (!isSmartCaptchaExpected()) return;
 
   const response = await fetchWithTimeout(context, `${baseUrl}/api/contact`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Idempotency-Key': `deploy-smoke-turnstile-${Date.now()}`,
+      'X-Idempotency-Key': `deploy-smoke-smartcaptcha-${Date.now()}`,
     },
     body: JSON.stringify(createContactPayload()),
   });
 
-  const body = await readJsonResponse(response, 'POST /api/contact (turnstile negative)');
+  const body = await readJsonResponse(response, 'POST /api/contact (SmartCaptcha negative)');
   assert(
     response.status === 400 || response.status === 503,
-    `Turnstile negative must return 400/503, got ${response.status}`
+    `SmartCaptcha negative must return 400/503, got ${response.status}`
   );
   assert(
     ['BOT_PROTECTION_REQUIRED', 'BOT_PROTECTION_FAILED', 'BOT_PROTECTION_UNAVAILABLE'].includes(
       String(body?.code || '')
     ),
-    `Unexpected Turnstile negative error code: ${String(body?.code || '(empty)')}`
+    `Unexpected SmartCaptcha negative error code: ${String(body?.code || '(empty)')}`
   );
 }
 
@@ -511,15 +511,15 @@ async function main() {
   const adminToken = resolveAdminToken();
   const expectedYandexVerification = resolveExpectedYandexVerification();
   const expectedYandexMetrikaId = resolveExpectedYandexMetrikaId();
-  const expectTurnstile = isTurnstileExpected();
-  const turnstileToken = resolveTurnstileToken();
+  const expectSmartCaptcha = isSmartCaptchaExpected();
+  const smartCaptchaToken = resolveSmartCaptchaToken();
   if (!adminToken) {
     throw new Error('DEPLOY_SMOKE_ADMIN_TOKEN or METRICS_ADMIN_TOKEN is required for /api/admin/health checks');
   }
 
-  if (expectTurnstile && !turnstileToken) {
-    console.warn(
-      'DEPLOY_SMOKE_EXPECT_TURNSTILE=true but DEPLOY_SMOKE_TURNSTILE_TOKEN is empty. Happy-path /api/contact may fail.'
+  if (expectSmartCaptcha && !smartCaptchaToken) {
+    throw new Error(
+      'DEPLOY_SMOKE_SMARTCAPTCHA_TOKEN must contain a fresh one-time test token when SmartCaptcha is required.'
     );
   }
 
@@ -553,12 +553,16 @@ async function main() {
   await withRetry(context, 'invalid_payload', async () => checkInvalidPayload(context, baseUrl), {
     allowRetry: () => false,
   });
-  await withRetry(context, 'turnstile_negative', async () => checkTurnstileNegative(context, baseUrl), {
+  await withRetry(context, 'smartcaptcha_negative', async () => checkSmartCaptchaNegative(context, baseUrl), {
     allowRetry: isTransientError,
   });
 
-  const contact = await withRetry(context, 'contact_happy_path', async () =>
-    postContact(context, baseUrl, { includeTurnstileToken: true })
+  const contact = await withRetry(
+    context,
+    'contact_happy_path',
+    async () => postContact(context, baseUrl, { includeSmartCaptchaToken: true }),
+    // SmartCaptcha tokens are single-use. A retry must obtain a new token.
+    { allowRetry: expectSmartCaptcha ? () => false : isTransientError }
   );
   assert(contact.status === 200, `POST /api/contact must return 200, got ${contact.status}`);
   assert(contact.body?.success === true, 'POST /api/contact must return success=true');

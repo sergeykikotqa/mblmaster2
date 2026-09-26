@@ -10,7 +10,7 @@ import { getPortfolioItems } from '~/lib/projects/portfolio-items';
 const metadata = {
   title: 'О компании - мебель на заказ в Иркутске',
   description:
-    'О компании «мбл мастер»: собственное производство в Иркутске, опыт более 10 лет, сертифицированные материалы и гарантия 2 года.',
+    'О компании «мбл мастер»: проектируем и производим кухни, шкафы-купе и гардеробные по индивидуальным проектам в Иркутске и области.',
 };
 
 const aboutSlides = [
@@ -26,7 +26,7 @@ const aboutSlides = [
     alt: 'Шкаф в спальне, проект компании',
     title: 'Контроль качества на каждом этапе',
     subtitle: 'От замера до финального монтажа проект ведет одна команда.',
-    kicker: '10+ лет опыта',
+    kicker: 'Контроль качества',
   },
   {
     src: '/images/projects/uglovaya-garderobnaya-kupe-irkutsk/01.jpg',
@@ -73,7 +73,7 @@ const portfolioItems = await getPortfolioItems(6);
 
   <HeroModern
     title="О компании «мбл мастер»"
-    subtitle="Более 10 лет проектируем и производим мебель на заказ в Иркутске: кухни, шкафы-купе и гардеробные системы."
+    subtitle="Проектируем и производим кухни, шкафы-купе и гардеробные по индивидуальным проектам в Иркутске и области."
     actions={[
       { text: 'Обсудить проект', href: '#contact', variant: 'primary' },
       { text: 'Наши принципы', href: '#principles', variant: 'secondary' },
@@ -98,23 +98,23 @@ const portfolioItems = await getPortfolioItems(6);
       </article>
 
       <div class="about-stats-card ds-card">
-        <h3>Факты о компании</h3>
+        <h3>Как мы работаем</h3>
         <ul>
           <li>
-            <strong>10+</strong>
-            <span>лет на рынке мебели Иркутска</span>
+            <strong>01</strong>
+            <span>Обсуждаем задачу и собираем исходные данные</span>
           </li>
           <li>
-            <strong>500+</strong>
-            <span>реализованных проектов под ключ</span>
+            <strong>02</strong>
+            <span>Подбираем компоновку, материалы и внутреннее наполнение</span>
           </li>
           <li>
-            <strong>24 мес.</strong>
-            <span>гарантия на мебель и монтаж</span>
+            <strong>03</strong>
+            <span>Изготавливаем мебель по согласованному проекту</span>
           </li>
           <li>
-            <strong>1 команда</strong>
-            <span>замер, проект, производство, установка</span>
+            <strong>04</strong>
+            <span>Доставляем, устанавливаем и настраиваем результат</span>
           </li>
         </ul>
       </div>
@@ -294,6 +294,15 @@ const portfolioItems = await getPortfolioItems(6);
   .about-stats-card span {
     color: #5f544b;
     font-size: 0.82rem;
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+  }
+
+  @media (max-width: 720px) {
+    .about-story-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .about-principles-grid {

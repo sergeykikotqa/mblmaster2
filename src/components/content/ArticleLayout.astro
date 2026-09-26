@@ -162,7 +162,7 @@ const ctaContext = getContextCta({ serviceId: normalizedService?.id, pageSlug: s
 const ctaTitle = normalizedService ? ctaContext.title : 'Хотите узнать больше?';
 const ctaSubtitle = normalizedService
   ? ctaContext.subtitle
-  : 'Оставьте заявку и наш специалист свяжется с вами в течение 10 минут';
+  : 'Оставьте заявку, и наш специалист свяжется с вами для уточнения деталей';
 const ctaLabel = normalizedService ? ctaContext.cta : 'Отправить заявку';
 const leadContext = {
   service: normalizedService?.id,
@@ -330,7 +330,7 @@ const breadcrumbItems = [
       <p class="mb-8 text-[#665f5a]">{ctaSubtitle}</p>
       <ContactForm
         cta={ctaLabel}
-        ctaNote="Ответим в течение дня • можно без звонка • без обязательств"
+        ctaNote="Свяжемся для уточнения деталей • можно оставить заявку без обязательств"
         leadContext={leadContext}
       />
     </div>

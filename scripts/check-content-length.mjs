@@ -45,11 +45,11 @@ function extractMain(html) {
 
 function extractCityBlocks(html) {
   const blocks = [];
-  const regex = /<article\b[^>]*data-local-city-block=(["'])([^"']+)\1[^>]*>([\s\S]*?)<\/article>/gi;
+  const regex = /<article\b[^>]*class=(['"])([^'"]*\bcity-block\b[^'"]*)\1[^>]*>([\s\S]*?)<\/article>/gi;
   let match;
   while ((match = regex.exec(html)) !== null) {
     blocks.push({
-      city: match[2],
+      city: String(match[2] || '').toLowerCase(),
       html: match[3],
     });
   }

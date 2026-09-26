@@ -27,7 +27,15 @@ export default ({ config: _themeConfig = 'src/config.yaml' } = {}): AstroIntegra
 
         const rawJsonConfig = (await loadConfig(_themeConfig)) as Config;
 
-        const { SITE, I18N, METADATA, APP_BLOG, UI, ANALYTICS } = configBuilder(rawJsonConfig);
+        const builtConfig = configBuilder(rawJsonConfig);
+        const SITE = {
+          ...builtConfig.SITE,
+          // The explicit Astro config is sourced from PUBLIC_SITE_URL. Keep the
+          // theme's virtual config on that same origin instead of allowing the
+          // YAML development fallback to overwrite it during config setup.
+          site: config.site ? config.site.toString().replace(/\/$/, '') : builtConfig.SITE.site,
+        };
+        const { I18N, METADATA, APP_BLOG, UI, ANALYTICS } = builtConfig;
 
         updateConfig({
           site: SITE.site,

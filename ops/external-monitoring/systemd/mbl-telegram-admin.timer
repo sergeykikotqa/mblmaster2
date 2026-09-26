@@ -1,0 +1,11 @@
+[Unit]
+Description=Poll Telegram owner commands every 10 seconds
+
+[Timer]
+OnBootSec=10s
+OnUnitActiveSec=10s
+AccuracySec=1s
+Unit=mbl-telegram-admin.service
+
+[Install]
+WantedBy=timers.target

@@ -7,18 +7,18 @@ import { getCanonicalUrl } from '../../src/lib/canonical';
 import { getIndexabilityPolicy, normalizePolicyPath } from '../../src/config/indexability-policy';
 
 const MANIFEST_PATH = path.join(process.cwd(), 'artifacts', 'smoke-manifest.json');
-const DEFAULT_ROUTES = ['/', '/kuhni', '/articles/kak-vybrat-kuhnyu'];
 
 function loadRoutes(): string[] {
   if (!fs.existsSync(MANIFEST_PATH)) {
-    return DEFAULT_ROUTES;
+    throw new Error(`SEO smoke manifest is missing: ${MANIFEST_PATH}`);
   }
   try {
     const payload = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
     const routes = Array.isArray(payload?.seo?.routes) ? payload.seo.routes : [];
-    return routes.length > 0 ? routes : DEFAULT_ROUTES;
-  } catch {
-    return DEFAULT_ROUTES;
+    if (routes.length === 0) throw new Error('SEO smoke manifest contains no routes');
+    return routes;
+  } catch (error) {
+    throw new Error(`SEO smoke manifest is invalid: ${error instanceof Error ? error.message : 'UNKNOWN'}`);
   }
 }
 
@@ -43,7 +43,10 @@ test.describe('SEO invariants', () => {
       expect(policy.isKnown).toBe(true);
 
       const targetUrl = appendQuery(routePath, 'utm_source=playwright');
-      await page.goto(targetUrl, { waitUntil: 'networkidle' });
+      const response = await page.goto(targetUrl, { waitUntil: 'networkidle' });
+      expect(response, `No HTTP response for ${routePath}`).not.toBeNull();
+      expect(response?.status(), `Unexpected HTTP status for ${routePath}`).toBe(200);
+      expect(new URL(page.url()).pathname).toBe(routePath);
 
       const canonicalHref = await page.locator('link[rel="canonical"]').getAttribute('href');
       expect(canonicalHref).toBeTruthy();

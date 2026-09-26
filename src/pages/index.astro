@@ -14,7 +14,7 @@ import '~/assets/styles/pages/home.css';
 const metadata = {
   title: 'Мебель на заказ в Иркутске — кухни, шкафы и гардеробные МБЛ',
   description:
-    'Проектируем и производим мебель на заказ в Иркутске: кухни, шкафы и гардеробные по вашим размерам. Замер, договор, гарантия 2 года и монтаж под ключ.',
+    'Мебель на заказ в Иркутске: кухни, шкафы и гардеробные по индивидуальным размерам. Посмотрите выполненные работы МБЛ и оставьте заявку на обсуждение проекта.',
 };
 
 const businessInfo = getBusinessInfo();
@@ -90,11 +90,11 @@ const materialStories = [
   },
 ];
 
-const trustFacts = [
-  { value: '10+', label: 'лет работаем с мебелью в Иркутске' },
-  { value: '500+', label: 'реализованных проектов' },
-  { value: '24', unit: 'месяца', label: 'гарантия на мебель и монтаж' },
-  { value: '1', unit: 'договор', label: 'фиксирует смету, сроки и состав работ' },
+const trustFacts: Array<{ value: string; label: string; unit?: string }> = [
+  { value: '01', label: 'Обсуждаем задачу и собираем исходные данные' },
+  { value: '02', label: 'Проектируем компоновку, материалы и наполнение' },
+  { value: '03', label: 'Изготавливаем мебель по согласованному проекту' },
+  { value: '04', label: 'Доставляем, устанавливаем и настраиваем результат' },
 ];
 
 const faqItems = [
@@ -112,11 +112,11 @@ const faqItems = [
   },
   {
     q: 'Где вы работаете?',
-    a: 'В Иркутске, Ангарске, Шелехове и ближайших локациях — выезд и монтаж согласовываем для каждого проекта.',
+    a: 'Работаем в Иркутске; выезд и монтаж согласовываем для каждого проекта.',
   },
   {
     q: 'Что входит в гарантию?',
-    a: 'Условия гарантии на конструкцию, фасады, фурнитуру и монтаж фиксируются в договоре. Базовый срок на мебель и монтаж — 24 месяца.',
+    a: 'Условия гарантии на конструкцию, фасады, фурнитуру и монтаж фиксируются в договоре.',
   },
   {
     q: 'Можно заказать проект под ключ?',
@@ -125,11 +125,6 @@ const faqItems = [
 ];
 
 const districts = ['Октябрьский', 'Свердловский', 'Ленинский', 'Правобережный', 'Ново-Ленино', 'Солнечный'];
-const cityLinks = [
-  { label: 'Иркутск', href: '/irkutsk' },
-  { label: 'Ангарск', href: '/angarsk' },
-  { label: 'Шелехов', href: '/shelekhov' },
-];
 
 const projectEntries = (await getCollection('projects', ({ data }) => !data.draft)).sort((a, b) => {
   const dateDiff = Number(b.data.publishDate || 0) - Number(a.data.publishDate || 0);
@@ -220,14 +215,14 @@ const heroPreload = import.meta.env.DEV
           <div class="home-hero-proof home-hero-enter home-hero-enter-4" aria-label="Ключевые условия">
             <span>Собственное производство</span>
             <span>Смета до старта</span>
-            <span>Гарантия 2 года</span>
+            <span>Условия гарантии фиксируются в договоре</span>
           </div>
           <a href="#contact" class="home-hero-direct">Или сразу обсудить задачу</a>
         </div>
 
         <a
           class="home-hero-scene home-hero-enter home-hero-enter-3 mbl-media-cover mbl-media-zoom"
-          href="/projects/kuhnya-piskunova"
+          href="/projects/uglovaya-kuhnya-s-podsvetkoy-irkutsk"
         >
           <Image
             src={heroProjectImage}
@@ -410,12 +405,9 @@ const heroPreload = import.meta.env.DEV
         </dl>
         <div class="home-geography mbl-reveal" data-mbl-reveal>
           <div>
-            <p class="home-geography-label">Работаем по городу и рядом</p>
-            <div class="home-city-links">
-              {cityLinks.map((city) => <a href={city.href}>{city.label}</a>)}
-            </div>
+            <p class="home-geography-label">Работаем в Иркутске</p>
           </div>
-          <p>{districts.join(' · ')}</p>
+          <p>Районы: {districts.join(' · ')}</p>
         </div>
       </div>
     </section>
@@ -578,7 +570,7 @@ const heroPreload = import.meta.env.DEV
             {businessInfo.phone}
           </a>
           <ul>
-            <li>Бесплатный замер по Иркутску, Ангарску и Шелехову</li>
+            <li>Замер по Иркутску</li>
             <li>Смета и сроки фиксируются до производства</li>
             <li>Монтаж и гарантия по договору</li>
           </ul>

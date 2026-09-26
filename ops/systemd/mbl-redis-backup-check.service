@@ -1,0 +1,18 @@
+[Unit]
+Description=Verify encrypted MBL Redis backup repository
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/mbl/runtime/current
+EnvironmentFile=/opt/mbl/runtime/deploy.env
+Environment=MBL_BACKUP_CHECK_SUBSET=10%%
+ExecStart=/usr/bin/flock -n /run/lock/mbl-redis-maintenance.lock /usr/bin/docker compose --env-file /opt/mbl/runtime/deploy.env --file compose.production.yml --file compose.backup.yml --profile backup run --rm --no-deps mbl-backup check
+TimeoutStartSec=2h
+Nice=15
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target

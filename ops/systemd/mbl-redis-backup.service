@@ -1,0 +1,20 @@
+[Unit]
+Description=MBL encrypted Redis backup to off-host object storage
+Requires=docker.service
+After=docker.service mbl-production.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/mbl/runtime/current
+EnvironmentFile=/opt/mbl/runtime/deploy.env
+ExecStartPre=/usr/bin/test -d /opt/mbl/secrets/backup
+ExecStartPre=/usr/bin/test -d /opt/mbl/runtime/backup-status
+ExecStart=/usr/bin/flock -n /run/lock/mbl-redis-maintenance.lock /usr/bin/docker compose --env-file /opt/mbl/runtime/deploy.env --file compose.production.yml --file compose.backup.yml --profile backup run --rm --no-deps mbl-backup backup
+TimeoutStartSec=30min
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+[Install]
+WantedBy=multi-user.target

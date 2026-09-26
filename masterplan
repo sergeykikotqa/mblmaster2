@@ -1,5 +1,17 @@
 ﻿# Masterplan: SEO-машина лидогенерации
 
+> **HISTORICAL PLANNING DOCUMENT — NOT CURRENT SOURCE OF TRUTH**
+>
+> Этот документ фиксирует план проекта на февраль 2026 года и сохранён как
+> исторический контекст. Актуальная точка входа — [`README.md`](README.md).
+> Текущие эксплуатационные контракты описаны в
+> [`docs/QUALITY_GATES.md`](docs/QUALITY_GATES.md),
+> [`docs/production-runtime.md`](docs/production-runtime.md),
+> [`docs/release-and-rollback.md`](docs/release-and-rollback.md),
+> [`docs/backup-restore-runbook.md`](docs/backup-restore-runbook.md) и
+> [`docs/external-monitoring.md`](docs/external-monitoring.md). При расхождении
+> текущий код, тесты, конфигурация и runbooks имеют приоритет над этим планом.
+
 Дата обновления: 2026-02-22  
 Проект: мебель на заказ (Иркутск)  
 Стек: Astro 5+, TypeScript strict

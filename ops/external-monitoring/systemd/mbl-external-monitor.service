@@ -1,0 +1,36 @@
+[Unit]
+Description=MBL external production monitor with Telegram notifications
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=mbl-monitor
+Group=mbl-monitor
+WorkingDirectory=/opt/mbl-monitor/current
+EnvironmentFile=/etc/mbl-monitor/monitor.env
+StateDirectory=mbl-monitor
+StateDirectoryMode=0700
+RuntimeDirectory=mbl-monitor
+RuntimeDirectoryMode=0700
+UMask=0077
+ExecStart=/usr/bin/flock -n /run/mbl-monitor/probe.lock /usr/bin/node scripts/external-monitor.mjs
+TimeoutStartSec=120
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/mbl-monitor
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=true
+LockPersonality=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

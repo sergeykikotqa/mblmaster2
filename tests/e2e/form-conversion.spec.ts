@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { mockSmartCaptcha } from './smartcaptcha-mock';
+
 test.describe('Form conversion flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.route('**/api/track', async (route) => {
@@ -8,6 +10,7 @@ test.describe('Form conversion flow', () => {
   });
 
   test('money-page CTA moves focus into contact form and submits with minimal data', async ({ page }) => {
+    await mockSmartCaptcha(page);
     await page.route('**/api/leads', async (route) => {
       await route.fulfill({
         status: 200,
@@ -55,6 +58,7 @@ test.describe('Form conversion flow', () => {
     await firstInput.fill('9123456789');
     await form.locator('input[name="name"]').fill('Form E2E');
     await form.locator('input[name="consent"]').check();
+    await form.locator('[data-smartcaptcha-widget] button').click();
     const submitButton = form.locator('[data-submit-btn]');
     await expect(submitButton).toBeEnabled();
     await expect(submitButton).toBeInViewport();

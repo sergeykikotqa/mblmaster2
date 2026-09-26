@@ -161,9 +161,6 @@ function toCtaId(value: string | undefined, fallback: string) {
 
         {showToggleTheme && <ToggleTheme iconClass="h-5 w-5" />}
 
-        <a class="header-search-trigger ui-btn-state" href="/guides" aria-label="Открыть поиск">
-          <Icon name="tabler:search" class="h-4 w-4" aria-hidden="true" />
-        </a>
       </div>
 
       <div class="header-mobile-controls inline-flex lg:hidden">
@@ -185,12 +182,6 @@ function toCtaId(value: string | undefined, fallback: string) {
     </div>
 
     <div id="header-mobile-panel" data-aw-mobile-panel class="header-mobile-panel hidden lg:hidden" aria-hidden="true">
-      <form class="header-search mobile" role="search" action="/guides" method="get">
-        <label class="sr-only" for="header-search-input-mobile">Поиск по сайту</label>
-        <Icon name="tabler:search" class="header-search-icon" aria-hidden="true" />
-        <input id="header-search-input-mobile" name="q" type="search" placeholder="Найти мебель" />
-      </form>
-
       <nav data-aw-mobile-nav aria-label="Mobile navigation">
         <ul class="header-mobile-nav-list">
           {
@@ -417,62 +408,6 @@ function toCtaId(value: string | undefined, fallback: string) {
     background: #f8f2ee;
     color: #7f5438;
     text-decoration: none;
-  }
-
-  .header-search-trigger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 2.5rem;
-    width: 2.5rem;
-    border-radius: 999px;
-    border: 1px solid #d9cdc4;
-    background: #fff;
-    color: #6c615b;
-    text-decoration: none;
-  }
-
-  .header-search-trigger:hover {
-    color: #7f5438;
-    border-color: #cdb6a5;
-    background: #faf3ee;
-    text-decoration: none;
-  }
-
-  .header-search {
-    position: relative;
-    width: 100%;
-  }
-
-  .header-search.mobile {
-    width: 100%;
-  }
-
-  .header-search-icon {
-    position: absolute;
-    left: 0.72rem;
-    top: 50%;
-    transform: translateY(-50%);
-    height: 1rem;
-    width: 1rem;
-    color: #99908a;
-  }
-
-  .header-search input {
-    width: 100%;
-    height: 2.05rem;
-    border-radius: 999px;
-    border: 1px solid #d9cdc4;
-    background: #fff;
-    color: #1d1b1a;
-    font-size: 0.78rem;
-    padding: 0 0.8rem 0 2.25rem;
-    outline: none;
-  }
-
-  .header-search input:focus-visible {
-    border-color: #8b5a3c;
-    box-shadow: 0 0 0 2px rgb(182 127 89 / 20%);
   }
 
   .header-phone {
@@ -740,4 +675,3 @@ function toCtaId(value: string | undefined, fallback: string) {
     }
   }
 </style>
-
