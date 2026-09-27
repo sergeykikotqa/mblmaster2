@@ -7,9 +7,10 @@ import '~/styles/components/project-card.css';
 interface Props {
   project: ProjectCardData;
   useModal?: boolean;
+  prioritizeImage?: boolean;
 }
 
-const { project, useModal = false } = Astro.props as Props;
+const { project, useModal = false, prioritizeImage = false } = Astro.props as Props;
 const showDescription = !project.proofHighlight;
 const contactHref = `/contacts?from=project&slug=${project.slug}${project.serviceId ? `&service=${project.serviceId}` : ''}`;
 const ctaNote = 'Свяжемся для уточнения деталей';
@@ -31,7 +32,15 @@ const calloutText = project.calloutText || 'Рассчитаем похожий 
     <div class="project-cover">
       {
         project.coverImage ? (
-          <Image src={project.coverImage} alt={project.title} width={1200} height={800} layout="responsive" />
+          <Image
+            src={project.coverImage}
+            alt={project.title}
+            width={1200}
+            height={800}
+            layout="responsive"
+            loading={prioritizeImage ? 'eager' : undefined}
+            fetchpriority={prioritizeImage ? 'high' : undefined}
+          />
         ) : (
           <div class="project-cover-placeholder">Без фото</div>
         )

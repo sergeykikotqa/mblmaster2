@@ -7,17 +7,23 @@ interface Props {
   projects: ProjectCardData[];
   emptyTitle?: string;
   useModal?: boolean;
+  prioritizeFirstImage?: boolean;
 }
 
-const { projects, emptyTitle = 'Кейсы скоро появятся', useModal = false } = Astro.props as Props;
+const {
+  projects,
+  emptyTitle = 'Кейсы скоро появятся',
+  useModal = false,
+  prioritizeFirstImage = false,
+} = Astro.props as Props;
 ---
 
 {
   projects.length > 0 ? (
     <ul class="projects-grid">
-      {projects.map((project) => (
+      {projects.map((project, index) => (
         <li>
-          <ProjectCard project={project} useModal={useModal} />
+          <ProjectCard project={project} useModal={useModal} prioritizeImage={prioritizeFirstImage && index === 0} />
         </li>
       ))}
     </ul>

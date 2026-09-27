@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { load as loadHtml } from 'cheerio';
 import yaml from 'js-yaml';
 import { expect, test } from 'vitest';
 import { generateProjectSlug } from '../src/utils/slugify';
@@ -268,4 +269,35 @@ test('approved semantic project migration has no chains and canonical HTML seman
     expect(sitemapUrls.has(newPath)).toBe(true);
     expect(sitemapUrls.has(oldPath)).toBe(false);
   }
+});
+
+test('projects catalogue prioritizes only its first card image', () => {
+  const distDir = requireHermeticBuild();
+  const catalogueHtml = fs.readFileSync(path.join(distDir, 'projects', 'index.html'), 'utf8');
+  const $ = loadHtml(catalogueHtml);
+  const catalogueCards = $('ul.projects-grid').first().children('li').find('article.project-card');
+
+  expect(catalogueCards.length).toBeGreaterThanOrEqual(3);
+
+  const firstImage = catalogueCards.eq(0).find('.project-cover picture img').first();
+  const secondImage = catalogueCards.eq(1).find('.project-cover picture img').first();
+  const thirdImage = catalogueCards.eq(2).find('.project-cover picture img').first();
+
+  expect(firstImage.attr('loading')).toBe('eager');
+  expect(firstImage.attr('fetchpriority')).toBe('high');
+  for (const image of [secondImage, thirdImage]) {
+    expect(image.attr('loading')).toBe('lazy');
+    expect(image.attr('fetchpriority')).not.toBe('high');
+  }
+
+  const firstProjectHref = catalogueCards.eq(0).find('a.project-link').attr('href');
+  expect(firstProjectHref).toMatch(/^\/projects\/[a-z0-9-]+$/);
+  const firstProjectSlug = firstProjectHref!.slice('/projects/'.length);
+  const detailHtml = fs.readFileSync(path.join(distDir, 'projects', firstProjectSlug, 'index.html'), 'utf8');
+  const detailPage = loadHtml(detailHtml);
+  const defaultGridImage = detailPage('.project-related ul.projects-grid .project-cover picture img').first();
+
+  expect(defaultGridImage.length).toBe(1);
+  expect(defaultGridImage.attr('loading')).toBe('lazy');
+  expect(defaultGridImage.attr('fetchpriority')).not.toBe('high');
 });
