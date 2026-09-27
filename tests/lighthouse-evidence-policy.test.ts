@@ -3,6 +3,8 @@ import path from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
+import { runCollectWithEvidence } from '../scripts/run-lighthouse-batch.mjs';
+
 const ROOT = path.resolve(import.meta.dirname, '..');
 
 function read(relativePath: string): string {
@@ -87,6 +89,94 @@ describe('Lighthouse evidence is preserved before assertions', () => {
     // The collect wrapper used to report "lhci collect failed" even when assert failed.
     expect(checkLighthouse).toContain("'lighthouse collect'");
     expect(indexOf(checkLighthouse, "'lhci collect'")).toBe(-1);
+  });
+});
+
+describe('collect evidence survives a failed collect', () => {
+  test('the collect call is wrapped so persistence always runs', () => {
+    const runIndex = runLighthouseBatch.indexOf('await runCollectWithEvidence({');
+    const collectIndex = runLighthouseBatch.indexOf("'lhci', 'collect'");
+    const persistIndex = runLighthouseBatch.indexOf('const evidenceFiles = persistCollectedEvidence();');
+    const assertIndex = runLighthouseBatch.indexOf("'lhci', 'assert'");
+
+    expect(runIndex, 'the batch loop must go through runCollectWithEvidence').toBeGreaterThan(-1);
+    expect(collectIndex).toBeGreaterThan(-1);
+    expect(persistIndex).toBeGreaterThan(collectIndex);
+    expect(assertIndex, 'inline assert must stay outside the evidence wrapper').toBeGreaterThan(persistIndex);
+  });
+
+  test('importing the batch module does not start a Lighthouse run', () => {
+    // Without this guard the behavioural tests below would execute a real collect.
+    expect(runLighthouseBatch).toContain('export async function runCollectWithEvidence');
+    expect(runLighthouseBatch).toContain('fileURLToPath(import.meta.url)');
+  });
+
+  test('a failed collect still fails the gate', () => {
+    expect(runLighthouseBatch).toContain('process.exit(1)');
+    expect(runLighthouseBatch).toContain('batch run failed');
+  });
+});
+
+describe('the original collect failure keeps priority over a persistence failure', () => {
+  const collectError = new Error('lhci collect failed with exit code 1');
+  const persistenceError = new Error('EACCES: evidence dir not writable');
+
+  const run = async (collectFails: boolean, persistFails: boolean) => {
+    const logs: string[] = [];
+    const outcome = await runCollectWithEvidence({
+      collect: async () => {
+        if (collectFails) throw collectError;
+      },
+      persist: async () => {
+        if (persistFails) throw persistenceError;
+      },
+      log: (message: string) => logs.push(message),
+    });
+    return { outcome, logs };
+  };
+
+  test('collect FAIL + persist PASS surfaces the original collect error', async () => {
+    await expect(run(true, false)).rejects.toBe(collectError);
+  });
+
+  test('collect FAIL + persist FAIL still surfaces the original collect error', async () => {
+    const logs: string[] = [];
+    const promise = runCollectWithEvidence({
+      collect: async () => {
+        throw collectError;
+      },
+      persist: async () => {
+        throw persistenceError;
+      },
+      log: (message: string) => logs.push(message),
+    });
+
+    await expect(promise).rejects.toBe(collectError);
+    expect(logs.join('\n')).toContain('secondary to the collect failure');
+  });
+
+  test('collect PASS + persist FAIL fails the gate on the persistence error', async () => {
+    await expect(run(false, true)).rejects.toBe(persistenceError);
+  });
+
+  test('collect PASS + persist PASS continues normally', async () => {
+    const { outcome } = await run(false, false);
+    expect(outcome).toBeUndefined();
+  });
+
+  test('persistence runs even when collect throws', async () => {
+    let persisted = false;
+    await expect(
+      runCollectWithEvidence({
+        collect: async () => {
+          throw collectError;
+        },
+        persist: async () => {
+          persisted = true;
+        },
+      })
+    ).rejects.toBe(collectError);
+    expect(persisted, 'evidence of a partially completed batch must still be captured').toBe(true);
   });
 });
 

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 import { buildAuditRoutes } from './lib/audit-routes.mjs';
@@ -84,6 +85,52 @@ function persistCollectedEvidence() {
   return copied;
 }
 
+/**
+ * Runs a collect step and always persists the evidence it produced.
+ *
+ * Error priority matters here. A single 404 on an audited route makes
+ * `lhci collect` exit non-zero, and the reports gathered before that point are
+ * the only way to see what did get measured. Two rules follow:
+ *
+ *   collect FAIL + persist PASS  -> the original collect error propagates
+ *   collect FAIL + persist FAIL  -> the original collect error still propagates;
+ *                                   the persistence error is only logged
+ *   collect PASS + persist FAIL  -> the gate fails on the persistence error
+ *
+ * A bare `try/finally` would break the middle case: an error thrown from the
+ * finally block replaces the in-flight exception, so the evidence failure would
+ * mask the 404 that actually broke the run.
+ */
+export async function runCollectWithEvidence({ collect, persist, log = console.log }) {
+  let collectError = null;
+  try {
+    await collect();
+  } catch (error) {
+    collectError = error;
+  }
+
+  let persistenceError = null;
+  try {
+    await persist();
+  } catch (error) {
+    persistenceError = error;
+  }
+
+  if (persistenceError) {
+    if (collectError) {
+      log(
+        `[lighthouse] evidence persistence failed as well (secondary to the collect failure): ${
+          persistenceError instanceof Error ? persistenceError.message : persistenceError
+        }`
+      );
+    } else {
+      throw persistenceError;
+    }
+  }
+
+  if (collectError) throw collectError;
+}
+
 function runCommand(command, args, label) {
   const result = spawnSync(command, args, {
     cwd: ROOT,
@@ -140,17 +187,24 @@ async function main() {
     fs.writeFileSync(configPath, `${JSON.stringify(batchConfig, null, 2)}\n`, 'utf8');
 
     console.log(`[lighthouse] batch ${i + 1}/${batches.length}: ${batchUrls.length} urls`);
-    runCommand(npxCommand, ['lhci', 'collect', '--config', configPath, '--additive'], 'lhci collect');
-    // Capture evidence before anything can fail, so a red gate still leaves proof.
-    const evidenceFiles = persistCollectedEvidence();
-    console.log(`[lighthouse] evidence persisted: ${evidenceFiles} file(s) in ${EVIDENCE_DIR}`);
+    await runCollectWithEvidence({
+      collect: () => runCommand(npxCommand, ['lhci', 'collect', '--config', configPath, '--additive'], 'lhci collect'),
+      persist: () => {
+        const evidenceFiles = persistCollectedEvidence();
+        console.log(`[lighthouse] evidence persisted: ${evidenceFiles} file(s) in ${EVIDENCE_DIR}`);
+      },
+    });
     if (!skipAssert) {
       runCommand(npxCommand, ['lhci', 'assert', '--config', configPath], 'lhci assert');
     }
   }
 }
 
-main().catch((error) => {
-  console.error('[lighthouse] batch run failed:', error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+// Only self-execute when invoked directly, so tests can import the helpers above
+// without triggering a Lighthouse batch run.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error('[lighthouse] batch run failed:', error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}
