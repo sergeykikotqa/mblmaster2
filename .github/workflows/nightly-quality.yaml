@@ -49,7 +49,9 @@ jobs:
         with:
           name: lighthouse-report-nightly-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            .lighthouseci/*.html
-            .lighthouseci/*.json
+            .tmp/lighthouse-report/**
+            .lighthouseci/**
+            artifacts/lighthouse-summary.json
+            artifacts/lighthouse-lcp-elements.json
           if-no-files-found: warn
           retention-days: 14

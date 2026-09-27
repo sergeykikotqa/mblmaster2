@@ -8,6 +8,7 @@ const ROOT = process.cwd();
 const CONFIG_PATH = path.join(ROOT, '.lighthouserc.json');
 const TEMP_DIR = path.join(ROOT, '.tmp', 'lighthouse');
 const LHCI_DIR = path.join(ROOT, '.lighthouseci');
+const EVIDENCE_DIR = path.join(ROOT, '.tmp', 'lighthouse-report');
 const DEFAULT_BATCH_SIZE = 25;
 
 const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
@@ -60,6 +61,27 @@ function chunkArray(items, size) {
     batches.push(items.slice(i, i + size));
   }
   return batches;
+}
+
+/**
+ * Copies freshly collected LHR reports out of the .lighthouseci working dir.
+ *
+ * Assertions run after this script, so the evidence must be captured while the
+ * collected reports are still present. The copy also survives a later failure,
+ * which is the only useful moment for a red Lighthouse gate.
+ */
+function persistCollectedEvidence() {
+  if (!fs.existsSync(LHCI_DIR)) return 0;
+  fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
+
+  let copied = 0;
+  for (const entry of fs.readdirSync(LHCI_DIR, { withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    if (!/^lhr-\d+\.(json|html)$/.test(entry.name)) continue;
+    fs.copyFileSync(path.join(LHCI_DIR, entry.name), path.join(EVIDENCE_DIR, entry.name));
+    copied += 1;
+  }
+  return copied;
 }
 
 function runCommand(command, args, label) {
@@ -119,6 +141,9 @@ async function main() {
 
     console.log(`[lighthouse] batch ${i + 1}/${batches.length}: ${batchUrls.length} urls`);
     runCommand(npxCommand, ['lhci', 'collect', '--config', configPath, '--additive'], 'lhci collect');
+    // Capture evidence before anything can fail, so a red gate still leaves proof.
+    const evidenceFiles = persistCollectedEvidence();
+    console.log(`[lighthouse] evidence persisted: ${evidenceFiles} file(s) in ${EVIDENCE_DIR}`);
     if (!skipAssert) {
       runCommand(npxCommand, ['lhci', 'assert', '--config', configPath], 'lhci assert');
     }

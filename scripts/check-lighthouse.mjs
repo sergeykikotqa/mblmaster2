@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 function runCommand(command, args, label, env, useShell = process.platform === 'win32') {
   const result = spawnSync(command, args, {
@@ -33,15 +34,39 @@ function main() {
     PUBLIC_SITE_URL: fallbackSiteUrl,
   };
 
+  // Collect must not assert inline: a failing assertion would otherwise abort the
+  // run before the summary and LCP-element evidence are produced.
+  const collectEnv = { ...env, LHCI_SKIP_ASSERT: 'true' };
+
   if (!process.env.PUBLIC_SITE_URL) {
     console.warn(`[lighthouse] PUBLIC_SITE_URL not set, using ${fallbackSiteUrl}`);
   }
   console.log('[lighthouse] building with NETLIFY_IMAGE_CDN=false');
   runCommand(npmCommand, ['run', 'build'], 'build', env, true);
 
-  runCommand(process.execPath, [path.join('scripts', 'run-lighthouse-batch.mjs')], 'lhci collect', env, false);
+  runCommand(
+    process.execPath,
+    [path.join('scripts', 'run-lighthouse-batch.mjs')],
+    'lighthouse collect',
+    collectEnv,
+    false
+  );
   runCommand(process.execPath, [path.join('scripts', 'lighthouse-summarize.mjs')], 'lighthouse summarize', env, false);
-  runCommand(process.execPath, [path.join('scripts', 'check-lighthouse-lcp-element.mjs')], 'lighthouse LCP check', env, false);
+  runCommand(
+    process.execPath,
+    [path.join('scripts', 'check-lighthouse-lcp-element.mjs')],
+    'lighthouse LCP check',
+    env,
+    false
+  );
+  // Assertions run last, after every evidence artifact has been produced.
+  runCommand(
+    npxCommand,
+    ['lhci', 'assert', '--config', '.lighthouserc.json'],
+    'lhci assert',
+    env,
+    process.platform === 'win32'
+  );
 }
 
 main();
