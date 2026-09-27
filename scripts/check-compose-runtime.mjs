@@ -660,6 +660,7 @@ function checkBrowserRuntime(baseUrl) {
     PUBLIC_E2E: '0',
   };
 
+  // Functional specs run in the base config, which deliberately ignores the specialized suites.
   run(
     process.execPath,
     [
@@ -668,11 +669,16 @@ function checkBrowserRuntime(baseUrl) {
       '--config=playwright.config.ts',
       '--workers=4',
       'tests/e2e/header-navigation.spec.ts',
-      'tests/e2e/seo-invariants.spec.ts',
       'tests/e2e/project-images.spec.ts',
       'tests/e2e/runtime-resource-integrity.spec.ts',
     ],
     { env, timeoutMs: 720_000 }
+  );
+  // SEO browser invariants are owned by the audit config, not the functional one.
+  run(
+    process.execPath,
+    [playwrightCli, 'test', '--config=playwright.audit.config.ts', '--workers=4', 'tests/e2e/seo-invariants.spec.ts'],
+    { env, timeoutMs: 480_000 }
   );
   run(
     process.execPath,

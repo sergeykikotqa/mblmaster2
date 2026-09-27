@@ -54,7 +54,7 @@ function commandFailure(result, label) {
   return `${label} ended without an exit code${result.signal ? ` (${result.signal})` : ''}.`;
 }
 
-function copyGitVisibleWorkspace(projectRoot, workspaceRoot) {
+export function copyGitVisibleWorkspace(projectRoot, workspaceRoot) {
   const listed = spawnSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
     cwd: projectRoot,
     encoding: 'buffer',
@@ -72,6 +72,9 @@ function copyGitVisibleWorkspace(projectRoot, workspaceRoot) {
     if (source !== projectRoot && !source.startsWith(`${projectRoot}${path.sep}`)) {
       throw new Error(`Refusing to copy a path outside the project: ${relativePath}`);
     }
+    // `git ls-files --cached` includes tracked files deleted in the current WIP.
+    // Preserve that deletion in the isolated workspace instead of treating it as a copy failure.
+    if (!fs.existsSync(source)) continue;
     const destination = path.resolve(workspaceRoot, relativePath);
     fs.mkdirSync(path.dirname(destination), { recursive: true });
     fs.copyFileSync(source, destination);

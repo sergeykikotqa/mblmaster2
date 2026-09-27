@@ -737,7 +737,8 @@ function run() {
   });
 
   withFailFast('Q23', () => {
-    runNpm('check:e2e', ['--', 'tests/e2e/mobile-adaptation-audit.spec.ts']);
+    // The mobile adaptation audit is build-gated and owned by its own gate, not by check:e2e.
+    runNpm('check:mobile-audit');
     const reportPath = path.join(ROOT, '.tmp', 'mobile-audit', 'report.md');
     if (!fs.existsSync(reportPath)) {
       throw new Error('.tmp/mobile-audit/report.md was not generated.');

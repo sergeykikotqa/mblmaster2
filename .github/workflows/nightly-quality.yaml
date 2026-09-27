@@ -28,6 +28,8 @@ jobs:
       - run: npm run build
       - run: npm run check:accessibility:full
       - run: npm run check:e2e
+      - run: npm run check:mobile-audit
+      - run: npm run check:seo:smoke
       - run: npm run check:seo
       - run: npm run check:lighthouse
       - name: Upload Visual Audit artifacts

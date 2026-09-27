@@ -72,10 +72,52 @@ npm run check:redis-outage
 npm run check:webhook-delivery
 npm run check:accessibility:full
 npm run check:e2e
+npm run check:mobile-audit
 npm run check:seo
 npm run check:lighthouse
 npm run check:audit
 ```
+
+## Playwright suite ownership
+
+`tests/e2e/*.spec.ts` is split by required environment, and every spec belongs to exactly one
+suite declared in `playwright.suites.ts`.
+
+| Suite          | Config                       | Environment    | npm gate                                          |
+| -------------- | ---------------------------- | -------------- | ------------------------------------------------- |
+| Functional     | `playwright.config.ts`       | `PUBLIC_E2E=1` | `check:e2e`, `check:e2e:smoke`                    |
+| Accessibility  | `playwright.a11y.config.ts`  | `PUBLIC_E2E=0` | `check:accessibility`, `check:accessibility:full` |
+| SEO / artifact | `playwright.audit.config.ts` | `PUBLIC_E2E=1` | `check:seo:smoke`, `check:mobile-audit`           |
+
+`check:e2e` runs the functional suite only. The accessibility suite is deliberately not
+reused there: `a11y-all` and `a11y-smoke` assert that `html` has no `data-e2e="true"`
+attribute, which only holds when `PUBLIC_E2E=0`, so running them under the functional
+environment fails on configuration rather than on product behaviour.
+
+`check:accessibility:full` intentionally passes no file arguments, so newly owned
+accessibility specs (for example `smartcaptcha-a11y.spec.ts` and
+`project-modal-focus.spec.ts`) are covered automatically instead of being pinned to a
+hardcoded subset.
+
+`check:seo:smoke` regenerates `artifacts/smoke-manifest.json` in the same command before
+launching the browser, so the SEO browser gate cannot pass on a stale manifest.
+`check:mobile-audit` owns `mobile-adaptation-audit.spec.ts`, which needs a fresh
+`npm run build` (`dist/` plus `sitemap.xml`).
+
+`tests/playwright-config.test.ts` enforces the ownership contract: every spec on disk must
+resolve to exactly one owner, specialized suites must stay out of the functional gate, and
+adding a spec without declaring an owner fails the test and the Playwright config load.
+It also verifies that gate scripts such as `check-compose-runtime.mjs` and
+`audit-pre-launch.mjs` invoke each spec through its owning config.
+
+Current suite sizes (`playwright test --list`): functional 58 tests in 11 files,
+accessibility 153 tests in 5 files, SEO and artifact audits 5 tests in 2 files.
+
+`check:performance-budgets` separates three client-JavaScript constraints: a strict 15 KB gzip initial
+payload per public HTML page, a conservative 30 KB gzip per-route runtime graph including local scripts
+loaded dynamically, and a 36 KB gzip repository-wide cap across all non-admin assets. The repository cap
+is intentionally only about 1 KB above the measured 35 KB post-cleanup baseline, so route splitting cannot
+hide aggregate growth. Failures print the largest assets and the heaviest initial/runtime routes.
 
 `npm run check:audit` is a read-only production dependency security gate. It
 runs the current audit and applies the strict, expiring allowlist without

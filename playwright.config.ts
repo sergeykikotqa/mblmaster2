@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
+import { assertSuiteOwnership, SPECIALIZED_SPEC_GLOBS } from './playwright.suites';
+
 const host = process.env.PLAYWRIGHT_HOST || '127.0.0.1';
 const port = Number(process.env.PLAYWRIGHT_PORT || 4321);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://${host}:${port}`;
@@ -12,6 +14,22 @@ const publicSiteUrl = process.env.PUBLIC_SITE_URL || baseURL;
 const allowlistIps = process.env.ADMIN_ALLOWLIST_IPS || '203.0.113.120';
 const trustProxyHeaders = process.env.ADMIN_TRUST_PROXY_HEADERS || 'true';
 const astroCliPath = path.join(process.cwd(), 'node_modules', 'astro', 'bin', 'astro.mjs');
+
+export const DEFAULT_PLAYWRIGHT_WEBSERVER_TIMEOUT_MS = 240_000;
+
+export function resolvePlaywrightWebServerTimeoutMs(rawValue = process.env.PLAYWRIGHT_WEBSERVER_TIMEOUT_MS): number {
+  if (rawValue === undefined || rawValue.trim() === '') return DEFAULT_PLAYWRIGHT_WEBSERVER_TIMEOUT_MS;
+  const parsed = Number(rawValue);
+  if (!Number.isSafeInteger(parsed) || parsed < 30_000) {
+    throw new Error('PLAYWRIGHT_WEBSERVER_TIMEOUT_MS must be an integer of at least 30000 milliseconds.');
+  }
+  return parsed;
+}
+
+const webServerTimeoutMs = resolvePlaywrightWebServerTimeoutMs();
+
+// Fail fast when a new spec has no explicit owner, instead of letting it run in the wrong environment.
+assertSuiteOwnership();
 
 process.env.PUBLIC_SITE_URL = publicSiteUrl;
 process.env.ADMIN_ALLOWLIST_IPS = allowlistIps;
@@ -39,6 +57,9 @@ function resolveBrowserExecutablePath() {
 
 export default defineConfig({
   testDir: './tests/e2e',
+  // This config owns the functional suite only. Accessibility, SEO and
+  // artifact-gated audits run in their own configs and own environments.
+  testIgnore: SPECIALIZED_SPEC_GLOBS,
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
@@ -90,7 +111,7 @@ export default defineConfig({
           PUBLIC_E2E: '1',
         },
         reuseExistingServer: false,
-        timeout: 120_000,
+        timeout: webServerTimeoutMs,
         stdout: 'pipe',
         stderr: 'pipe',
       },

@@ -1,10 +1,11 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
-import { runUnitTests, unitTestBuildContract } from '../scripts/run-unit-tests.mjs';
+import { copyGitVisibleWorkspace, runUnitTests, unitTestBuildContract } from '../scripts/run-unit-tests.mjs';
 
 type CommandRunner = (
   command: string,
@@ -57,6 +58,27 @@ afterEach(() => {
 });
 
 describe('hermetic npm test runner', () => {
+  test('preserves tracked deletions when copying a WIP into the isolated workspace', () => {
+    const projectRoot = makeRoot('deleted-source-project');
+    const workspaceRoot = makeRoot('deleted-source-workspace');
+    fs.mkdirSync(path.join(projectRoot, 'node_modules'));
+    fs.writeFileSync(path.join(projectRoot, 'kept.txt'), 'kept');
+    fs.writeFileSync(path.join(projectRoot, 'deleted.txt'), 'deleted');
+
+    const git = (args: string[]) => {
+      const result = spawnSync('git', args, { cwd: projectRoot });
+      expect(result.status).toBe(0);
+    };
+    git(['init']);
+    git(['add', 'kept.txt', 'deleted.txt']);
+    fs.rmSync(path.join(projectRoot, 'deleted.txt'));
+
+    copyGitVisibleWorkspace(projectRoot, workspaceRoot);
+
+    expect(fs.readFileSync(path.join(workspaceRoot, 'kept.txt'), 'utf8')).toBe('kept');
+    expect(fs.existsSync(path.join(workspaceRoot, 'deleted.txt'))).toBe(false);
+  });
+
   test('uses a fresh workspace instead of a stale project dist', () => {
     const projectRoot = makeRoot('stale-project');
     fs.mkdirSync(path.join(projectRoot, 'dist'), { recursive: true });
