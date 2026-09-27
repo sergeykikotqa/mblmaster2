@@ -25,6 +25,8 @@ jobs:
       - name: Export CHROME_PATH
         run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
       - run: npm ci
+      - name: Install Playwright FFmpeg
+        run: npx playwright install ffmpeg
       - run: npm run build
       - run: npm run check:accessibility:full
       - run: npm run check:e2e

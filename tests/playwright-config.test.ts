@@ -269,6 +269,17 @@ const RELEASE_JOBS: Array<{ file: string; job: string }> = [
   { file: '.github/workflows/nightly-quality.yaml', job: 'nightly' },
 ];
 
+/** Jobs that create Playwright browser contexts and therefore need the FFmpeg binary. */
+const BROWSER_JOBS: Array<{ file: string; job: string }> = [
+  ...RELEASE_JOBS,
+  { file: '.github/workflows/actions.yaml', job: 'pr-gate' },
+];
+
+/** Jobs that never create a browser context, so they must not be forced to install FFmpeg. */
+const NON_BROWSER_JOBS: Array<{ file: string; job: string }> = [
+  { file: '.github/workflows/actions.yaml', job: 'build' },
+];
+
 describe('Playwright specialized suites stay reachable from release gates', () => {
   test.each(RELEASE_JOBS)('$file $job invokes every suite owner command', ({ file, job }) => {
     const jobBody = extractWorkflowJob(readScript(file), job);
@@ -294,5 +305,50 @@ describe('Playwright specialized suites stay reachable from release gates', () =
     expect(functionalJobBody).toContain('npm run check:e2e');
     expect(functionalJobBody).toContain('npm run check:mobile-audit');
     expect(functionalJobBody).toContain('npm run check:seo:smoke');
+  });
+});
+
+describe('Playwright browser jobs install the FFmpeg prerequisite', () => {
+  // Derived from package.json so a new Playwright gate is covered automatically.
+  const playwrightGateInvocations = Object.entries(packageJson.scripts)
+    .filter(([, command]) => command.includes('playwright test'))
+    .map(([name]) => `npm run ${name}`);
+
+  test('package.json still exposes Playwright gates to assert on', () => {
+    expect(playwrightGateInvocations.length).toBeGreaterThan(0);
+    expect(playwrightGateInvocations).toContain('npm run check:e2e');
+  });
+
+  test.each(BROWSER_JOBS)('$file $job installs ffmpeg before any Playwright gate', ({ file, job }) => {
+    const jobBody = extractWorkflowJob(readScript(file), job);
+    const installIndex = jobBody.indexOf('npx playwright install ffmpeg');
+    expect(installIndex, `${file} job ${job} must install the Playwright FFmpeg binary`).toBeGreaterThan(-1);
+
+    // The install must follow dependency installation.
+    const ciIndex = jobBody.indexOf('npm ci');
+    expect(ciIndex, `${file} job ${job} must run npm ci`).toBeGreaterThan(-1);
+    expect(installIndex).toBeGreaterThan(ciIndex);
+
+    // video: 'retain-on-failure' needs ffmpeg, so every Playwright gate must run after the install.
+    const gateIndexes = playwrightGateInvocations
+      .map((invocation) => jobBody.indexOf(invocation))
+      .filter((i) => i > -1);
+    expect(
+      gateIndexes.length,
+      `${file} job ${job} should run at least one Playwright gate after the install`
+    ).toBeGreaterThan(0);
+    for (const index of gateIndexes) {
+      expect(index, `${file} job ${job} must install ffmpeg before its Playwright gates`).toBeGreaterThan(installIndex);
+    }
+
+    // Only the missing FFmpeg binary is installed; the browser comes from setup-chrome.
+    expect(jobBody).not.toContain('npx playwright install --with-deps');
+    expect(jobBody).not.toContain('npx playwright install chromium');
+    expect(jobBody).not.toMatch(/npx playwright install\s*$/m);
+  });
+
+  test.each(NON_BROWSER_JOBS)('$file $job does not need the FFmpeg prerequisite', ({ file, job }) => {
+    const jobBody = extractWorkflowJob(readScript(file), job);
+    expect(jobBody).not.toContain('npx playwright install ffmpeg');
   });
 });

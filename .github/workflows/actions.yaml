@@ -124,6 +124,8 @@ jobs:
       - name: Export CHROME_PATH
         run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
       - run: npm ci
+      - name: Install Playwright FFmpeg
+        run: npx playwright install ffmpeg
       - run: npm run generate:runtime-redirects
       - run: npm run check
       - run: npm run typecheck
@@ -176,6 +178,8 @@ jobs:
       - name: Export CHROME_PATH
         run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
       - run: npm ci
+      - name: Install Playwright FFmpeg
+        run: npx playwright install ffmpeg
       - run: npm run check:architecture
       - run: npm run check:generated-pages-sync
       - run: npm run check:slugs
