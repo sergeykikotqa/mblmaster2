@@ -29,7 +29,17 @@ const hasContent = paragraphs.length > 0 || Boolean(image);
         </div>
         {image && (
           <div class="project-about-media">
-            <Image src={image} alt={heroAlt} width={900} height={900} layout="cover" loading="lazy" decoding="async" />
+            <Image
+              src={image}
+              alt={heroAlt}
+              width={900}
+              height={900}
+              layout="cover"
+              loading="lazy"
+              decoding="async"
+              sizes="(min-width: 901px) 272px, (min-width: 641px) calc(100vw - 101px), calc(100vw - 85px)"
+              widths={[320, 480, 640, 768, 960, 1200]}
+            />
           </div>
         )}
       </div>
