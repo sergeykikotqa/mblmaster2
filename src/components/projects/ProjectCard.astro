@@ -40,6 +40,8 @@ const calloutText = project.calloutText || 'Рассчитаем похожий 
             layout="responsive"
             loading={prioritizeImage ? 'eager' : undefined}
             fetchpriority={prioritizeImage ? 'high' : undefined}
+            sizes="(min-width: 1280px) 400px, (min-width: 1101px) calc((100vw - 74px) / 3), (min-width: 681px) calc((100vw - 65px) / 2), (min-width: 555px) 520px, calc(100vw - 34px)"
+            widths={[320, 400, 480, 640, 720, 800, 960, 1200]}
           />
         ) : (
           <div class="project-cover-placeholder">Без фото</div>
