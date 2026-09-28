@@ -1,6 +1,7 @@
 ---
 import globalStylesUrl from '~/assets/styles/tailwind.css?url';
 import golosCyrillicUrl from '@fontsource-variable/golos-text/files/golos-text-cyrillic-wght-normal.woff2?url';
+import golosLatinUrl from '@fontsource-variable/golos-text/files/golos-text-latin-wght-normal.woff2?url';
 import '~/assets/styles/tailwind.css';
 import '~/assets/styles/design-system.css';
 import '~/assets/styles/site-shell.css';
@@ -89,6 +90,7 @@ const showMoneyPageStickyCta = isMoneyServicePage && Boolean(businessInfo.phoneH
   <head>
     <link rel="preload" as="style" href={globalStylesUrl} />
     <link rel="preload" as="font" href={golosCyrillicUrl} type="font/woff2" crossorigin />
+    <link rel="preload" as="font" href={golosLatinUrl} type="font/woff2" crossorigin />
     <link rel="preconnect" href="https://smartcaptcha.cloud.yandex.ru" crossorigin />
     <CommonMeta />
     <Favicons />
