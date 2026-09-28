@@ -109,6 +109,8 @@ jobs:
   pr-gate:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    env:
+      PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://ci.example.invalid' }}
     steps:
       - uses: actions/checkout@v4
         with:
