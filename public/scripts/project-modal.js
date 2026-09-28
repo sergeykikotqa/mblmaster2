@@ -22,7 +22,6 @@
     const price = modal.querySelector('[data-project-modal-price]');
     const proofList = modal.querySelector('[data-project-modal-proof]');
     const closeButtons = Array.from(modal.querySelectorAll('[data-project-modal-close]'));
-    const templateButton = modal.querySelector('[data-project-modal-template]');
     const form = modal.querySelector('form.lead-contact-form');
     const formTitle = form?.querySelector('h3');
     const formCtaText = form?.querySelector('[data-btn-text]');
@@ -327,20 +326,6 @@
       });
     };
 
-    const resolveServiceLabel = (serviceId) => {
-      if (serviceId === 'kuhni') return 'кухню';
-      if (serviceId === 'shkafy') return 'шкаф';
-      if (serviceId === 'garderobnye') return 'гардеробную';
-      return 'проект';
-    };
-
-    const buildPrefillMessage = (data) => {
-      const noun = resolveServiceLabel(data.project_service);
-      const namePart = data.project_name ? `как в проекте «${data.project_name}»` : 'как в выбранном проекте';
-      const areaPart = data.project_area ? `Площадь: ${data.project_area}.` : '';
-      return `Хочу такую же ${noun}, ${namePart}. Интересует стоимость под мои размеры. ${areaPart}`.trim();
-    };
-
     const resolveTriggerImage = (trigger) => {
       const direct = (trigger.getAttribute('data-project-image') || '').trim();
       if (direct && !direct.startsWith('data:') && !direct.startsWith('blob:')) return direct;
@@ -411,19 +396,6 @@
         else formCtaText.textContent = 'Хочу такой же проект →';
       }
 
-      if (messageInput instanceof HTMLTextAreaElement) {
-        if (!messageInput.dataset.listenerAttached) {
-          messageInput.dataset.listenerAttached = 'true';
-          messageInput.addEventListener('input', () => {
-            messageInput.dataset.userEdited = 'true';
-          });
-        }
-      }
-
-      if (templateButton instanceof HTMLButtonElement) {
-        templateButton.dataset.templateText = buildPrefillMessage(data);
-      }
-
       activeTrigger = trigger instanceof HTMLAnchorElement ? trigger : null;
       bodyOverflowBeforeOpen = document.body.style.overflow;
       scrollPositionBeforeOpen = { x: window.scrollX, y: window.scrollY };
@@ -452,20 +424,6 @@
       const focusTarget = resolveReturnFocus(returnTarget);
       if (focusTarget instanceof HTMLElement) focusTarget.focus({ preventScroll: true });
     };
-
-    if (templateButton instanceof HTMLButtonElement) {
-      if (!templateButton.dataset.listenerAttached) {
-        templateButton.dataset.listenerAttached = 'true';
-        templateButton.addEventListener('click', () => {
-          const template = templateButton.dataset.templateText || '';
-          if (!(messageInput instanceof HTMLTextAreaElement) || !template) return;
-          const current = messageInput.value.trim();
-          messageInput.value = current ? `${current}\n\n${template}` : template;
-          messageInput.dataset.userEdited = 'true';
-          messageInput.focus();
-        });
-      }
-    }
 
     document.querySelectorAll('[data-project-modal-trigger]').forEach((trigger) => {
       if (!(trigger instanceof HTMLAnchorElement)) return;

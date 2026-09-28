@@ -2888,45 +2888,6 @@
   font-size: 0.92rem;
 }
 
-.project-modal-template {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  border-radius: 0.9rem;
-  border: 1px solid #eaded4;
-  background: #fdf8f3;
-  padding: 0.7rem 0.85rem;
-  margin-bottom: 0.9rem;
-}
-
-.project-modal-template strong {
-  display: block;
-  font-size: 0.85rem;
-  color: #2a231f;
-}
-
-.project-modal-template p {
-  margin: 0.2rem 0 0;
-  font-size: 0.78rem;
-  color: #6d625b;
-}
-
-.project-modal-template-btn {
-  border-radius: 999px;
-  border: 1px solid #3b2f28;
-  background: #3b2f28;
-  color: #fff;
-  font-weight: 700;
-  padding: 0.45rem 0.85rem;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.project-modal-template-btn:hover {
-  background: #2c221d;
-}
-
 @media (max-width: 640px) {
   .project-modal-panel {
     padding: 1rem 1rem 1.2rem;

@@ -457,12 +457,59 @@ test.describe('Contact form', () => {
     const form = await getLeadForm(page);
     await form.locator('[data-submit-btn]').click();
 
-    await expect(form.locator('[data-error-name]')).toBeVisible();
+    await expect(form.locator('[data-error-name]')).toBeHidden();
     await expect(form.locator('[data-error-phone]')).toBeVisible();
     await expect(form.locator('[data-error-consent]')).toBeVisible();
     await expect(form.locator('[data-form-status]')).toContainText('Проверьте корректность полей формы.');
     await expect(form.locator('[data-retry-btn]')).toBeHidden();
 
+    expect(submitCalls).toBe(0);
+  });
+
+  test('submits successfully with an empty optional name', async ({ page }) => {
+    await mockSmartCaptcha(page);
+    let submittedPayload: Record<string, unknown> | undefined;
+
+    await page.route('**/api/leads', async (route) => {
+      submittedPayload = route.request().postDataJSON() as Record<string, unknown>;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, leadId: 'lead-empty-name', receivedAt: new Date().toISOString() }),
+      });
+    });
+
+    await page.goto(CONTACTS_PAGE);
+    const form = await getLeadForm(page);
+    const nameInput = form.locator('input[name="name"]');
+    await expect(nameInput).not.toHaveAttribute('required', '');
+    await expect(nameInput).toHaveAttribute('maxlength', '80');
+    await expect(form.locator('label[for="lead-contact-name"]')).toContainText('необязательно');
+    await form.locator('input[name="phone"]').fill('9123456789');
+    await form.locator('input[name="consent"]').check();
+    await form.locator('[data-smartcaptcha-widget] button').click();
+    await form.locator('[data-submit-btn]').click();
+
+    await expect(form.locator('[data-success-box]')).toBeVisible();
+    expect(submittedPayload).toMatchObject({ name: '' });
+  });
+
+  test('blocks a one-character optional name before POST', async ({ page }) => {
+    let submitCalls = 0;
+    await page.route('**/api/leads', async (route) => {
+      submitCalls += 1;
+      await route.abort();
+    });
+
+    await page.goto(CONTACTS_PAGE);
+    const form = await getLeadForm(page);
+    await form.locator('input[name="phone"]').fill('9123456789');
+    await form.locator('input[name="name"]').fill('А');
+    await form.locator('input[name="consent"]').check();
+    await form.locator('[data-submit-btn]').click();
+
+    await expect(form.locator('[data-error-name]')).toBeVisible();
+    await expect(form.locator('[data-error-name]')).toContainText('от 2 до 80 символов');
     expect(submitCalls).toBe(0);
   });
 

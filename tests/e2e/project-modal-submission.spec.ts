@@ -14,7 +14,10 @@ async function openProjectModal(page: Page, index = 0) {
   const context = {
     project_slug: (await trigger.getAttribute('data-project-slug')) || '',
     project_name: (await trigger.getAttribute('data-project-title')) || '',
+    project_area: (await trigger.getAttribute('data-project-area')) || '',
+    project_price: (await trigger.getAttribute('data-project-price')) || '',
     project_service: (await trigger.getAttribute('data-project-service')) || '',
+    project_href: (await trigger.getAttribute('data-project-href')) || '',
     pageSlug: (await trigger.getAttribute('data-project-page')) || '',
   };
   await trigger.click();
@@ -74,22 +77,29 @@ test.describe('Project modal submission', () => {
 
     await form.locator('[data-submit-btn]').click();
     await expect(form.locator('[data-error-phone]')).toBeVisible();
-    await expect(form.locator('[data-error-name]')).toBeVisible();
+    await expect(form.locator('[data-error-name]')).toBeHidden();
     await expect(form.locator('[data-error-consent]')).toBeVisible();
     expect(leadPosts).toBe(0);
     expect(page.url()).toBe(pageUrl);
   });
 
-  test('sends one JSON request with CAPTCHA, idempotency and project context', async ({ page }) => {
+  test('submits empty optional name and message with project context and no template UX', async ({ page }) => {
     await mockSmartCaptcha(page);
     const captured: CapturedLead[] = [];
     await captureLeadRequests(page, captured);
 
     await page.goto(PROJECTS_PAGE);
     const pageUrl = page.url();
-    const { form, context } = await openProjectModal(page);
+    const { modal, form, context } = await openProjectModal(page);
     await waitForFormReady(form);
-    await fillValidLead(form);
+    await expect(modal.locator('[data-project-modal-template]')).toHaveCount(0);
+    await expect(modal).not.toContainText('Вставить шаблон');
+    await expect(form.locator('textarea[name="message"]')).toHaveValue('');
+    await form.locator('input[name="phone"]').fill('9000000000');
+    await form.locator('input[name="consent"]').check();
+    const captchaButton = form.locator('[data-smartcaptcha-widget] button');
+    await expect(captchaButton).toBeVisible();
+    await captchaButton.click();
     await form.locator('[data-submit-btn]').click();
 
     await expect(form.locator('[data-success-box]')).toBeVisible();
@@ -97,9 +107,14 @@ test.describe('Project modal submission', () => {
     expect(captured[0].headers['content-type']).toContain('application/json');
     expect(captured[0].headers['x-idempotency-key']).toBeTruthy();
     expect(captured[0].payload).toMatchObject({
+      name: '',
+      message: '',
       project_slug: context.project_slug,
       project_name: context.project_name,
+      project_area: context.project_area,
+      project_price: context.project_price,
       project_service: context.project_service,
+      project_href: context.project_href,
       service: context.project_service,
       pageSlug: context.pageSlug,
       smartCaptchaToken: 'mock-valid-token',

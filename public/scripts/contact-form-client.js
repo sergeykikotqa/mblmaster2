@@ -834,6 +834,7 @@
       const phone = phoneInput.value.trim();
       const messageValue = messageInput instanceof HTMLTextAreaElement ? messageInput.value.trim() : '';
       const hasConsent = consentInput.checked;
+      const invalidName = name.length > 0 && (name.length < 2 || name.length > 80);
       const messageTooLong = messageValue.length > 2000;
 
       const invalidFields = [];
@@ -860,8 +861,8 @@
         trackValidationError('phone', 'phone');
         hasFieldValidationError = true;
       }
-      if (!name) {
-        markInvalid(nameInput, errorName, 'Пожалуйста, укажите ваше имя.');
+      if (invalidName) {
+        markInvalid(nameInput, errorName, 'Если указываете имя, введите от 2 до 80 символов.');
         trackValidationError('name', 'name');
         hasFieldValidationError = true;
       }
