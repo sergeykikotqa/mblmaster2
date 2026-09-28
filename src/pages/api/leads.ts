@@ -661,8 +661,8 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
       return fail(400, 'CONSENT_REQUIRED', 'Consent is required');
     }
 
-    if (name.length < 2 || name.length > 80) {
-      return fail(400, 'INVALID_NAME', 'Name must contain from 2 to 80 characters');
+    if (name && (name.length < 2 || name.length > 80)) {
+      return fail(400, 'INVALID_NAME', 'Name must contain from 2 to 80 characters when provided');
     }
 
     const phone = normalizePhone(phoneRaw);

@@ -190,13 +190,13 @@ const resolvedCtaNote = ctaNote || serviceCopy.ctaNote;
 
     <div class="mb-6">
       <label for={`${idPrefix}-name`} class="block text-sm font-semibold text-slate-900 mb-2"
-        >Как к вам обращаться <span class="text-red-500">*</span></label
+        >Как к вам обращаться (необязательно)</label
       >
       <input
         id={`${idPrefix}-name`}
         name="name"
         type="text"
-        required
+        maxlength="80"
         autocomplete="name"
         enterkeyhint="next"
         aria-describedby={errorIds.name}
@@ -204,7 +204,7 @@ const resolvedCtaNote = ctaNote || serviceCopy.ctaNote;
         placeholder="Например, Иван"
       />
       <p id={errorIds.name} class="mt-2 text-sm text-red-600 hidden" role="alert" aria-live="assertive" data-error-name>
-        Пожалуйста, укажите ваше имя.
+        Если указываете имя, введите от 2 до 80 символов.
       </p>
     </div>
 

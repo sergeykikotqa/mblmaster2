@@ -118,3 +118,41 @@ test('same idempotency key with changed business payload returns a conflict', as
   });
   expect(await store.getQueueDepth()).toBe(initialDepth + 1);
 });
+
+test('accepts an omitted name and validates optional name length', async () => {
+  const store = getLeadStore();
+  const initialDepth = await store.getQueueDepth();
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => Response.json({ status: 'ok', host: TEST_HOST }))
+  );
+
+  const emptyName = await submit({
+    ...BASE_PAYLOAD,
+    name: '',
+    smartCaptchaToken: `empty-name-${crypto.randomUUID()}`,
+  });
+  expect(emptyName).toMatchObject({ status: 200, body: { success: true } });
+
+  const oneCharacter = await submit({
+    ...BASE_PAYLOAD,
+    name: 'А',
+    smartCaptchaToken: `short-name-${crypto.randomUUID()}`,
+  });
+  expect(oneCharacter).toMatchObject({ status: 400, body: { success: false, code: 'INVALID_NAME' } });
+
+  const twoCharacters = await submit({
+    ...BASE_PAYLOAD,
+    name: 'Ян',
+    smartCaptchaToken: `valid-name-${crypto.randomUUID()}`,
+  });
+  expect(twoCharacters).toMatchObject({ status: 200, body: { success: true } });
+
+  const tooLong = await submit({
+    ...BASE_PAYLOAD,
+    name: 'А'.repeat(81),
+    smartCaptchaToken: `long-name-${crypto.randomUUID()}`,
+  });
+  expect(tooLong).toMatchObject({ status: 400, body: { success: false, code: 'INVALID_NAME' } });
+  expect(await store.getQueueDepth()).toBe(initialDepth + 2);
+});
