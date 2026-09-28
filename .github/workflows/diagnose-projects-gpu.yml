@@ -1,0 +1,123 @@
+name: Diagnose Projects GPU
+
+# ISOLATED DIAGNOSTIC — deliberately separate from the normal CI pipeline.
+#
+# Purpose: find out whether the commit->presentation / GPU interval measured on a
+# local Windows host also exists on a GitHub-hosted Linux runner. A local trace
+# cannot answer that, because renderer configuration differs completely.
+#
+# This workflow must never run on main. It has no main trigger, and the job
+# asserts the branch before doing any work.
+on:
+  push:
+    branches:
+      - diagnostic/projects-gpu-trace
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose-projects-gpu:
+    if: github.ref == 'refs/heads/diagnostic/projects-gpu-trace'
+    runs-on: ubuntu-latest
+    env:
+      # Same expression full-audit uses.
+      PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || 'https://ci.example.invalid' }}
+      # check:lighthouse builds with this set; the diagnostic must measure the
+      # same bytes the performance gate measures.
+      NETLIFY_IMAGE_CDN: 'false'
+    steps:
+      - name: Assert diagnostic branch
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/diagnostic/projects-gpu-trace" ]; then
+            echo "refusing to run outside the diagnostic branch: $GITHUB_REF" >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Export CHROME_PATH
+        run: echo "CHROME_PATH=${{ steps.chrome.outputs.chrome-path }}" >> "$GITHUB_ENV"
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # Exactly one collection, one route, one run. No 56-route suite, and no
+      # additional Chrome flags: this run establishes the CI baseline renderer,
+      # so --disable-gpu / --use-gl / --use-angle / --disable-software-rasterizer
+      # are intentionally absent.
+      - name: Collect single /projects/ trace with GPU info
+        run: node scripts/diagnose-projects-lcp-trace.mjs /projects/ .tmp/lighthouse-trace-projects-ci
+
+      - name: Report runner and Chrome environment
+        run: |
+          # Written to a plain file, never to GITHUB_ENV: that file holds the
+          # whole job environment and must not be dumped into a summary.
+          # Runs AFTER the collection, because the diagnostic script clears its
+          # own output directory before writing.
+          report=.tmp/lighthouse-trace-projects-ci/environment.txt
+          mkdir -p "$(dirname "$report")"
+          {
+            echo "runner_os=$RUNNER_OS"
+            echo "runner_image=$ImageOS-$ImageVersion"
+            echo "node=$(node --version)"
+            echo "npm=$(npm --version)"
+            echo "chrome_path=$CHROME_PATH"
+            echo "chrome_version=$("$CHROME_PATH" --version 2>/dev/null || echo unknown)"
+            echo "cpus=$(nproc)"
+            echo "memory_total=$(free -h | awk '/^Mem:/{print $2}')"
+            if [ -e /dev/dri/renderD128 ]; then
+              echo "dri_render_node=present"
+            else
+              echo "dri_render_node=absent"
+            fi
+            echo "dev_dri_entries=$(ls -1 /dev/dri 2>/dev/null | tr '\n' ',' || echo none)"
+          } | tee "$report"
+
+      - name: Analyze trace timings and GPU configuration
+        if: always()
+        run: node scripts/diagnose-projects-trace-report.mjs .tmp/lighthouse-trace-projects-ci
+
+      - name: Publish diagnostics to the job summary
+        if: always()
+        run: |
+          if [ -f .tmp/lighthouse-trace-projects-ci/trace-report.txt ]; then
+            {
+              echo '## /projects/ real trace timings'
+              echo
+              echo '```'
+              cat .tmp/lighthouse-trace-projects-ci/trace-report.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'trace-report.txt missing' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload diagnostic artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: projects-gpu-diagnostic-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .tmp/lighthouse-trace-projects-ci/environment.txt
+            .tmp/lighthouse-trace-projects-ci/gpu-info.json
+            .tmp/lighthouse-trace-projects-ci/lhr.report.json
+            .tmp/lighthouse-trace-projects-ci/lhr.report.html
+            .tmp/lighthouse-trace-projects-ci/lhr-0.trace.json
+            .tmp/lighthouse-trace-projects-ci/lhr-0.devtoolslog.json
+            .tmp/lighthouse-trace-projects-ci/trace-report.json
+            .tmp/lighthouse-trace-projects-ci/trace-report.txt
+            .tmp/lighthouse-trace-projects-ci/lhr-*.trace.json
+          if-no-files-found: warn
+          retention-days: 14
