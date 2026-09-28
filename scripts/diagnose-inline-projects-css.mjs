@@ -24,6 +24,10 @@ const ROOT = process.cwd();
 const TARGET_HTML = path.resolve(ROOT, process.argv[2] || 'dist/projects/index.html');
 const DIST_DIR = path.resolve(ROOT, 'dist');
 const MANIFEST = path.join(path.dirname(TARGET_HTML), 'inline-projects-css-manifest.json');
+// Pristine snapshot of the page before the substitution, so equivalence can be
+// proven by reverse-substitution byte-equality. Kept outside dist/ so it can
+// never be served as a page by the static server.
+const PRISTINE_COPY = path.join(ROOT, '.tmp', 'diagnostic-inline-projects-css', 'pristine.html.txt');
 
 // Sanity markers that the candidate really is the projects route CSS.
 const PROJECT_SELECTORS = ['.projects-filters', '.projects-price'];
@@ -120,6 +124,9 @@ function main() {
   const inlineTag = `<style data-diagnostic-inline-projects-css>${css}</style>`;
   const inlined = html.replace(target.tag, inlineTag);
   if (inlined === html) throw new Error('stylesheet tag was not replaced');
+
+  fs.mkdirSync(path.dirname(PRISTINE_COPY), { recursive: true });
+  fs.writeFileSync(PRISTINE_COPY, html, 'utf8');
   fs.writeFileSync(TARGET_HTML, inlined, 'utf8');
 
   // Verify the result rather than trusting the substitution.
@@ -129,6 +136,8 @@ function main() {
     generatedAt: new Date().toISOString(),
     target: path.relative(ROOT, TARGET_HTML).replace(/\\/g, '/'),
     originalHref: target.href,
+    originalLinkTag: target.tag,
+    pristineCopy: path.relative(ROOT, PRISTINE_COPY).replace(/\\/g, '/'),
     cssBytes: Buffer.byteLength(css, 'utf8'),
     stylesheetsBefore: before,
     stylesheetsAfter: after.length,

@@ -61,41 +61,21 @@ jobs:
       - name: Inline projects-index route CSS in diagnostic dist
         run: node scripts/diagnose-inline-projects-css.mjs
 
+      # Deterministic Node verification of invariants A-F. This replaces a shell
+      # version that parsed minified HTML with `grep -o ... | head -1` under
+      # `set -euo pipefail`; the downstream `head` could SIGPIPE grep and abort
+      # the job before collection (CI run 36375010968), and `-o`/`-m`/`head` each
+      # have different matching semantics.
       - name: Verify the A/B differs from baseline in exactly one variable
         run: |
           set -euo pipefail
-          echo '--- A. projects route CSS no longer requested ---'
-          if grep -q 'index\..*\.css' dist/projects/index.html; then
-            echo 'FAIL: projects route stylesheet link still present' >&2
+          node scripts/diagnose-verify-projects-css.mjs
+          echo '--- production source untouched ---'
+          if ! git diff --exit-code -- src/ >/dev/null; then
+            echo 'FAIL: src/ was modified' >&2
             exit 1
           fi
-          echo 'OK'
-          echo '--- B. compiled CSS present inline ---'
-          grep -q 'data-diagnostic-inline-projects-css' dist/projects/index.html || {
-            echo 'FAIL: inline style marker missing' >&2; exit 1; }
-          echo 'OK'
-          echo '--- C. PageLayout CSS still external ---'
-          grep -q 'rel="stylesheet"[^>]*PageLayout' dist/projects/index.html || {
-            echo 'FAIL: PageLayout is no longer an external stylesheet' >&2; exit 1; }
-          echo 'OK'
-          echo '--- D. apply-color-mode script restored ---'
-          grep -q 'apply-color-mode' dist/projects/index.html || {
-            echo 'FAIL: apply-color-mode.js missing from the page' >&2; exit 1; }
-          echo 'OK'
-          echo '--- E. first project image still eager/high ---'
-          first_img="$(grep -o '<img[^>]*>' dist/projects/index.html | head -1)"
-          echo "$first_img"
-          case "$first_img" in
-            *'loading="eager"'*) echo 'loading=eager OK' ;;
-            *) echo 'FAIL: first image is not loading=eager' >&2; exit 1 ;;
-          esac
-          case "$first_img" in
-            *'fetchpriority="high"'*) echo 'fetchpriority=high OK' ;;
-            *) echo 'FAIL: first image is not fetchpriority=high' >&2; exit 1 ;;
-          esac
-          echo '--- F. production source untouched ---'
-          git diff --exit-code -- src/ >/dev/null && echo 'src/ matches HEAD (OK)' || {
-            echo 'FAIL: src/ was modified' >&2; exit 1; }
+          echo 'src/ matches HEAD (OK)'
           cat dist/projects/inline-projects-css-manifest.json
 
       # Exactly one collection, one route, one run. No 56-route suite, and no
