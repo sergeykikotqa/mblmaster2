@@ -1255,7 +1255,7 @@
   .project-materials-grid,
   .project-process-list,
   .project-compare-grid,
-  .project-video-frame,
+  .project-section.project-video .project-video-frame,
   .project-links-grid,
   .project-content,
   .project-section.project-story p {
@@ -1617,7 +1617,7 @@
   color: #1f1a17;
 }
 
-.project-about-highlight span {
+.project-about-highlight > div > span {
   display: block;
   font-size: 0.75rem;
   color: #7a6f68;
@@ -2268,6 +2268,12 @@
   height: 16px;
 }
 
+.project-about-icon .icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
 .project-page .projects-grid {
   gap: 1rem;
 }
@@ -2814,9 +2820,16 @@
 }
 
 .project-modal-close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-width: 44px;
+  min-height: 44px;
+  margin-left: auto;
   border-radius: 999px;
   border: 1px solid #eaded4;
   background: #fff;
@@ -2824,6 +2837,11 @@
   font-weight: 600;
   color: #5b4a40;
   cursor: pointer;
+}
+
+.project-modal-close:focus-visible {
+  outline: 3px solid var(--mbl-color-accent);
+  outline-offset: 3px;
 }
 
 .project-modal-kicker {
@@ -2914,11 +2932,6 @@
 
   .project-modal[aria-hidden='false'] .project-modal-panel {
     transform: translateY(0);
-  }
-
-  .project-modal-close {
-    top: 0.6rem;
-    right: 0.75rem;
   }
 }
 
