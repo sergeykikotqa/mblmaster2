@@ -1617,7 +1617,7 @@
   color: #1f1a17;
 }
 
-.project-about-highlight span {
+.project-about-highlight > div > span {
   display: block;
   font-size: 0.75rem;
   color: #7a6f68;
@@ -2266,6 +2266,12 @@
 .project-summary-icon .icon {
   width: 16px;
   height: 16px;
+}
+
+.project-about-icon .icon {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
 .project-page .projects-grid {

@@ -102,13 +102,18 @@ body.mbl-page-secondary nav[aria-label='Breadcrumb'] {
 }
 
 body.mbl-page-secondary nav[aria-label='Breadcrumb'] ol {
+  width: fit-content;
+  max-width: 100%;
   border: 1px solid var(--mbl-color-border-subtle);
   border-radius: var(--mbl-radius-sm);
   background: rgb(255 255 255 / 4%);
+  padding: 0.25rem 0.5rem;
   color: var(--mbl-color-text-secondary);
 }
 
 body.mbl-page-secondary nav[aria-label='Breadcrumb'] a {
+  min-height: 2.2rem;
+  padding-inline: 0.4rem;
   color: var(--mbl-color-accent);
 }
 
@@ -153,6 +158,18 @@ body.mbl-page-secondary :is(.ds-card-interactive, .ds-link-card):hover {
   background:
     radial-gradient(circle at 100% 0%, rgb(216 199 170 / 11%), transparent 18rem),
     linear-gradient(145deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 4%));
+}
+
+body.mbl-page-secondary .portfolio-card {
+  background-color: var(--mbl-color-bg-elevated);
+}
+
+body.mbl-page-secondary .portfolio-price strong {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .portfolio-price span {
+  color: var(--mbl-color-text-secondary);
 }
 
 body.mbl-page-secondary .ds-link-card span,
@@ -485,6 +502,94 @@ body.mbl-page-secondary :is(.article-deferred-section, .prose, .section-content)
   color: var(--mbl-color-text-secondary);
 }
 
+body.mbl-page-secondary .prose .article-mid-related {
+  background-color: var(--mbl-color-bg-elevated);
+}
+
+body.mbl-page-secondary .prose .article-mid-related > div:first-child {
+  color: var(--mbl-color-accent);
+}
+
+body.mbl-page-secondary .prose .article-mid-related a {
+  border-color: var(--mbl-color-border-strong);
+  background: var(--mbl-color-bg-primary);
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .prose .article-mid-related a > div:first-child,
+body.mbl-page-secondary .prose .article-mid-related a > div:nth-child(n + 3) {
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary .prose .article-mid-related a > div:nth-child(2) {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .prose .article-mid-related a:hover,
+body.mbl-page-secondary .prose .article-mid-related a:focus-visible {
+  border-color: var(--mbl-color-accent);
+  background: rgb(255 255 255 / 7%);
+}
+
+body.mbl-page-secondary .prose .article-mid-related a:focus-visible {
+  outline: 2px solid var(--mbl-color-accent);
+  outline-offset: 3px;
+}
+
+body.mbl-page-secondary .article-related-section {
+  padding-block: clamp(1rem, 3vw, 2rem);
+}
+
+body.mbl-page-secondary .section-content.article-related-links {
+  background-color: var(--mbl-color-bg-elevated);
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+body.mbl-page-secondary .article-related-links h3 {
+  margin: 0 0 1rem;
+}
+
+body.mbl-page-secondary .article-related-links ul {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body.mbl-page-secondary .article-related-links li {
+  margin: 0;
+}
+
+body.mbl-page-secondary .article-related-links a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--mbl-color-border-subtle);
+  border-radius: var(--mbl-radius-sm);
+  background: var(--mbl-color-bg-primary);
+  padding: 0.7rem 0.85rem;
+  color: var(--mbl-color-accent);
+  text-decoration: none;
+}
+
+body.mbl-page-secondary .article-related-links a::after {
+  content: '→';
+  flex: 0 0 auto;
+}
+
+body.mbl-page-secondary .article-related-links a:hover,
+body.mbl-page-secondary .article-related-links a:focus-visible {
+  border-color: var(--mbl-color-accent);
+  background: rgb(255 255 255 / 7%);
+}
+
+body.mbl-page-secondary .article-related-links a:focus-visible {
+  outline: 2px solid var(--mbl-color-accent);
+  outline-offset: 3px;
+}
+
 body.mbl-page-secondary :is(.prose h1, .prose h2, .prose h3, .section-content h1, .section-content h2, .section-content h3, .article-deferred-section h2) {
   color: var(--mbl-color-text-primary) !important;
 }
@@ -541,6 +646,22 @@ body.mbl-page-secondary .project-page :is(.project-section > h2, .project-trust 
 }
 
 body.mbl-page-secondary .project-page .project-related-title h2 {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .project-page .project-specs-card {
+  background-color: var(--mbl-color-bg-elevated);
+}
+
+body.mbl-page-secondary .project-page .project-specs-card :is(dt, .specs-note) {
+  color: var(--mbl-color-text-secondary);
+}
+
+body.mbl-page-secondary .project-page .project-specs-card dd {
+  color: var(--mbl-color-text-primary);
+}
+
+body.mbl-page-secondary .project-page .project-cta-card h2 {
   color: var(--mbl-color-text-primary);
 }
 
@@ -734,6 +855,61 @@ body.mbl-page-secondary .project-page :is(.project-about-card, .project-about-hi
 
 body.mbl-page-secondary .project-page .project-process-card .project-process-meta {
   color: var(--mbl-color-text-inverse);
+}
+
+/* Case heroes already provide their own compact breadcrumb placement. Keep
+ * the shared secondary-page breadcrumb panel from stretching across them. */
+body.mbl-page-secondary .project-page .project-hero-breadcrumbs {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  justify-self: start;
+}
+
+body.mbl-page-secondary .project-page .project-hero-breadcrumbs ol {
+  width: fit-content;
+  border: 0;
+  background: transparent;
+}
+
+/* Cost callouts keep the light accent surface, so their copy must use the
+ * inverse dark role instead of inheriting the surrounding dark-card text. */
+body.mbl-page-secondary .project-page :is(.project-cost-badge, .project-cost-highlight) {
+  border-color: var(--mbl-color-accent-strong);
+  background: var(--mbl-color-accent);
+  color: var(--mbl-color-text-inverse);
+}
+
+body.mbl-page-secondary .project-page :is(.project-cost-badge, .project-cost-highlight) :is(span, strong) {
+  color: var(--mbl-color-text-inverse);
+}
+
+body.mbl-page-secondary .project-page .project-cost-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+body.mbl-page-secondary .project-page .project-cost-highlight {
+  display: grid;
+  width: min(100%, 32rem);
+  grid-template-columns: minmax(0, 1fr) auto;
+  justify-self: start;
+}
+
+body.mbl-page-secondary .project-page .project-cost-highlight .project-cost-highlight-badge {
+  background: var(--mbl-color-text-inverse);
+  color: var(--mbl-color-text-primary);
+}
+
+@media (max-width: 36rem) {
+  body.mbl-page-secondary .project-page .project-cost-head,
+  body.mbl-page-secondary .project-page .project-cost-highlight {
+    grid-template-columns: 1fr;
+  }
+
+  body.mbl-page-secondary .project-page .project-cost-highlight .project-cost-highlight-badge {
+    justify-self: start;
+  }
 }
 
 body.mbl-page-secondary .project-page :is(.project-split a:not(.ds-action-primary), .project-mid-cta-card a:not(.ds-action-primary), .project-gallery-cta-card a:not(.ds-action-primary), .project-cost-cta a:not(.ds-action-primary), .project-final-cta-card a:not(.ds-action-primary)) {
