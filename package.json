@@ -79,7 +79,7 @@
     "check:lighthouse:full": "node scripts/check-lighthouse.mjs",
     "check:accessibility": "playwright test --config=playwright.a11y.config.ts tests/e2e/a11y-smoke.spec.ts tests/e2e/project-gallery-focus.spec.ts",
     "check:accessibility:full": "playwright test --config=playwright.a11y.config.ts",
-    "check:e2e:smoke": "playwright test tests/e2e/header-navigation.spec.ts tests/e2e/contact-form.spec.ts",
+    "check:e2e:smoke": "playwright test tests/e2e/header-navigation.spec.ts tests/e2e/contact-form.spec.ts tests/e2e/tracking-funnel.spec.ts",
     "check:seo:smoke": "node scripts/generate-smoke-manifest.mjs && playwright test --config=playwright.audit.config.ts tests/e2e/seo-invariants.spec.ts",
     "check:mobile-audit": "playwright test --config=playwright.audit.config.ts tests/e2e/mobile-adaptation-audit.spec.ts",
     "test:seo": "node scripts/seo-tests/run.mjs",

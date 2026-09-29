@@ -159,6 +159,55 @@ test.describe('Lead tracking funnel', () => {
       .map((entry) => String(entry.reason || ''));
 
     expect(submitAttemptIndex).toBeGreaterThan(-1);
-    expect(validationReasons).toEqual(expect.arrayContaining(['phone', 'name', 'consent']));
+    // `name` is an optional field: an empty value is valid, so it must not raise a
+    // validation error. `phone` and `consent` stay required.
+    expect(validationReasons).toEqual(expect.arrayContaining(['phone', 'consent']));
+    expect(validationReasons).not.toContain('name');
+  });
+
+  test('emits a name validation_error for a non-empty name shorter than 2 characters', async ({ page }) => {
+    const leadApiRequests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/leads')) {
+        leadApiRequests.push(request.url());
+      }
+    });
+
+    await page.goto('/contacts');
+    await page.waitForFunction(() => Boolean((window as { __leadTrackingInit?: boolean }).__leadTrackingInit));
+    await page.waitForFunction(() => Boolean((window as { __contactFormsInit?: boolean }).__contactFormsInit));
+    await page.evaluate(() => {
+      (window as unknown as { dataLayer?: Array<Record<string, unknown>> }).dataLayer = [];
+    });
+
+    const form = page.locator('form.lead-contact-form').first();
+    const nameInput = form.locator('input[name="name"]');
+    const nameError = form.locator('[data-error-name]');
+    await expect(nameError).toBeHidden();
+
+    // phone valid, consent given, but a non-empty name of 1 character is rejected.
+    await form.locator('input[name="phone"]').fill('9123456789');
+    await nameInput.fill('А');
+    await form.locator('input[name="consent"]').check();
+    await form.locator('[data-submit-btn]').click();
+
+    const entries = await readDataLayer(page);
+    const submitAttemptIndex = entries.findIndex((entry) => entry.event === 'form_submit_attempt');
+    const validationReasons = entries
+      .filter((entry) => entry.event === 'form_validation_error')
+      .map((entry) => String(entry.reason || ''));
+
+    expect(submitAttemptIndex).toBeGreaterThan(-1);
+    expect(validationReasons).toContain('name');
+    // phone and consent are valid here, so only the optional name may be rejected.
+    expect(validationReasons).not.toContain('phone');
+    expect(validationReasons).not.toContain('consent');
+    // the rejection is a client-side field check, so the lead API is never reached
+    // and the anti-bot step is not what stops the submit.
+    expect(leadApiRequests).toEqual([]);
+    expect(entries.find((entry) => entry.event === 'form_submit_blocked')).toBeFalsy();
+
+    await expect(nameError).toBeVisible();
+    await expect(nameInput).toHaveAttribute('aria-invalid', 'true');
   });
 });
