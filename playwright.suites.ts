@@ -40,6 +40,7 @@ export const FUNCTIONAL_SPECS = [
   'project-cta-fallback.spec.ts',
   'project-images.spec.ts',
   'project-modal-submission.spec.ts',
+  'project-ui-contrast.spec.ts',
   'runtime-resource-integrity.spec.ts',
   'tracking-funnel.spec.ts',
 ] as const;
