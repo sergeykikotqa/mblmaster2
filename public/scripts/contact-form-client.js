@@ -150,23 +150,6 @@
   function resolveTracking() {
     const tracking = window.leadTracking || {};
     return {
-      getLeadAttribution:
-        typeof tracking.getLeadAttribution === 'function'
-          ? tracking.getLeadAttribution.bind(tracking)
-          : function getDefaultLeadAttribution() {
-              return {
-                utm_source: '(direct)',
-                utm_medium: '(none)',
-                utm_campaign: '(none)',
-                utm_term: '(none)',
-                utm_content: '(none)',
-                landingPath: window.location.pathname,
-                currentPath: window.location.pathname + window.location.search,
-                firstReferrer: document.referrer || '(direct)',
-                deviceType: 'desktop',
-                submittedAt: new Date().toISOString(),
-              };
-            },
       resolvePageType:
         typeof tracking.resolvePageType === 'function' ? tracking.resolvePageType.bind(tracking) : () => 'other',
       trackLeadStart: typeof tracking.trackLeadStart === 'function' ? tracking.trackLeadStart.bind(tracking) : () => {},
@@ -220,8 +203,6 @@
     const content = form.querySelector('[data-form-content]');
     const successBox = form.querySelector('[data-success-box]');
     const phoneInput = form.querySelector('input[name="phone"]');
-    const nameInput = form.querySelector('input[name="name"]');
-    const messageInput = form.querySelector('textarea[name="message"]');
     const consentInput = form.querySelector('input[name="consent"]');
     const trapInput = form.querySelector('input[name="website"]');
     const cityInput = form.querySelector('input[name="city"]');
@@ -236,9 +217,7 @@
     const submitFallback = form.querySelector('[data-submit-fallback]');
     const submitFallbackCopy = form.querySelector('[data-submit-fallback-copy]');
 
-    const errorName = form.querySelector('[data-error-name]');
     const errorPhone = form.querySelector('[data-error-phone]');
-    const errorMessage = form.querySelector('[data-error-message]');
     const errorConsent = form.querySelector('[data-error-consent]');
     const status = form.querySelector('[data-form-status]');
     const submitBtn = form.querySelector('[data-submit-btn]');
@@ -249,7 +228,6 @@
       !(content instanceof HTMLElement) ||
       !(successBox instanceof HTMLElement) ||
       !(phoneInput instanceof HTMLInputElement) ||
-      !(nameInput instanceof HTMLInputElement) ||
       !(consentInput instanceof HTMLInputElement) ||
       !(submitBtn instanceof HTMLButtonElement) ||
       !(status instanceof HTMLElement) ||
@@ -677,14 +655,10 @@
     };
 
     const clearErrors = function clearErrors() {
-      if (errorName instanceof HTMLElement) errorName.classList.add('hidden');
       if (errorPhone instanceof HTMLElement) errorPhone.classList.add('hidden');
-      if (errorMessage instanceof HTMLElement) errorMessage.classList.add('hidden');
       if (errorConsent instanceof HTMLElement) errorConsent.classList.add('hidden');
       if (errorSmartCaptcha instanceof HTMLElement) errorSmartCaptcha.classList.add('hidden');
-      clearFieldInvalid(nameInput);
       clearFieldInvalid(phoneInput);
-      clearFieldInvalid(messageInput);
       clearFieldInvalid(consentInput);
       status.classList.add('hidden');
       retryBtn.classList.add('hidden');
@@ -733,48 +707,20 @@
       }
     };
 
-    const collectExtraFields = function collectExtraFields() {
-      const extraFields = {};
-      form.querySelectorAll('[data-extra-field]').forEach((input) => {
-        if (!(input instanceof HTMLInputElement)) return;
-        const key = input.getAttribute('data-extra-field') || input.name;
-        if (!key) return;
-        extraFields[key] = input.value.trim();
-      });
-      return extraFields;
-    };
-
     const collectPayload = function collectPayload() {
-      const nowIso = new Date().toISOString();
-      const sessionMeta = tracking.getFormSessionMeta(formId, pageType) || {};
       const leadContext = resolveLeadContext();
-      const extraFields = collectExtraFields();
       return {
-        name: nameInput.value.trim(),
         phone: phoneInput.value.trim(),
-        message: messageInput instanceof HTMLTextAreaElement ? messageInput.value.trim() : '',
         consent: Boolean(consentInput.checked),
         website: trapInput instanceof HTMLInputElement ? trapInput.value.trim() : '',
         smartCaptchaToken: getSmartCaptchaToken(),
-        city: leadContext.city,
-        district: leadContext.district,
         service: leadContext.service,
-        pageType: leadContext.leadPageType,
         pageSlug: leadContext.pageSlug,
-        attribution: tracking.getLeadAttribution(),
         formContext: {
-          formId,
-          pageType: leadContext.leadPageType,
           placement,
-          city: leadContext.city,
-          district: leadContext.district,
           service: leadContext.service,
           pageSlug: leadContext.pageSlug,
-          openId: sessionMeta.openId || '',
-          openedAt: sessionMeta.openedAt || '',
-          submittedAt: nowIso,
         },
-        ...extraFields,
       };
     };
 
@@ -798,25 +744,15 @@
       const payloadFormContext =
         payload.formContext && typeof payload.formContext === 'object' ? payload.formContext : {};
       const logicalPayload = {
-        name: payload.name || '',
         phone: payload.phone || '',
-        message: payload.message || '',
         consent: Boolean(payload.consent),
         service: payload.service || '',
-        city: payload.city || '',
-        district: payload.district || '',
-        pageType: payload.pageType || '',
         pageSlug: payload.pageSlug || '',
         formContext: {
-          formId: payloadFormContext.formId || '',
-          pageType: payloadFormContext.pageType || '',
           placement: payloadFormContext.placement || '',
-          city: payloadFormContext.city || '',
-          district: payloadFormContext.district || '',
           service: payloadFormContext.service || '',
           pageSlug: payloadFormContext.pageSlug || '',
         },
-        extraFields: collectExtraFields(),
       };
 
       return JSON.stringify(canonicalizeSignatureValue(logicalPayload));
@@ -830,12 +766,8 @@
       trackFormView('submit');
       tracking.trackFormSubmitAttempt(formId, pageType, placement, resolveLeadContext());
 
-      const name = nameInput.value.trim();
       const phone = phoneInput.value.trim();
-      const messageValue = messageInput instanceof HTMLTextAreaElement ? messageInput.value.trim() : '';
       const hasConsent = consentInput.checked;
-      const invalidName = name.length > 0 && (name.length < 2 || name.length > 80);
-      const messageTooLong = messageValue.length > 2000;
 
       const invalidFields = [];
       const markInvalid = function markInvalid(input, errorEl, fallbackMessage) {
@@ -859,15 +791,6 @@
       if (!validPhone(phone)) {
         markInvalid(phoneInput, errorPhone, 'Пожалуйста, введите корректный номер телефона.');
         trackValidationError('phone', 'phone');
-        hasFieldValidationError = true;
-      }
-      if (invalidName) {
-        markInvalid(nameInput, errorName, 'Если указываете имя, введите от 2 до 80 символов.');
-        trackValidationError('name', 'name');
-        hasFieldValidationError = true;
-      }
-      if (messageTooLong) {
-        markInvalid(messageInput, errorMessage, 'Сообщение слишком длинное. Максимум 2000 символов.');
         hasFieldValidationError = true;
       }
       if (!hasConsent) {
@@ -970,16 +893,9 @@
           const code = data && data.code ? String(data.code) : '';
           const message = (data && data.message) || 'Ошибка отправки. Попробуйте снова.';
           let handled = false;
-          if (code === 'INVALID_NAME') {
-            markInvalid(nameInput, errorName, message);
-            trackValidationError('name', 'name');
-            handled = true;
-          } else if (code === 'INVALID_PHONE') {
+          if (code === 'INVALID_PHONE') {
             markInvalid(phoneInput, errorPhone, message);
             trackValidationError('phone', 'phone');
-            handled = true;
-          } else if (code === 'INVALID_MESSAGE') {
-            markInvalid(messageInput, errorMessage, message);
             handled = true;
           } else if (code === 'CONSENT_REQUIRED') {
             markInvalid(consentInput, errorConsent, message);
@@ -1053,19 +969,7 @@
       if (typeof nextContext.service === 'string' && serviceInput instanceof HTMLInputElement) {
         serviceInput.value = nextContext.service;
       }
-      if (typeof nextContext.message === 'string' && messageInput instanceof HTMLTextAreaElement) {
-        messageInput.value = nextContext.message;
-      }
     });
-
-    nameInput.addEventListener('input', () => {
-      handleTextInputTracking('name', nameInput.value, 'text');
-    });
-    if (messageInput instanceof HTMLTextAreaElement) {
-      messageInput.addEventListener('input', () => {
-        handleTextInputTracking('message', messageInput.value, 'textarea');
-      });
-    }
 
     form.addEventListener(
       'focusin',

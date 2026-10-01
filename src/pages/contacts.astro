@@ -199,12 +199,10 @@ const businessInfo = getBusinessInfo();
     <Contact
       id="contact"
       title="Оставьте заявку на консультацию и замер"
-      subtitle="Заполните форму — свяжемся для уточнения деталей и подберем удобное время встречи."
+      subtitle="Оставьте номер телефона — свяжемся и подберём удобное время встречи."
       tagline="Контактная форма"
       inputs={[
-        { type: 'text', name: 'name', label: 'Имя', required: true },
         { type: 'tel', name: 'phone', label: 'Телефон', required: true },
-        { type: 'textarea', name: 'message', label: 'Комментарий (район, тип мебели)', required: false },
       ]}
       leadContext={{ pageType: 'site', pageSlug: '/contacts' }}
     />

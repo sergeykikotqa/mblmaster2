@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "projectName": "mbl-production",
-  "dataContractVersion": 1,
+  "dataContractVersion": 2,
   "metricsRuntimeGeneration": 2,
   "applicationServices": ["mbl-web", "mbl-worker-trigger", "mbl-nginx"],
   "statefulServices": ["mbl-redis"],

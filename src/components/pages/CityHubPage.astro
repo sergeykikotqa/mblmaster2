@@ -114,12 +114,10 @@ const cityNotes = [
   <Contact
     id="contact"
     title={`Оставить заявку в ${city.nameIn}`}
-    subtitle="Напишите, какая мебель нужна, и мы подготовим расчет с учетом города, сроков и комплектации."
+    subtitle="Оставьте номер телефона — свяжемся и уточним задачу."
     tagline={`Город: ${city.name}`}
     inputs={[
-      { type: 'text', name: 'name', label: 'Имя', required: true },
       { type: 'tel', name: 'phone', label: 'Телефон', required: true },
-      { type: 'textarea', name: 'message', label: 'Комментарий по задаче', required: false },
     ]}
     leadContext={{ city: city.id, pageType: 'city-hub', pageSlug: `/${city.id}` }}
   />

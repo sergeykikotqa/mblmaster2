@@ -4,16 +4,12 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { assertProductionContactWebhookUrl, resolveContactWebhookSetting } from '../scripts/check-runtime-config.mjs';
 import { deliverLeadWebhook } from '../src/server/leads/webhook';
+import { notificationFixture } from './helpers/lead-v2';
 
 const SECRET = 'synthetic-webhook-secret-value';
 const SYNTHETIC_WEBHOOK_URL = 'https://mbl-test-webhook.invalid/webhook';
 const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
-const PAYLOAD = {
-  lead: {
-    leadId: 'lead-security-test',
-    phone: 'SENSITIVE_PHONE_SENTINEL',
-  },
-};
+const PAYLOAD = notificationFixture('lead-security-test');
 
 function setWebhook(url: string, options: { legacy?: boolean } = {}) {
   delete process.env.CONTACT_WEBHOOK_URL;

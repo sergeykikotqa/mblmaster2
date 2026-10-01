@@ -259,7 +259,6 @@ function makeAuthStoreUnavailableFailure(
 ): AdminAuthFailure {
   console.error('[admin-auth] redis unavailable; denying request', {
     scope,
-    clientIp: clientIp || 'unknown',
     operation,
     errorName: error instanceof Error ? error.name : 'UNKNOWN',
   });
@@ -473,7 +472,6 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
   if (forbiddenQueryToken) {
     console.warn('[admin-auth] denied query-token', {
       scope,
-      clientIp: clientIp || 'unknown',
       queryKey: forbiddenQueryToken,
     });
     return {
@@ -640,7 +638,6 @@ export async function authorizeAdminRequest(request: Request, options: AdminAuth
   console.warn('[admin-auth] unauthorized', {
     scope,
     rateLimitScope,
-    clientIp: clientIp || 'unknown',
     hasAuthorizationHeader: Boolean(request.headers.get('authorization')),
     tokenConfigured,
     telegramLoginConfigured,

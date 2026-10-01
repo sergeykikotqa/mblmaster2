@@ -2,7 +2,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
+
+const externalCommand = vi.hoisted(() =>
+  vi.fn(() => {
+    throw new Error('TEST_EXTERNAL_COMMAND_BOUNDARY');
+  })
+);
+vi.mock('node:child_process', () => ({ spawnSync: externalCommand }));
 
 import {
   METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID,
@@ -20,6 +27,11 @@ import {
   resolvePublicBuildConfig,
   syncActiveReleaseLink,
   verifyReleaseBundle,
+  applyRelease,
+  rollbackRelease,
+  validateApplyDataContract,
+  validateRollbackDataContract,
+  validateRecoveryDataContract,
   writeReleaseChecksums,
 } from '../scripts/release-tool.mjs';
 
@@ -31,7 +43,6 @@ const PUBLIC_CONFIG = {
   PUBLIC_ENABLE_LEAD_TRACKING: 'true',
   PUBLIC_YANDEX_METRIKA_ID: '12345678',
   PUBLIC_YANDEX_VERIFICATION: 'synthetic-verification',
-  PUBLIC_GA4_ID: 'G-SYNTHETIC1',
   PUBLIC_LEAD_FORM_ABANDON_MS: '60000',
   PUBLIC_ENABLE_RUM_WEB_VITALS: 'true',
   PUBLIC_RUM_LCP_ALERT_THRESHOLD_MS: '2500',
@@ -74,6 +85,7 @@ function createBundle(
     legacyManifest?: boolean;
     policyGeneration?: unknown;
     manifestGeneration?: unknown;
+    dataContractVersion?: number;
   } = {}
 ) {
   const releaseId = options.releaseId || RELEASE_ID;
@@ -91,6 +103,7 @@ function createBundle(
   }
   const policyPath = path.join(root, 'config', 'release-policy.json');
   const policy = JSON.parse(fs.readFileSync(policyPath, 'utf8')) as Record<string, unknown>;
+  if (options.dataContractVersion !== undefined) policy.dataContractVersion = options.dataContractVersion;
   if (options.legacyPolicy) delete policy.metricsRuntimeGeneration;
   else if (Object.hasOwn(options, 'policyGeneration')) {
     policy.metricsRuntimeGeneration = options.policyGeneration;
@@ -106,7 +119,7 @@ function createBundle(
     createdAt: '2026-09-20T00:00:00.000Z',
     canonicalOrigin: 'https://mebel-irkutsk.ru',
     publicBuildConfigSha256: 'e'.repeat(64),
-    dataContractVersion: 1,
+    dataContractVersion: policy.dataContractVersion,
     platform: 'linux/amd64',
     images: {
       web: {
@@ -141,6 +154,194 @@ function createBundle(
 }
 
 describe('O2.4 application release and rollback policy', () => {
+  function contractRuntime(currentVersion: number, previousVersion: number) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'mbl-contract-runtime-'));
+    const bundles = [
+      createBundle({ releaseId: 'a'.repeat(40), dataContractVersion: currentVersion }),
+      createBundle({ releaseId: 'b'.repeat(40), dataContractVersion: previousVersion }),
+    ];
+    const records = bundles.map((directory) => {
+      const bundle = verifyReleaseBundle(directory, { allowHistoricalDataContract: true });
+      fs.cpSync(directory, path.join(root, 'releases', bundle.manifest.releaseId), { recursive: true });
+      return releaseRecord(bundle);
+    });
+    const state = {
+      schema: 1,
+      current: records[0],
+      previous: records[1],
+      redisIdentity: { containerId: 'isolated-redis', imageId: 'redis-image', volumeName: 'isolated-volume' },
+    };
+    fs.writeFileSync(path.join(root, 'release-state.json'), JSON.stringify(state));
+    fs.writeFileSync(path.join(root, 'redis-data-proof'), 'queued synthetic lead');
+    fs.writeFileSync(path.join(root, 'deploy.env'), 'SYNTHETIC_ONLY=true\n', { mode: 0o600 });
+    syncActiveReleaseLink(root, records[0].releaseId);
+    return {
+      root,
+      state,
+      bundles,
+      cleanup() {
+        fs.rmSync(root, { recursive: true, force: true });
+        bundles.forEach((directory) => fs.rmSync(directory, { recursive: true, force: true }));
+      },
+    };
+  }
+
+  function snapshotRuntime(root: string) {
+    return {
+      state: fs.readFileSync(path.join(root, 'release-state.json'), 'utf8'),
+      link: fs.readlinkSync(path.join(root, 'current')),
+      data: fs.readFileSync(path.join(root, 'redis-data-proof'), 'utf8'),
+      journal: fs.existsSync(path.join(root, 'release-operation.json'))
+        ? fs.readFileSync(path.join(root, 'release-operation.json'), 'utf8')
+        : null,
+    };
+  }
+
+  test.each([
+    [2, 1],
+    [1, 2],
+  ])(
+    'production rollback rejects %i to %i before external commands or filesystem mutation',
+    async (current, target) => {
+      const fixture = contractRuntime(current, target);
+      try {
+        const before = snapshotRuntime(fixture.root);
+        externalCommand.mockClear();
+        await expect(
+          rollbackRelease({
+            runtimeRoot: fixture.root,
+            envFile: path.join(fixture.root, 'deploy.env'),
+            baseUrl: 'http://127.0.0.1:1',
+          })
+        ).rejects.toThrow(`ROLLBACK_DATA_CONTRACT_MISMATCH: current=${current} target=${target}`);
+        expect(externalCommand).not.toHaveBeenCalled();
+        expect(snapshotRuntime(fixture.root)).toEqual(before);
+        expect(fs.existsSync(path.join(fixture.root, '.release.lock'))).toBe(false);
+      } finally {
+        fixture.cleanup();
+      }
+    }
+  );
+
+  test('verified v2 rollback and fresh/same-contract apply pass read-only preflight', () => {
+    const fixture = contractRuntime(2, 2);
+    const fresh = fs.mkdtempSync(path.join(os.tmpdir(), 'mbl-fresh-v2-'));
+    try {
+      const source = verifyReleaseBundle(fixture.bundles[1]);
+      expect(() => validateRollbackDataContract(fixture.root)).not.toThrow();
+      expect(() => validateApplyDataContract(source, fixture.root)).not.toThrow();
+      expect(() => validateApplyDataContract(source, fresh)).not.toThrow();
+      expect(releaseRecord(source).dataContractVersion).toBe(2);
+    } finally {
+      fixture.cleanup();
+      fs.rmSync(fresh, { recursive: true, force: true });
+    }
+  });
+
+  test('production apply rejects a v1 current even with a valid v2 candidate', async () => {
+    const fixture = contractRuntime(1, 2);
+    try {
+      const before = snapshotRuntime(fixture.root);
+      externalCommand.mockClear();
+      await expect(
+        applyRelease({
+          bundleDirectory: fixture.bundles[1],
+          runtimeRoot: fixture.root,
+          envFile: path.join(fixture.root, 'deploy.env'),
+          baseUrl: 'http://127.0.0.1:1',
+        })
+      ).rejects.toThrow('APPLY_DATA_CONTRACT_MISMATCH: current=1 target=2');
+      expect(externalCommand).not.toHaveBeenCalled();
+      expect(snapshotRuntime(fixture.root)).toEqual(before);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  test.each([
+    [2, 1],
+    [1, 2],
+    [2, 2],
+  ])('interrupted recovery verifies %i source and %i target before mutation', async (sourceVersion, targetVersion) => {
+    const fixture = contractRuntime(sourceVersion, targetVersion);
+    const journal = {
+      schema: 1,
+      operationId: 'synthetic-interruption',
+      kind: 'apply',
+      phase: 'web-updated',
+      candidateReleaseId: fixture.state.previous.releaseId,
+      stableReleaseId: fixture.state.current.releaseId,
+      targetDataContractVersion: targetVersion,
+      sourceDataContractVersion: sourceVersion,
+      redisIdentityBefore: fixture.state.redisIdentity,
+    };
+    try {
+      fs.writeFileSync(path.join(fixture.root, 'release-operation.json'), JSON.stringify(journal));
+      const before = snapshotRuntime(fixture.root);
+      externalCommand.mockClear();
+      if (sourceVersion === targetVersion) {
+        expect(() => validateRecoveryDataContract(fixture.root, journal, fixture.state)).not.toThrow();
+      } else {
+        await expect(
+          rollbackRelease({
+            runtimeRoot: fixture.root,
+            envFile: path.join(fixture.root, 'deploy.env'),
+            baseUrl: 'http://127.0.0.1:1',
+          })
+        ).rejects.toThrow(`RECOVERY_DATA_CONTRACT_MISMATCH: current=${sourceVersion} target=${targetVersion}`);
+        expect(externalCommand).not.toHaveBeenCalled();
+        expect(snapshotRuntime(fixture.root)).toEqual(before);
+        expect(fs.existsSync(path.join(fixture.root, '.release.lock'))).toBe(false);
+      }
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  test.each(['missing', 'forged'])('recovery rejects %s journal versions without commands', async (scenario) => {
+    const fixture = contractRuntime(2, 2);
+    try {
+      const journal = {
+        schema: 1,
+        operationId: 'synthetic-invalid-journal',
+        kind: 'apply',
+        candidateReleaseId: fixture.state.previous.releaseId,
+        stableReleaseId: fixture.state.current.releaseId,
+        ...(scenario === 'forged' ? { targetDataContractVersion: 1, sourceDataContractVersion: 2 } : {}),
+      };
+      fs.writeFileSync(path.join(fixture.root, 'release-operation.json'), JSON.stringify(journal));
+      const before = snapshotRuntime(fixture.root);
+      externalCommand.mockClear();
+      await expect(
+        rollbackRelease({
+          runtimeRoot: fixture.root,
+          envFile: path.join(fixture.root, 'deploy.env'),
+          baseUrl: 'http://127.0.0.1:1',
+        })
+      ).rejects.toThrow('RECOVERY_DATA_CONTRACT_MISMATCH');
+      expect(externalCommand).not.toHaveBeenCalled();
+      expect(snapshotRuntime(fixture.root)).toEqual(before);
+    } finally {
+      fixture.cleanup();
+    }
+  });
+
+  test('version tampering and state-to-artifact drift are rejected', () => {
+    const fixture = contractRuntime(2, 2);
+    try {
+      const state = { ...fixture.state, previous: { ...fixture.state.previous, dataContractVersion: 1 } };
+      fs.writeFileSync(path.join(fixture.root, 'release-state.json'), JSON.stringify(state));
+      expect(() => validateRollbackDataContract(fixture.root)).toThrow(/data-contract/i);
+      const manifestPath = path.join(fixture.bundles[1], 'manifest.json');
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      fs.writeFileSync(manifestPath, JSON.stringify({ ...manifest, dataContractVersion: 1 }));
+      expect(() => verifyReleaseBundle(fixture.bundles[1])).toThrow(/Checksum mismatch/);
+      writeReleaseChecksums(fixture.bundles[1]);
+      expect(() => verifyReleaseBundle(fixture.bundles[1])).toThrow(/versions differ/);
+    } finally {
+      fixture.cleanup();
+    }
+  });
   test('validates the production origin without running a deploy', () => {
     expect(() => assertProductionPublicSiteUrl('')).toThrow(/required/i);
     expect(() => assertProductionPublicSiteUrl('https://example.com')).toThrow(/placeholder or local host/i);
@@ -156,9 +357,6 @@ describe('O2.4 application release and rollback policy', () => {
     const resolved = resolvePublicBuildConfig({ ...PUBLIC_CONFIG, PRIVATE_TOKEN: 'must-not-pass' });
     expect(resolved).toEqual(PUBLIC_CONFIG);
     expect(resolved).not.toHaveProperty('PRIVATE_TOKEN');
-    expect(() => resolvePublicBuildConfig({ ...PUBLIC_CONFIG, PUBLIC_GA4_ID: '' })).toThrow(
-      /PUBLIC_GA4_ID is required/
-    );
     expect(() => resolvePublicBuildConfig({ ...PUBLIC_CONFIG, PUBLIC_PRIMARY_SEO_CITY_ID: 'angarsk' })).toThrow(
       /must be irkutsk/
     );

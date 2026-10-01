@@ -244,7 +244,7 @@ test('keeps explicit-key replay and conflict semantics unchanged', async () => {
   const conflict = await post({
     request: makeRequest(idempotencyKey, {
       ...payload,
-      message: 'Changed synthetic business payload',
+      phone: '+7 (950) 555-01-02',
       smartCaptchaToken: `explicit-three-${crypto.randomUUID()}`,
     }),
   });

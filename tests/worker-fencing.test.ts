@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import type { LeadStore } from '../src/server/leads/store';
 import type { DeadLetterEntry, DeliveryAttemptMetric, LeadPipelineHealth, LeadRecord } from '../src/server/leads/types';
+import { notificationFixture, privateLeadFields } from './helpers/lead-v2';
 
 const getLeadStoreMock = vi.fn();
 const deliverLeadWebhookMock = vi.fn();
@@ -38,11 +39,8 @@ function createLeadRecord(nowMs: number): LeadRecord {
     receivedAt: nowIso,
     idempotencyHash: 'idempotency-1',
     payloadFingerprint: 'fingerprint-1',
-    webhookPayload: {
-      lead: {
-        leadId: 'lead-1',
-      },
-    },
+    ...privateLeadFields(nowIso),
+    webhookPayload: notificationFixture('lead-1', nowIso),
     status: 'pending',
     retryCount: 0,
     nextRetryAt: nowMs - 1000,
@@ -84,6 +82,7 @@ function createStore(options: {
     checkRateLimit: async () => ({ allowed: true, count: 1, retryAfterSec: 0 }),
     enqueueLeadWithIdempotency: async () => ({ duplicate: false }),
     getLeadRecord: async () => options.record.current,
+    listRecentLeadRecords: async () => (options.record.current ? [options.record.current] : []),
     saveLeadRecord: async (leadRecord) => {
       options.record.current = leadRecord;
     },
@@ -213,8 +212,8 @@ test('worker re-sends the same lead id after a post-send claim loss', async () =
 
   const firstPayload = deliverLeadWebhookMock.mock.calls[0]?.[0];
   const secondPayload = deliverLeadWebhookMock.mock.calls[1]?.[0];
-  expect(firstPayload?.lead?.leadId).toBe('lead-1');
-  expect(secondPayload?.lead?.leadId).toBe('lead-1');
+  expect(firstPayload?.notification?.leadId).toBe('lead-1');
+  expect(secondPayload?.notification?.leadId).toBe('lead-1');
   expect(record.current?.status).toBe('delivered');
   expect(queued.current).toBe(false);
 });
@@ -223,12 +222,7 @@ test('worker sends insecure transport failures directly to DLQ without leaking p
   const nowMs = Date.now();
   const record = { current: createLeadRecord(nowMs) };
   if (record.current) {
-    record.current.webhookPayload = {
-      lead: {
-        leadId: 'lead-1',
-        phone: 'SENSITIVE_PHONE_SENTINEL',
-      },
-    };
+    record.current.normalizedPhone = 'SENSITIVE_PHONE_SENTINEL';
   }
   const queued = { current: true };
   const metrics: DeliveryAttemptMetric[] = [];

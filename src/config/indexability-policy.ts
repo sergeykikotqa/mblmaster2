@@ -20,7 +20,13 @@ const INDEX_PATHS = Object.freeze([
 
 const TEMP_NOINDEX_PATHS = Object.freeze(['/articles', '/articles/*']);
 
-const NOINDEX_FOLLOW_PATHS = Object.freeze(['/guides', '/privacy', '/terms', '/projects/kuhnya-baykalskaya']);
+const NOINDEX_FOLLOW_PATHS = Object.freeze([
+  '/guides',
+  '/privacy',
+  '/personal-data-consent',
+  '/terms',
+  '/projects/kuhnya-baykalskaya',
+]);
 
 const BLOCKED_PATHS = Object.freeze(['/404', '/410', '/thanks', '/admin/*', '/api/*', '/decapcms', '/decapcms/*']);
 

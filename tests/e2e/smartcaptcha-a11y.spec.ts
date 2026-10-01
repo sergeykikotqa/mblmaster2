@@ -14,7 +14,7 @@ for (const viewport of [
 
     const form = page.locator('form.lead-contact-form').first();
     await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('input[name="name"]').fill('Тест');
+    await expect(form.locator('input[name="name"], textarea')).toHaveCount(0);
     await form.locator('input[name="consent"]').check();
     await expect(form.locator('[data-smartcaptcha-widget] button')).toBeVisible();
     await form.locator('[data-submit-btn]').click();

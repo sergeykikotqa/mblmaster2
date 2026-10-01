@@ -17,7 +17,6 @@ ARG PUBLIC_PRIMARY_SEO_CITY_ID
 ARG PUBLIC_ENABLE_LEAD_TRACKING
 ARG PUBLIC_YANDEX_METRIKA_ID
 ARG PUBLIC_YANDEX_VERIFICATION
-ARG PUBLIC_GA4_ID
 ARG PUBLIC_LEAD_FORM_ABANDON_MS
 ARG PUBLIC_ENABLE_RUM_WEB_VITALS
 ARG PUBLIC_RUM_LCP_ALERT_THRESHOLD_MS
@@ -50,7 +49,6 @@ ENV PUBLIC_SITE_URL=${PUBLIC_SITE_URL} \
     PUBLIC_ENABLE_LEAD_TRACKING=${PUBLIC_ENABLE_LEAD_TRACKING} \
     PUBLIC_YANDEX_METRIKA_ID=${PUBLIC_YANDEX_METRIKA_ID} \
     PUBLIC_YANDEX_VERIFICATION=${PUBLIC_YANDEX_VERIFICATION} \
-    PUBLIC_GA4_ID=${PUBLIC_GA4_ID} \
     PUBLIC_LEAD_FORM_ABANDON_MS=${PUBLIC_LEAD_FORM_ABANDON_MS} \
     PUBLIC_ENABLE_RUM_WEB_VITALS=${PUBLIC_ENABLE_RUM_WEB_VITALS} \
     PUBLIC_RUM_LCP_ALERT_THRESHOLD_MS=${PUBLIC_RUM_LCP_ALERT_THRESHOLD_MS} \
@@ -110,6 +108,7 @@ COPY --from=restic-tools /usr/bin/restic /usr/local/bin/restic
 COPY --from=redis-tools /usr/local/bin/redis-cli /usr/local/bin/redis-server /usr/local/bin/
 RUN ln -s redis-server /usr/local/bin/redis-check-rdb
 COPY --chown=node:node scripts/redis-backup.mjs ./scripts/redis-backup.mjs
+COPY --chown=node:node config/release-policy.json ./config/release-policy.json
 USER node
 ENTRYPOINT ["node", "scripts/redis-backup.mjs"]
 CMD ["backup"]

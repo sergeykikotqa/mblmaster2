@@ -1,4 +1,5 @@
 import { createHmac } from 'crypto';
+import type { LeadNotificationEnvelope } from './types';
 
 export type WebhookConfig = {
   webhookUrl: string;
@@ -63,15 +64,11 @@ export function hasWebhookSecretConfig(): boolean {
   return Boolean(resolveWebhookConfig().webhookSecret);
 }
 
-function resolveWebhookId(payload: Record<string, unknown>): string {
-  const lead =
-    payload?.lead && typeof payload.lead === 'object' && !Array.isArray(payload.lead)
-      ? (payload.lead as Record<string, unknown>)
-      : null;
-  return typeof lead?.leadId === 'string' ? lead.leadId.trim() : '';
+function resolveWebhookId(payload: LeadNotificationEnvelope): string {
+  return typeof payload?.notification?.leadId === 'string' ? payload.notification.leadId.trim() : '';
 }
 
-export async function deliverLeadWebhook(payload: Record<string, unknown>): Promise<WebhookDeliveryResult> {
+export async function deliverLeadWebhook(payload: LeadNotificationEnvelope): Promise<WebhookDeliveryResult> {
   const { webhookUrl, webhookSecret, timeoutMs } = resolveWebhookConfig();
   if (!webhookUrl) {
     return {
@@ -99,11 +96,55 @@ export async function deliverLeadWebhook(payload: Record<string, unknown>): Prom
     return {
       ok: false,
       code: 'WEBHOOK_ID_MISSING',
-      message: 'lead.leadId is required for webhook signing',
+      message: 'notification.leadId is required for webhook signing',
     };
   }
 
-  const body = JSON.stringify(payload);
+  // Project a separate transport DTO; never serialize arbitrary stored fields
+  // or a caller-provided toJSON/raw LeadRecord.
+  const notification = payload.notification;
+  const createdAt = notification.createdAt;
+  const delivery = payload.delivery;
+  if (
+    typeof createdAt !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(createdAt) ||
+    !Number.isFinite(Date.parse(createdAt)) ||
+    (delivery &&
+      (![delivery.attempt, delivery.retryCount, delivery.maxRetries, delivery.retryBaseDelaySec].every(
+        (value) => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+      ) ||
+        typeof delivery.workerProcessedAt !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(delivery.workerProcessedAt) ||
+        !Number.isFinite(Date.parse(delivery.workerProcessedAt))))
+  ) {
+    return { ok: false, code: 'WEBHOOK_PAYLOAD_INVALID', message: 'Invalid notification metadata' };
+  }
+  const service = ['kuhni', 'shkafy', 'garderobnye', 'kitchen', 'wardrobe', 'closet'].includes(
+    notification.service || ''
+  )
+    ? notification.service
+    : undefined;
+  const body = JSON.stringify({
+    schemaVersion: '1.0',
+    event: 'lead.created',
+    notification: {
+      leadId: webhookId,
+      createdAt,
+      adminPath: `/admin/leads/${webhookId}`,
+      ...(service ? { service } : {}),
+    },
+    ...(payload.delivery
+      ? {
+          delivery: {
+            attempt: payload.delivery.attempt,
+            retryCount: payload.delivery.retryCount,
+            maxRetries: payload.delivery.maxRetries,
+            retryBaseDelaySec: payload.delivery.retryBaseDelaySec,
+            workerProcessedAt: payload.delivery.workerProcessedAt,
+          },
+        }
+      : {}),
+  });
   const timestamp = String(Math.floor(Date.now() / 1000));
   const signaturePayload = `${timestamp}.${webhookId}.${body}`;
   const signature = createHmac('sha256', webhookSecret).update(signaturePayload).digest('hex');
@@ -143,19 +184,18 @@ export async function deliverLeadWebhook(payload: Record<string, unknown>): Prom
       };
     }
 
-    const responseText = await response.text().catch(() => '');
     return {
       ok: false,
       code: `HTTP_${response.status}`,
       status: response.status,
-      message: responseText.slice(0, 300),
+      message: 'Webhook rejected notification',
     };
   } catch (error) {
     const aborted = error instanceof DOMException && error.name === 'AbortError';
     return {
       ok: false,
       code: aborted ? 'TIMEOUT' : 'NETWORK_ERROR',
-      message: error instanceof Error ? error.message.slice(0, 300) : 'network_error',
+      message: aborted ? 'Webhook request timed out' : 'Webhook network error',
     };
   } finally {
     clearTimeout(timeout);

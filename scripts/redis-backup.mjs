@@ -8,10 +8,26 @@ import { pathToFileURL } from 'node:url';
 
 const DEFAULT_HOST = 'mbl-production';
 const BACKUP_TAG = 'mbl-redis';
-const DATA_CONTRACT_TAG = 'data-contract-1';
 const MANIFEST_NAME = 'mbl-redis-backup.json';
 const RDB_NAME = 'dump.rdb';
 const MAX_COMMAND_OUTPUT = 8 * 1024 * 1024;
+
+export function readBackupDataContractVersion() {
+  const policy = JSON.parse(fs.readFileSync(new URL('../config/release-policy.json', import.meta.url), 'utf8'));
+  assert(
+    policy?.schema === 1 && Number.isSafeInteger(policy.dataContractVersion) && policy.dataContractVersion > 0,
+    'Invalid backup release policy data contract'
+  );
+  return policy.dataContractVersion;
+}
+
+export function assertBackupDataContract(manifest, expected = readBackupDataContractVersion()) {
+  assert(manifest?.schema === 1, 'Unsupported backup manifest');
+  assert(
+    manifest.dataContractVersion === expected,
+    `BACKUP_DATA_CONTRACT_MISMATCH: expected=${expected} backup=${manifest.dataContractVersion}`
+  );
+}
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -116,11 +132,8 @@ function resolveConfig() {
   assertSecretPathIsNotRepositoryFile(password, repository, 'Restic password');
   assertSecretPathIsNotRepositoryFile(s3SecretKey, repository, 'S3 secret key');
 
-  const releaseSha = String(process.env.MBL_BACKUP_RELEASE_SHA || 'unknown').trim();
-  assert(
-    releaseSha === 'unknown' || /^[a-f0-9]{40}$/i.test(releaseSha),
-    'MBL_BACKUP_RELEASE_SHA must be a full Git SHA'
-  );
+  const releaseSha = String(process.env.MBL_BACKUP_RELEASE_SHA || '');
+  assert(/^[a-f0-9]{40}$/.test(releaseSha), 'MBL_BACKUP_RELEASE_SHA must be an exact lowercase full Git SHA');
 
   return {
     repository,
@@ -130,6 +143,7 @@ function resolveConfig() {
     s3SessionToken,
     redisPassword,
     releaseSha,
+    dataContractVersion: readBackupDataContractVersion(),
     host: String(process.env.MBL_BACKUP_HOST || DEFAULT_HOST).trim() || DEFAULT_HOST,
     redisHost: String(process.env.MBL_BACKUP_REDIS_HOST || 'mbl-redis').trim(),
     redisPort: String(process.env.MBL_BACKUP_REDIS_PORT || '6379').trim(),
@@ -246,7 +260,8 @@ function writeBackupStatus(config, status) {
   }
 }
 
-function backupRedis(config) {
+export function backupRedis(config) {
+  assertBackupDataContract({ schema: 1, dataContractVersion: config.dataContractVersion });
   ensureRepository(config);
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mbl-redis-backup-'));
   const snapshotDir = path.join(temporaryRoot, 'snapshot');
@@ -257,7 +272,7 @@ function backupRedis(config) {
       schema: 1,
       createdAt: new Date().toISOString(),
       releaseSha: config.releaseSha,
-      dataContractVersion: 1,
+      dataContractVersion: config.dataContractVersion,
       rdb: {
         file: RDB_NAME,
         bytes: fs.statSync(rdbPath).size,
@@ -276,7 +291,7 @@ function backupRedis(config) {
         '--tag',
         BACKUP_TAG,
         '--tag',
-        DATA_CONTRACT_TAG,
+        `data-contract-${config.dataContractVersion}`,
         '--json',
         '--no-scan',
       ],
@@ -390,7 +405,8 @@ function parseCliOptions(args) {
   return values;
 }
 
-function restoreSnapshot(config, cliArgs) {
+export function restoreSnapshot(config, cliArgs) {
+  assertBackupDataContract({ schema: 1, dataContractVersion: config.dataContractVersion });
   assert(process.env.MBL_BACKUP_RESTORE_CONFIRM === 'RESTORE_TO_ISOLATED_DIRECTORY', 'Restore confirmation is missing');
   ensureRepository(config);
   const options = parseCliOptions(cliArgs);
@@ -418,7 +434,7 @@ function restoreSnapshot(config, cliArgs) {
       'Restore snapshot must contain exactly one RDB and one manifest'
     );
     const manifest = JSON.parse(fs.readFileSync(manifestFiles[0], 'utf8'));
-    assert(manifest?.schema === 1 && manifest?.dataContractVersion === 1, 'Unsupported backup manifest');
+    assertBackupDataContract(manifest, config.dataContractVersion);
     assert(manifest?.rdb?.sha256 === sha256File(rdbFiles[0]), 'Restored RDB checksum does not match manifest');
     assert(manifest?.rdb?.bytes === fs.statSync(rdbFiles[0]).size, 'Restored RDB size does not match manifest');
     run('redis-check-rdb', [rdbFiles[0]], { secrets: secretValues(config), timeoutMs: 120_000 });
@@ -497,4 +513,4 @@ if (isDirectRun) {
   }
 }
 
-export const BACKUP_CONSTANTS = Object.freeze({ BACKUP_TAG, DATA_CONTRACT_TAG, MANIFEST_NAME, RDB_NAME });
+export const BACKUP_CONSTANTS = Object.freeze({ BACKUP_TAG, MANIFEST_NAME, RDB_NAME });

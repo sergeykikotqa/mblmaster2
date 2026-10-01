@@ -7,6 +7,24 @@ backup.
 
 ## Safety invariants
 
+The production data contract is v2, defined by `config/release-policy.json`
+packaged in the backup image. Both the immutable release SHA and
+`dataContractVersion` are written to every manifest; the SHA does not replace
+schema compatibility. The Restic contract tag comes from the same policy.
+Restore checks the backup version against the packaged target policy before
+writing the usable isolated output. v1 -> v2 is rejected with
+`BACKUP_DATA_CONTRACT_MISMATCH`; there is no conversion or automatic production
+activation. Existing local v1 backups are not deleted, but are not compatible
+with v2 disaster recovery.
+
+The first production launch must use a new empty external Redis volume, a v2
+application, passing readiness checks, an encrypted v2 backup and an isolated
+restore drill. This procedure is a requirement, not a claim that a real VPS
+drill has already run. Do not import dev/test records or fabricate a previous
+v1 release. A safe application rollback target exists after the second verified
+v2 release. Automatic cross-version application recovery is also blocked; see
+`release-and-rollback.md`.
+
 - The backup job is one-shot; it is not a fifth permanently running service.
 - It connects to Redis over `mbl-backend` and never mounts the production Redis
   volume.

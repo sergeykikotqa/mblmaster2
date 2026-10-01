@@ -107,6 +107,7 @@ async function startReceiver({ port, secret }) {
   const attempts = [];
   const acceptedIds = new Set();
   const recoveredIds = new Set();
+  const faultModes = new Map();
   const releaseBarriers = new Map();
   const sockets = new Set();
 
@@ -145,6 +146,18 @@ async function startReceiver({ port, secret }) {
         return;
       }
 
+      if (request.method === 'POST' && requestUrl.pathname === '/control/configure') {
+        const body = JSON.parse(await readRequestBody(request));
+        const allowed = ['[r03-lost-ack]', '[r03-claim-barrier]', '[r03-dlq]', '[r03-lock-renewal]'];
+        if (typeof body?.webhookId !== 'string' || !allowed.includes(body?.mode)) {
+          writeJson(response, 400, { ok: false, code: 'INVALID_FAULT_MODE' });
+          return;
+        }
+        faultModes.set(body.webhookId, body.mode);
+        writeJson(response, 200, { ok: true });
+        return;
+      }
+
       if (request.method !== 'POST' || requestUrl.pathname !== '/webhook') {
         writeJson(response, 404, { ok: false, code: 'NOT_FOUND' });
         return;
@@ -155,8 +168,8 @@ async function startReceiver({ port, secret }) {
       const webhookId = String(request.headers['x-webhook-id'] || '');
       const timestamp = String(request.headers['x-webhook-timestamp'] || '');
       const signature = String(request.headers['x-hub-signature-256'] || '');
-      const leadId = String(payload?.lead?.leadId || '');
-      const message = String(payload?.lead?.message || '');
+      const leadId = String(payload?.notification?.leadId || '');
+      const message = faultModes.get(webhookId) || '';
       const timestampSeconds = Number(timestamp);
       const timestampFresh = Number.isFinite(timestampSeconds) && Math.abs(Date.now() / 1000 - timestampSeconds) <= 300;
       const expectedSignature = `sha256=${createHmac('sha256', secret)

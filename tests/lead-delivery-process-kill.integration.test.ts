@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from 'vitest
 
 import type { LeadStore } from '../src/server/leads/store';
 import type { ContactSuccessResponse, LeadRecord } from '../src/server/leads/types';
+import { notificationFixture, privateLeadFields } from './helpers/lead-v2';
 
 type BarrierPhase = 'claim_acquired_before_post' | 'receiver_accepted_before_redis_commit';
 type ChildMessage = {
@@ -60,7 +61,8 @@ function createLead(leadId: string, marker: string): LeadRecord {
     receivedAt: now,
     idempotencyHash: `idem-${leadId}`,
     payloadFingerprint: `fingerprint-${leadId}`,
-    webhookPayload: { lead: { leadId, message: marker } },
+    ...privateLeadFields(now),
+    webhookPayload: notificationFixture(leadId, now, marker),
     status: 'pending',
     retryCount: 0,
     nextRetryAt: Date.now() - 1,

@@ -25,6 +25,7 @@ export type LeadStore = {
     leadRecordTtlSec: number;
   }) => Promise<EnqueueLeadResult>;
   getLeadRecord: (leadId: string) => Promise<LeadRecord | null>;
+  listRecentLeadRecords: (limit: number) => Promise<LeadRecord[]>;
   saveLeadRecord: (leadRecord: LeadRecord, leadRecordTtlSec: number) => Promise<void>;
   listDueLeadIds: (nowMs: number, limit: number) => Promise<string[]>;
   acquireProcessingLock: (leadId: string, ttlSec: number) => Promise<string | null>;
@@ -62,6 +63,7 @@ else
 end
 redis.call('ZADD', KEYS[3], ARGV[6], ARGV[5])
 redis.call('ZADD', KEYS[4], ARGV[7], ARGV[5])
+redis.call('ZADD', KEYS[5], ARGV[7], ARGV[5])
 return {1}
 `;
 
@@ -389,8 +391,8 @@ class RedisLeadStore implements LeadStore {
 
     const raw = await this.client.eval<unknown[]>(
       ENQUEUE_LEAD_WITH_IDEMPOTENCY_SCRIPT,
-      4,
-      [idempotencyKey, leadRecordKey, queueKey, pendingSinceKey],
+      5,
+      [idempotencyKey, leadRecordKey, queueKey, pendingSinceKey, this.keyLeadRecordIndex()],
       [
         JSON.stringify(params.successResponse),
         params.idempotencyTtlSec,
@@ -426,6 +428,24 @@ class RedisLeadStore implements LeadStore {
     const raw = await this.client.command<string | null>('GET', this.keyLeadRecord(leadId));
     if (!raw) return null;
     return parseLeadRecord(raw);
+  }
+
+  async listRecentLeadRecords(limit: number): Promise<LeadRecord[]> {
+    const boundedLimit = Math.min(100, Math.max(1, Math.floor(limit)));
+    const ids = await this.client.command<unknown[]>('ZREVRANGE', this.keyLeadRecordIndex(), 0, boundedLimit * 3 - 1);
+    if (!Array.isArray(ids)) return [];
+    const records: LeadRecord[] = [];
+    for (const rawId of ids) {
+      if (typeof rawId !== 'string') continue;
+      const record = await this.getLeadRecord(rawId);
+      if (!record) {
+        await this.client.command('ZREM', this.keyLeadRecordIndex(), rawId);
+        continue;
+      }
+      records.push(record);
+      if (records.length >= boundedLimit) break;
+    }
+    return records;
   }
 
   async saveLeadRecord(leadRecord: LeadRecord, leadRecordTtlSec: number): Promise<void> {
@@ -762,6 +782,10 @@ class RedisLeadStore implements LeadStore {
     return `${this.prefix}:record:${leadId}`;
   }
 
+  private keyLeadRecordIndex() {
+    return `${this.prefix}:record:index`;
+  }
+
   private keyQueue() {
     return `${this.prefix}:delivery:queue`;
   }
@@ -932,6 +956,16 @@ class MemoryLeadStore implements LeadStore {
       return null;
     }
     return current.leadRecord;
+  }
+
+  async listRecentLeadRecords(limit: number): Promise<LeadRecord[]> {
+    const boundedLimit = Math.min(100, Math.max(1, Math.floor(limit)));
+    const records: LeadRecord[] = [];
+    for (const entry of this.leadRecords.values()) {
+      if (entry.expiresAt !== null && entry.expiresAt <= Date.now()) continue;
+      records.push(entry.leadRecord);
+    }
+    return records.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0, boundedLimit);
   }
 
   async saveLeadRecord(leadRecord: LeadRecord, leadRecordTtlSec: number): Promise<void> {
@@ -1278,17 +1312,105 @@ function parseContactSuccessResponse(raw: unknown): ContactSuccessResponse | nul
   }
 }
 
-function parseLeadRecord(raw: unknown): LeadRecord | null {
+export function parseLeadRecord(raw: unknown): LeadRecord | null {
   if (typeof raw !== 'string' || !raw) return null;
   try {
-    const parsed = JSON.parse(raw) as LeadRecord;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
     if (!parsed || typeof parsed !== 'object') return null;
     if (typeof parsed.leadId !== 'string' || typeof parsed.status !== 'string') return null;
-    if (!parsed.webhookPayload || typeof parsed.webhookPayload !== 'object') return null;
-    return parsed;
+    if (!['pending', 'delivered', 'failed'].includes(parsed.status)) return null;
+
+    const normalizedPhone = normalizeStoredPhone(parsed.normalizedPhone);
+    if (!normalizedPhone) return null;
+
+    const receivedAt = readIso(parsed.receivedAt);
+    const createdAt = readIso(parsed.createdAt);
+    const updatedAt = readIso(parsed.updatedAt);
+    if (!receivedAt || !createdAt || !updatedAt) return null;
+
+    const consent = parseStoredConsent(parsed.consent);
+    if (!consent) return null;
+    const rawContext =
+      parsed.context && typeof parsed.context === 'object' && !Array.isArray(parsed.context)
+        ? (parsed.context as Record<string, unknown>)
+        : null;
+    if (!rawContext) return null;
+    const context = {
+      ...readSafeContextField(rawContext.service, 'token'),
+      ...readSafeContextField(rawContext.pageSlug, 'pageSlug'),
+      ...readSafeContextField(rawContext.placement, 'placement'),
+    };
+    const notification = {
+      leadId: parsed.leadId,
+      createdAt,
+      ...(context.service ? { service: context.service } : {}),
+      ...(context.pageSlug ? { pageSlug: context.pageSlug } : {}),
+      adminPath: `/admin/leads/${parsed.leadId}`,
+    };
+
+    return {
+      leadId: parsed.leadId,
+      normalizedPhone,
+      receivedAt,
+      idempotencyHash: typeof parsed.idempotencyHash === 'string' ? parsed.idempotencyHash : '',
+      payloadFingerprint: typeof parsed.payloadFingerprint === 'string' ? parsed.payloadFingerprint : '',
+      consent,
+      context,
+      webhookPayload: {
+        schemaVersion: '1.0',
+        event: 'lead.created',
+        notification,
+      },
+      status: parsed.status as LeadRecord['status'],
+      retryCount: Number.isFinite(parsed.retryCount) ? Math.max(0, Math.floor(Number(parsed.retryCount))) : 0,
+      nextRetryAt: Number.isFinite(parsed.nextRetryAt) ? Number(parsed.nextRetryAt) : Date.parse(createdAt),
+      createdAt,
+      updatedAt,
+      ...(readIso(parsed.deliveredAt) ? { deliveredAt: readIso(parsed.deliveredAt) } : {}),
+      ...(readIso(parsed.lastAttemptAt) ? { lastAttemptAt: readIso(parsed.lastAttemptAt) } : {}),
+      ...(typeof parsed.lastErrorCode === 'string' ? { lastErrorCode: parsed.lastErrorCode.slice(0, 120) } : {}),
+      ...(Number.isFinite(parsed.lastErrorStatus) ? { lastErrorStatus: Number(parsed.lastErrorStatus) } : {}),
+      ...(typeof parsed.lastErrorMessage === 'string'
+        ? { lastErrorMessage: parsed.lastErrorMessage.slice(0, 300) }
+        : {}),
+    };
   } catch {
     return null;
   }
+}
+
+function normalizeStoredPhone(value: unknown): string {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.length === 10) return `+7${digits}`;
+  if (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8'))) return `+7${digits.slice(1)}`;
+  return '';
+}
+
+function readIso(value: unknown): string {
+  if (typeof value !== 'string' || !Number.isFinite(Date.parse(value))) return '';
+  return new Date(value).toISOString();
+}
+
+function readSafeContextField(value: unknown, kind: 'token' | 'pageSlug' | 'placement') {
+  if (typeof value !== 'string') return {};
+  const maxLength = kind === 'pageSlug' ? 200 : 80;
+  const safe = value
+    .trim()
+    .slice(0, maxLength)
+    .replace(/[^a-zA-Z0-9/_:-]+/g, '');
+  if (!safe) return {};
+  return { [kind === 'token' ? 'service' : kind]: safe };
+}
+
+function parseStoredConsent(value: unknown): LeadRecord['consent'] | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const consent = value as Record<string, unknown>;
+    const acceptedAt = readIso(consent.acceptedAt);
+    if (consent.accepted === true && consent.version === 'phone-contact-v1' && acceptedAt) {
+      return { accepted: true, version: consent.version, acceptedAt };
+    }
+  }
+  return null;
 }
 
 export function resolveLeadRedisPrefix(rawValue = process.env.CONTACT_REDIS_PREFIX): string {

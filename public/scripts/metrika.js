@@ -40,11 +40,18 @@
     window.ym.l = Date.now();
     ensureLoader();
     window.ym(metrikaId, 'init', {
-      clickmap: true,
-      trackLinks: true,
+      clickmap: false,
+      trackLinks: false,
+      webvisor: false,
+      defer: true,
+      sendTitle: false,
       accurateTrackBounce: true,
-      webvisor: true,
     });
+    const pageType =
+      typeof window.leadTracking?.resolvePageType === 'function'
+        ? window.leadTracking.resolvePageType(window.location.pathname)
+        : 'other';
+    window.ym(metrikaId, 'hit', `${window.location.origin}/${pageType}`, { referer: '' });
   }
 
   function disableMetrika() {

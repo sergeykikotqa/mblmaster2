@@ -32,7 +32,7 @@ never`. Deployment on the VPS therefore cannot silently rebuild source or pull
 a moving application tag.
 
 `dataContractVersion` and `metricsRuntimeGeneration` are independent
-compatibility axes. The Redis data contract remains version `1`, while current
+compatibility axes. The Redis data contract is version `2`, while current
 application bundles use metrics runtime generation `2`. Rollback to a target
 with a lower or unknown metrics generation is rejected before Docker images,
 Compose services, the active-release link or the operation journal are
@@ -43,10 +43,42 @@ not sufficient for the complete metrics contract. This exception is temporary
 and can be removed once both current and previous production releases carry an
 explicit metrics runtime generation.
 
+The metrics bootstrap exception does not override the data-contract boundary:
+an old v1 bundle is not a rollback target for v2. `config/release-policy.json`
+is the authoritative version source, packaged in the tool and backup image.
+New bundles must match that version; historical v1 bundles can only be parsed
+explicitly to diagnose compatibility. Their manifest and policy versions must
+agree, and current/previous records must bind to the exact verified bundle.
+
+Normal apply permits a fresh v2 runtime or v2 -> v2 only. v1 -> v2 apply fails
+with `APPLY_DATA_CONTRACT_MISMATCH`; there is no implicit migration flag.
+Cross-version rollback fails with `ROLLBACK_DATA_CONTRACT_MISMATCH` before
+Docker, application, active-link, state or Redis changes.
+
+Interrupted-operation journals record verified source/target versions. Before
+any automatic recovery, both stored artifacts, journal versions and committed
+state are checked. A cross-version recovery fails with
+`RECOVERY_DATA_CONTRACT_MISMATCH` without stopping the compatible application;
+the journal is retained for manual diagnosis. Old journals missing contract
+metadata fail closed and require manual intervention. Same-contract v2
+recovery retains the existing reconciliation/containment procedure.
+
+## First production v2 baseline (not yet performed)
+
+MBL has no production customer data to migrate. Provision a new empty external
+Redis volume; do not reuse dev/test records. Start directly with a verified v2
+application and require readiness/smoke checks. Create an encrypted v2 backup
+and complete its isolated restore drill before opening public traffic and
+declaring the recovery chain verified. The first release has no safe previous
+release: do not fabricate a v1 target. After a second verified v2 deployment,
+current=v2-B and previous=v2-A enable ordinary rollback.
+
 Persisted release IDs in manifests and release state use the canonical
 lowercase 40-character SHA form, without whitespace or prefixes. Normal apply
 is permitted with an empty initial state, a generation `2` current release, or
-the exact audited legacy bootstrap above. Any other legacy current release
+the exact audited metrics bootstrap above, always subject to the v2 data
+contract guard. A v1 bootstrap does not authorize ordinary apply into v2.
+Any other legacy current release
 requires a separate migration or recovery procedure and is rejected by the
 normal apply path.
 

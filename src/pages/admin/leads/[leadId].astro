@@ -1,0 +1,65 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import AdminSessionBar from '~/components/admin/AdminSessionBar.astro';
+import { getLeadStore } from '~/server/leads/store';
+
+export const prerender = false;
+
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+
+const leadId = String(Astro.params.leadId || '');
+const validLeadId = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(leadId);
+let record = validLeadId
+  ? await getLeadStore()
+      .getLeadRecord(leadId)
+      .catch(() => null)
+  : null;
+if (!record) Astro.response.status = 404;
+---
+
+<AdminLayout title={record ? `Заявка ${record.leadId}` : 'Заявка не найдена'}>
+  <section class="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+    <a href="/admin/leads" class="font-semibold text-[#7f5438] underline">← Все заявки</a>
+    <div class="mt-6"><AdminSessionBar /></div>
+    {
+      record ? (
+        <article class="mt-6 rounded-2xl border border-[#e8d8cb] bg-white p-6 sm:p-8">
+          <p class="text-sm font-semibold uppercase tracking-[0.12em] text-[#7f5438]">Заявка</p>
+          <h1 class="mt-2 break-all text-2xl font-bold text-slate-900">#{record.leadId}</h1>
+          <dl class="mt-6 grid gap-5">
+            <div>
+              <dt class="text-sm text-slate-500">Телефон</dt>
+              <dd class="mt-1 text-2xl font-bold text-slate-900">
+                <a href={`tel:${record.normalizedPhone}`} class="underline">
+                  {record.normalizedPhone}
+                </a>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm text-slate-500">Получена</dt>
+              <dd class="mt-1 font-semibold text-slate-900">{new Date(record.createdAt).toLocaleString('ru-RU')}</dd>
+            </div>
+            <div>
+              <dt class="text-sm text-slate-500">Контекст</dt>
+              <dd class="mt-1 text-slate-700">
+                {[record.context.service, record.context.pageSlug, record.context.placement]
+                  .filter(Boolean)
+                  .join(' · ') || 'Не указан'}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-sm text-slate-500">Статус уведомления</dt>
+              <dd class="mt-1 font-semibold text-slate-900">{record.status}</dd>
+            </div>
+          </dl>
+        </article>
+      ) : (
+        <div class="mt-6 rounded-xl border border-[#e8d8cb] bg-white p-6">
+          <h1 class="text-2xl font-bold text-slate-900">Заявка не найдена</h1>
+          <p class="mt-2 text-slate-600">Запись отсутствует или срок её хранения истёк.</p>
+        </div>
+      )
+    }
+  </section>
+</AdminLayout>

@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 
 import type { LeadStore } from '../src/server/leads/store';
 import type { ContactSuccessResponse, LeadRecord } from '../src/server/leads/types';
+import { notificationFixture, privateLeadFields } from './helpers/lead-v2';
 
 const deliverLeadWebhookMock = vi.hoisted(() => vi.fn());
 
@@ -33,7 +34,8 @@ function createLead(leadId: string, dueAtMs = Date.now() - 1000): LeadRecord {
     receivedAt: nowIso,
     idempotencyHash: `idem-${leadId}`,
     payloadFingerprint: `fingerprint-${leadId}`,
-    webhookPayload: { lead: { leadId } },
+    ...privateLeadFields(nowIso),
+    webhookPayload: notificationFixture(leadId, nowIso),
     status: 'pending',
     retryCount: 0,
     nextRetryAt: dueAtMs,
@@ -334,14 +336,14 @@ redisDescribe('native Redis lead pipeline integration', () => {
       retryCount: 2,
       maxRetries: 2,
       errorCode: 'SYNTHETIC_OLD_FAILURE',
-      webhookPayload: { lead: { leadId: 'synthetic-old' } },
+      webhookPayload: notificationFixture('synthetic-old'),
     };
     const freshEntry = {
       ...oldEntry,
       leadId: randomUUID(),
       failedAt: new Date(nowMs).toISOString(),
       errorCode: 'SYNTHETIC_FRESH_FAILURE',
-      webhookPayload: { lead: { leadId: 'synthetic-fresh' } },
+      webhookPayload: notificationFixture('synthetic-fresh'),
     };
 
     try {
@@ -385,7 +387,7 @@ redisDescribe('native Redis lead pipeline integration', () => {
       retryCount: 2,
       maxRetries: 2,
       errorCode: 'SYNTHETIC_LEGACY_FAILURE',
-      webhookPayload: { lead: { leadId: 'synthetic-legacy' } },
+      webhookPayload: notificationFixture('synthetic-legacy'),
     };
     await redisCommand('LPUSH', `${prefix}:delivery:dlq`, JSON.stringify(legacyEntry));
     await redisCommand('EXPIRE', `${prefix}:delivery:dlq`, 60);
@@ -410,7 +412,7 @@ redisDescribe('native Redis lead pipeline integration', () => {
           retryCount: 1,
           maxRetries: 1,
           errorCode: 'SYNTHETIC_BULK_FAILURE',
-          webhookPayload: { lead: { leadId: `bulk-${index}` } },
+          webhookPayload: notificationFixture(`bulk-${index}`),
         })
       );
     }

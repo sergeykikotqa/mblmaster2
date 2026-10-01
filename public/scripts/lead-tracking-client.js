@@ -11,16 +11,6 @@
   const formSessions = new Map();
   let pageViewSent = false;
 
-  const storageKeys = {
-    source: 'lead_utm_source',
-    medium: 'lead_utm_medium',
-    campaign: 'lead_utm_campaign',
-    term: 'lead_utm_term',
-    content: 'lead_utm_content',
-    landingPath: 'lead_landing_path',
-    firstReferrer: 'lead_first_referrer',
-  };
-
   function readCookieValue(cookieName) {
     const cookie = String(document.cookie || '')
       .split(';')
@@ -54,74 +44,22 @@
     return canTrack();
   }
 
-  function getSafeLeadAttribution() {
-    return {
-      utm_source: '(direct)',
-      utm_medium: '(none)',
-      utm_campaign: '(none)',
-      utm_term: '(none)',
-      utm_content: '(none)',
-      landingPath: window.location.pathname + window.location.search || '/',
-      currentPath: window.location.pathname + window.location.search,
-      firstReferrer: document.referrer && document.referrer.trim() ? document.referrer : '(direct)',
-      deviceType: getDeviceType(),
-      submittedAt: new Date().toISOString(),
-    };
-  }
-
   function compactPayload(payload) {
     const clean = {};
     if (!payload || typeof payload !== 'object') return clean;
 
     Object.entries(payload).forEach(([key, value]) => {
+      if (key === 'open_id' || key === 'opened_at') return;
+      if (key === 'page_slug') {
+        clean[key] = String(value || '').split(/[?#]/, 1)[0];
+        return;
+      }
       if (value === undefined || value === null) return;
       if (typeof value === 'string' && !value.trim()) return;
       clean[key] = value;
     });
 
     return clean;
-  }
-
-  function readStorage(key, fallback) {
-    try {
-      return window.localStorage.getItem(key) || fallback;
-    } catch {
-      return fallback;
-    }
-  }
-
-  function writeStorage(key, value) {
-    try {
-      window.localStorage.setItem(key, value);
-    } catch {
-      // noop
-    }
-  }
-
-  function ensureFirstTouch() {
-    if (!canTrack()) return;
-    const params = new URLSearchParams(window.location.search);
-    if (!readStorage(storageKeys.landingPath, '')) {
-      writeStorage(storageKeys.landingPath, window.location.pathname + window.location.search || '/');
-    }
-    if (!readStorage(storageKeys.firstReferrer, '')) {
-      const ref = document.referrer && document.referrer.trim() ? document.referrer : '(direct)';
-      writeStorage(storageKeys.firstReferrer, ref);
-    }
-
-    const mappings = [
-      ['source', 'utm_source', '(direct)'],
-      ['medium', 'utm_medium', '(none)'],
-      ['campaign', 'utm_campaign', '(none)'],
-      ['term', 'utm_term', '(none)'],
-      ['content', 'utm_content', '(none)'],
-    ];
-    mappings.forEach(([storageKey, queryKey, fallback]) => {
-      const storageToken = storageKeys[storageKey];
-      if (!readStorage(storageToken, '')) {
-        writeStorage(storageToken, params.get(queryKey) || fallback);
-      }
-    });
   }
 
   function resolvePageType(pathname) {
@@ -154,22 +92,7 @@
   }
 
   function getLeadAttribution() {
-    if (!canTrack()) {
-      return getSafeLeadAttribution();
-    }
-    ensureFirstTouch();
-    return {
-      utm_source: readStorage(storageKeys.source, '(direct)'),
-      utm_medium: readStorage(storageKeys.medium, '(none)'),
-      utm_campaign: readStorage(storageKeys.campaign, '(none)'),
-      utm_term: readStorage(storageKeys.term, '(none)'),
-      utm_content: readStorage(storageKeys.content, '(none)'),
-      landingPath: readStorage(storageKeys.landingPath, '/'),
-      currentPath: window.location.pathname + window.location.search,
-      firstReferrer: readStorage(storageKeys.firstReferrer, '(direct)'),
-      deviceType: getDeviceType(),
-      submittedAt: new Date().toISOString(),
-    };
+    return {};
   }
 
   function pushDataLayer(eventName, payload) {
@@ -185,7 +108,7 @@
     const body = JSON.stringify({
       event: eventName,
       payload: compactPayload(payload),
-      page: window.location.pathname + window.location.search,
+      page: resolvePageType(window.location.pathname),
       sentAt: new Date().toISOString(),
       channel: forceOps ? 'ops' : 'marketing',
     });
@@ -221,13 +144,13 @@
   function trackYandexGoal(goal, params) {
     if (!canTrack()) return;
     if (!yandexId || typeof window.ym !== 'function') return;
-    window.ym(yandexId, 'reachGoal', goal, params || {});
-  }
-
-  function trackGAEvent(name, params) {
-    if (!canTrack()) return;
-    if (typeof window.gtag !== 'function') return;
-    window.gtag('event', name, params || {});
+    const goals = { form_submit: 'form_submitted', call_click: 'cta_click' };
+    const safeGoal = goals[goal];
+    if (!safeGoal) return;
+    window.ym(yandexId, 'reachGoal', safeGoal, {
+      page_type: params?.page_type || 'other',
+      placement: params?.placement || 'section',
+    });
   }
 
   function emit(eventName, params) {
@@ -592,35 +515,30 @@
       open_id: ensureOpenId(session),
       opened_at: toIso(session.openedAtMs),
     };
-    trackGAEvent('contact', params);
     emit('lead_submit_start', params);
   }
 
-  function trackLeadSuccess(formId, pageType, leadId) {
+  function trackLeadSuccess(formId, pageType) {
     if (!canTrack()) return;
     markFormSubmitted(formId, pageType);
     const sessionMeta = getFormSessionMeta(formId, pageType);
     const params = {
       form_id: formId,
       page_type: pageType,
-      lead_id: leadId || '',
       open_id: sessionMeta.openId || '',
       opened_at: sessionMeta.openedAt || '',
     };
     trackYandexGoal('form_submit', params);
-    trackGAEvent('generate_lead', params);
-    trackGAEvent('lead_submit_success', params);
     emit('lead_submit_success', params);
   }
 
-  function trackFormSubmitSuccess(formId, pageType, leadId) {
+  function trackFormSubmitSuccess(formId, pageType) {
     if (!canTrackOps()) return;
     markFormSubmitted(formId, pageType);
     const sessionMeta = getFormSessionMeta(formId, pageType);
     emitOps('form_submit_success', {
       form_id: formId,
       page_type: pageType,
-      lead_id: leadId || '',
       open_id: sessionMeta.openId || '',
       opened_at: sessionMeta.openedAt || '',
     });
@@ -637,15 +555,13 @@
       opened_at: sessionMeta.openedAt || '',
     };
     trackYandexGoal('form_error', params);
-    trackGAEvent('lead_submit_error', params);
     emit('lead_submit_error', params);
   }
 
-  function trackCallClick(phone, placement) {
+  function trackCallClick(_phone, placement) {
     if (!canTrack()) return;
-    const params = { phone: phone || '', placement: placement || 'section' };
+    const params = { placement: placement || 'section' };
     trackYandexGoal('call_click', params);
-    trackGAEvent('click_call', params);
     emit('call_click', params);
   }
 
@@ -697,7 +613,9 @@
 
     if (!hasMarker && !contactHref && !telHref) return null;
 
-    const ctaText = normalizeCtaText(element.getAttribute('data-cta-label') || element.textContent || '');
+    const ctaText = telHref
+      ? 'Позвонить'
+      : normalizeCtaText(element.getAttribute('data-cta-label') || element.textContent || '');
     const explicitName = element.getAttribute('data-cta');
     const fallbackName = slugify(ctaText || href || '');
 
@@ -705,8 +623,7 @@
       cta: explicitName || fallbackName || 'cta_click',
       cta_type: inferCtaType(element, href),
       placement: resolveCtaPlacement(element),
-      href: href ? href.slice(0, 220) : '',
-      text: ctaText,
+      text: telHref ? 'Позвонить' : ctaText,
     });
   }
 
@@ -775,7 +692,7 @@
     pageViewSent = true;
     emit('page_view', {
       page_type: resolvePageType(window.location.pathname),
-      path: window.location.pathname + window.location.search,
+      path: resolvePageType(window.location.pathname),
       device_type: getDeviceType(),
     });
   }
@@ -784,8 +701,6 @@
     if (window.__leadTrackingInit) return;
     if (!enabled) return;
     window.__leadTrackingInit = true;
-
-    ensureFirstTouch();
 
     emitPageView();
 
@@ -880,7 +795,6 @@
   maybeInitLeadTracking();
   window.addEventListener('analytics-consent-change', function (event) {
     if (event && event.detail && event.detail.state === 'granted') {
-      ensureFirstTouch();
       emitPageView();
       maybeInitLeadTracking();
     }

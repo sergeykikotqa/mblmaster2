@@ -35,8 +35,6 @@ async function waitForFormReady(form: Locator) {
 
 async function fillValidLead(form: Locator) {
   await form.locator('input[name="phone"]').fill('9000000000');
-  await form.locator('input[name="name"]').fill('Тест формы проекта');
-  await form.locator('textarea[name="message"]').fill('Тестовый запрос без отправки реальной заявки.');
   await form.locator('input[name="consent"]').check();
   const captchaButton = form.locator('[data-smartcaptcha-widget] button');
   await expect(captchaButton).toBeVisible();
@@ -77,13 +75,13 @@ test.describe('Project modal submission', () => {
 
     await form.locator('[data-submit-btn]').click();
     await expect(form.locator('[data-error-phone]')).toBeVisible();
-    await expect(form.locator('[data-error-name]')).toBeHidden();
+    await expect(form.locator('[data-error-name]')).toHaveCount(0);
     await expect(form.locator('[data-error-consent]')).toBeVisible();
     expect(leadPosts).toBe(0);
     expect(page.url()).toBe(pageUrl);
   });
 
-  test('submits empty optional name and message with project context and no template UX', async ({ page }) => {
+  test('submits phone-only allowlisted context without legacy fields', async ({ page }) => {
     await mockSmartCaptcha(page);
     const captured: CapturedLead[] = [];
     await captureLeadRequests(page, captured);
@@ -94,7 +92,7 @@ test.describe('Project modal submission', () => {
     await waitForFormReady(form);
     await expect(modal.locator('[data-project-modal-template]')).toHaveCount(0);
     await expect(modal).not.toContainText('Вставить шаблон');
-    await expect(form.locator('textarea[name="message"]')).toHaveValue('');
+    await expect(form.locator('input[name="name"], textarea')).toHaveCount(0);
     await form.locator('input[name="phone"]').fill('9000000000');
     await form.locator('input[name="consent"]').check();
     const captchaButton = form.locator('[data-smartcaptcha-widget] button');
@@ -107,18 +105,13 @@ test.describe('Project modal submission', () => {
     expect(captured[0].headers['content-type']).toContain('application/json');
     expect(captured[0].headers['x-idempotency-key']).toBeTruthy();
     expect(captured[0].payload).toMatchObject({
-      name: '',
-      message: '',
-      project_slug: context.project_slug,
-      project_name: context.project_name,
-      project_area: context.project_area,
-      project_price: context.project_price,
-      project_service: context.project_service,
-      project_href: context.project_href,
       service: context.project_service,
       pageSlug: context.pageSlug,
       smartCaptchaToken: 'mock-valid-token',
     });
+    expect(captured[0].payload).not.toHaveProperty('name');
+    expect(captured[0].payload).not.toHaveProperty('message');
+    expect(captured[0].payload).not.toHaveProperty('project_name');
     expect(page.url()).toBe(pageUrl);
   });
 
@@ -206,9 +199,9 @@ test.describe('Project modal submission', () => {
     await page.goto(projectHref || PROJECTS_PAGE);
     const { form, context } = await openProjectModal(page);
     await waitForFormReady(form);
-    expect(await form.locator('input[name="project_slug"]').inputValue()).toBe(context.project_slug);
-    expect(await form.locator('input[name="project_name"]').inputValue()).toBe(context.project_name);
-    expect(await form.locator('input[name="project_service"]').inputValue()).toBe(context.project_service);
+    await expect(form.locator('input[name^="project_"]')).toHaveCount(0);
+    await expect(form.locator('input[name^="project_"]')).toHaveCount(0);
+    await expect(form.locator('input[name^="project_"]')).toHaveCount(0);
     expect(await form.locator('input[name="service"]').inputValue()).toBe(context.project_service);
     expect(await form.locator('input[name="pageSlug"]').inputValue()).toBe(context.pageSlug);
   });
@@ -232,7 +225,6 @@ test.describe('Project modal submission', () => {
     const { form } = await openProjectModal(page);
     await waitForFormReady(form);
     await form.locator('input[name="phone"]').fill('9000000000');
-    await form.locator('input[name="name"]').fill('Тест недоступной CAPTCHA');
     await form.locator('input[name="consent"]').check();
     await form.locator('[data-submit-btn]').click();
 

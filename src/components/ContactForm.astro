@@ -12,7 +12,6 @@ interface Props {
   trustNote?: string | string[];
   successItems?: string[];
   successLink?: { label: string; href: string };
-  extraHiddenFields?: { name: string; value?: string }[];
   leadContext?: {
     city?: string;
     district?: string;
@@ -33,16 +32,13 @@ const {
   trustNote,
   successItems = [],
   successLink,
-  extraHiddenFields = [],
   leadContext = {},
 } = Astro.props as Props;
 
 const idPrefix = `lead-${String(formContext).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 const formAnchorId = formContext === 'contact' ? 'form' : '';
 const errorIds = {
-  name: `${idPrefix}-error-name`,
   phone: `${idPrefix}-error-phone`,
-  message: `${idPrefix}-error-message`,
   consent: `${idPrefix}-error-consent`,
   smartCaptcha: `${idPrefix}-error-smartcaptcha`,
 };
@@ -58,8 +54,6 @@ const serviceCopyMap = {
   kuhni: {
     phoneLabel: 'Телефон для расчёта кухни',
     phoneHint: 'Оставьте номер телефона, чтобы мы могли связаться с вами по заявке.',
-    messageLabel: 'Что нужно рассчитать',
-    messagePlaceholder: 'Например: угловая кухня, встроенная техника, длина 3,2 м.',
     preCtaNote: 'Рассчитаем стоимость кухни с учётом техники, розеток и вентиляции.',
     ctaNote: 'Свяжемся, чтобы уточнить детали и рассчитать стоимость под ваш проект.',
     trustNotes: ['Без обязательств', 'Смета и сроки фиксируются до запуска'],
@@ -67,8 +61,6 @@ const serviceCopyMap = {
   shkafy: {
     phoneLabel: 'Телефон для расчёта шкафа',
     phoneHint: 'Оставьте номер телефона, чтобы мы могли связаться с вами по заявке.',
-    messageLabel: 'Что нужно рассчитать',
-    messagePlaceholder: 'Например: шкаф-купе в нишу, высота 260 см, зеркало и полки.',
     preCtaNote: 'Рассчитаем стоимость шкафа по размерам, наполнению и типу фасадов.',
     ctaNote: 'Свяжемся, чтобы уточнить детали и рассчитать стоимость под ваш проект.',
     trustNotes: ['Без обязательств', 'Смета и сроки фиксируются до запуска'],
@@ -76,8 +68,6 @@ const serviceCopyMap = {
   garderobnye: {
     phoneLabel: 'Телефон для расчёта гардеробной',
     phoneHint: 'Оставьте номер телефона, чтобы мы могли связаться с вами по заявке.',
-    messageLabel: 'Что нужно рассчитать',
-    messagePlaceholder: 'Например: П-образная гардеробная, хранение сезонной одежды и обуви.',
     preCtaNote: 'Рассчитаем стоимость гардеробной по размерам, хранению и типу фасадов.',
     ctaNote: 'Свяжемся, чтобы уточнить детали и подобрать конфигурацию под ваш сценарий хранения.',
     trustNotes: ['Без обязательств', 'Смета и сроки фиксируются до запуска'],
@@ -85,11 +75,9 @@ const serviceCopyMap = {
   default: {
     phoneLabel: 'Телефон для расчёта стоимости',
     phoneHint: 'Оставьте номер телефона, чтобы мы могли связаться с вами по заявке.',
-    messageLabel: 'Что нужно рассчитать',
-    messagePlaceholder: 'Коротко опишите задачу или размеры.',
     preCtaNote: '',
     ctaNote: 'Свяжемся, чтобы уточнить детали и предложить следующий шаг.',
-    trustNotes: ['Без обязательств', 'Достаточно телефона и короткого описания задачи'],
+    trustNotes: ['Без обязательств', 'Достаточно номера телефона'],
   },
 } as const;
 
@@ -188,49 +176,6 @@ const resolvedCtaNote = ctaNote || serviceCopy.ctaNote;
       </p>
     </div>
 
-    <div class="mb-6">
-      <label for={`${idPrefix}-name`} class="block text-sm font-semibold text-slate-900 mb-2"
-        >Как к вам обращаться (необязательно)</label
-      >
-      <input
-        id={`${idPrefix}-name`}
-        name="name"
-        type="text"
-        maxlength="80"
-        autocomplete="name"
-        enterkeyhint="next"
-        aria-describedby={errorIds.name}
-        class="w-full rounded-lg border border-[#d9c6b7] px-4 py-3.5 text-slate-900 placeholder:text-slate-400 transition-colors duration-200 focus-visible:border-[#8b5a3c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ead9cc]"
-        placeholder="Например, Иван"
-      />
-      <p id={errorIds.name} class="mt-2 text-sm text-red-600 hidden" role="alert" aria-live="assertive" data-error-name>
-        Если указываете имя, введите от 2 до 80 символов.
-      </p>
-    </div>
-
-    <div class="mb-6">
-      <label for={`${idPrefix}-message`} class="block text-sm font-semibold text-slate-900 mb-2"
-        >{serviceCopy.messageLabel} (опционально)</label
-      >
-      <textarea
-        id={`${idPrefix}-message`}
-        name="message"
-        rows="4"
-        maxlength="2000"
-        aria-describedby={errorIds.message}
-        class="min-h-[120px] w-full resize-none rounded-lg border border-[#d9c6b7] px-4 py-3.5 text-slate-900 placeholder:text-slate-400 transition-colors duration-200 focus-visible:border-[#8b5a3c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ead9cc]"
-        placeholder={serviceCopy.messagePlaceholder}></textarea>
-      <p
-        id={errorIds.message}
-        class="mt-2 text-sm text-red-600 hidden"
-        role="alert"
-        aria-live="assertive"
-        data-error-message
-      >
-        Сообщение слишком длинное.
-      </p>
-    </div>
-
     <div class="mb-8 flex items-start gap-3">
       <div class="flex items-center h-10 pt-0">
         <input
@@ -244,10 +189,14 @@ const resolvedCtaNote = ctaNote || serviceCopy.ctaNote;
       </div>
       <div>
         <label for={`${idPrefix}-consent`} class="text-sm font-medium text-slate-900 cursor-pointer">
-          Я согласен(а) на обработку персональных данных
+          Я даю согласие на обработку моего номера телефона для связи по моему запросу
         </label>
         <p id={consentHintId} class="text-xs text-slate-600 mt-1">
-          Ваши данные будут использоваться только для связи с вами
+          <a href="/privacy" class="font-semibold text-[#7f5438] underline">Политика обработки персональных данных</a>
+          <span aria-hidden="true"> · </span>
+          <a href="/personal-data-consent" class="font-semibold text-[#7f5438] underline"
+            >Согласие на обработку персональных данных</a
+          >
         </p>
       </div>
     </div>
@@ -295,16 +244,8 @@ const resolvedCtaNote = ctaNote || serviceCopy.ctaNote;
 
     <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
     <input type="hidden" name="redirectTo" value="/thanks" />
-    <input type="hidden" name="city" value={leadContext.city || ''} />
-    <input type="hidden" name="district" value={leadContext.district || ''} />
     <input type="hidden" name="service" value={leadContext.service || ''} />
-    <input type="hidden" name="pageType" value={leadContext.pageType || ''} />
     <input type="hidden" name="pageSlug" value={leadContext.pageSlug || ''} />
-    {
-      extraHiddenFields.map((field) => (
-        <input type="hidden" name={field.name} value={field.value ?? ''} data-extra-field={field.name} />
-      ))
-    }
 
     {resolvedPreCtaNote && <p class="text-xs font-semibold text-slate-700">{resolvedPreCtaNote}</p>}
     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">

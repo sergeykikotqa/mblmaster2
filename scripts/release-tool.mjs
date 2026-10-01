@@ -22,6 +22,35 @@ export const METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID = '39932acc1faa2446c3b3aa15cae
 const METRICS_RUNTIME_INCOMPATIBLE_ERROR = 'ROLLBACK_TARGET_METRICS_RUNTIME_INCOMPATIBLE';
 const diagnosticSecrets = new Set();
 
+// Tool-relative policy is the contract of this tool/image, not the caller's cwd.
+export function readDataContractVersion() {
+  const policy = readJson(new URL('../config/release-policy.json', import.meta.url), 'Tool release policy');
+  assert(policy?.schema === 1, 'Unsupported tool release policy schema');
+  assert(
+    Number.isSafeInteger(policy.dataContractVersion) && policy.dataContractVersion > 0,
+    'Invalid tool data contract version'
+  );
+  return policy.dataContractVersion;
+}
+
+export function assertDataContractCompatible(target, current, operation) {
+  const targetVersion = target?.manifest?.dataContractVersion ?? target?.dataContractVersion;
+  const currentVersion = current?.manifest?.dataContractVersion ?? current?.dataContractVersion;
+  assert(Number.isSafeInteger(targetVersion) && targetVersion > 0, `${operation}_DATA_CONTRACT_INVALID`);
+  if (current) {
+    assert(Number.isSafeInteger(currentVersion) && currentVersion > 0, `${operation}_DATA_CONTRACT_INVALID`);
+    assert(
+      targetVersion === currentVersion,
+      `${operation}_DATA_CONTRACT_MISMATCH: current=${currentVersion} target=${targetVersion}`
+    );
+  }
+  assert(
+    targetVersion === readDataContractVersion(),
+    `${operation}_DATA_CONTRACT_UNSUPPORTED: target=${targetVersion}`
+  );
+  return true;
+}
+
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -142,7 +171,11 @@ export function readReleasePolicy(filePath, options = {}) {
     JSON.stringify(policy.statefulServices) === JSON.stringify(['mbl-redis']),
     'Redis must be the only stateful service'
   );
-  assert(policy.dataContractVersion === 1, 'Unsupported Redis data contract version');
+  assert(
+    policy.dataContractVersion === readDataContractVersion() ||
+      (options.allowHistoricalDataContract === true && policy.dataContractVersion === 1),
+    'Unsupported Redis data contract version'
+  );
   if (Object.hasOwn(policy, 'metricsRuntimeGeneration')) {
     assertSupportedMetricsRuntimeGeneration(
       policy.metricsRuntimeGeneration,
@@ -265,6 +298,7 @@ export function verifyReleaseBundle(bundleDirectory, options = {}) {
   const allowLegacyMetricsRuntimeGeneration = options.allowLegacyMetricsRuntimeGeneration === true;
   const policy = readReleasePolicy(path.join(bundleDir, 'config', 'release-policy.json'), {
     allowLegacyMetricsRuntimeGeneration,
+    allowHistoricalDataContract: options.allowHistoricalDataContract === true,
   });
   assert(
     manifest.dataContractVersion === policy.dataContractVersion,
@@ -427,7 +461,6 @@ export function resolvePublicBuildConfig(env, policyPath = path.join(ROOT, PUBLI
     assert(['true', 'false'].includes(config[key]), `${key} must be true or false`);
   }
   assert(/^\d+$/.test(config.PUBLIC_YANDEX_METRIKA_ID), 'PUBLIC_YANDEX_METRIKA_ID must be numeric');
-  assert(/^G-[A-Z0-9]+$/i.test(config.PUBLIC_GA4_ID), 'PUBLIC_GA4_ID must be a GA4 measurement ID');
   for (const key of ['PUBLIC_LEAD_FORM_ABANDON_MS', 'PUBLIC_RUM_LCP_ALERT_THRESHOLD_MS']) {
     assert(Number.isSafeInteger(Number(config[key])) && Number(config[key]) > 0, `${key} must be a positive integer`);
   }
@@ -481,7 +514,6 @@ function assertRenderedPublicConfig(imageRef, rootPath, config) {
       PUBLIC_SITE_URL: config.PUBLIC_SITE_URL,
       PUBLIC_YANDEX_METRIKA_ID: config.PUBLIC_YANDEX_METRIKA_ID,
       PUBLIC_YANDEX_VERIFICATION: config.PUBLIC_YANDEX_VERIFICATION,
-      PUBLIC_GA4_ID: config.PUBLIC_GA4_ID,
       PUBLIC_BUSINESS_PHONE: config.PUBLIC_BUSINESS_PHONE,
       PUBLIC_BUSINESS_EMAIL: config.PUBLIC_BUSINESS_EMAIL,
       PUBLIC_BUSINESS_ADDRESS_LOCALITY: config.PUBLIC_BUSINESS_ADDRESS_LOCALITY,
@@ -1210,6 +1242,87 @@ export function assertCurrentBundleCompatibleForApply(bundle, record, label = 'C
   return true;
 }
 
+function verifiedStoredRelease(runtimeRoot, record, label) {
+  assertCanonicalReleaseId(record?.releaseId, `${label} release ID`);
+  const bundle = verifyReleaseBundle(path.join(runtimeRoot, 'releases', record.releaseId), {
+    allowLegacyMetricsRuntimeGeneration: true,
+    allowHistoricalDataContract: true,
+  });
+  assertBundleMatchesRecord(bundle, record, label);
+  return bundle;
+}
+
+export function validateApplyDataContract(source, runtimeRoot) {
+  const state = readState(runtimeRoot);
+  if (state.value?.current) {
+    const current = verifiedStoredRelease(runtimeRoot, state.value.current, 'Current release');
+    assertDataContractCompatible(source, current, 'APPLY');
+    assertMetricsApplyCompatible(current);
+  } else {
+    assertDataContractCompatible(source, null, 'APPLY');
+    assert(!fs.existsSync(activeReleaseLinkPath(runtimeRoot)), 'Active release link exists without release state');
+  }
+  return state;
+}
+
+export function validateRollbackDataContract(runtimeRoot) {
+  const state = readState(runtimeRoot);
+  assert(state.value?.current?.releaseId, 'No current release is recorded');
+  assert(state.value?.previous?.releaseId, 'No previous release is available for rollback');
+  // A rejecting state-only check is safe; acceptance still requires both artifacts.
+  assertMetricsRollbackCompatible(state.value.previous, state.value.current);
+  const stable = verifiedStoredRelease(runtimeRoot, state.value.current, 'Current release');
+  const target = verifiedStoredRelease(runtimeRoot, state.value.previous, 'Rollback target');
+  assertDataContractCompatible(target, stable, 'ROLLBACK');
+  assertMetricsRollbackCompatible(target, stable);
+  return { state, stable, target };
+}
+
+export function validateRecoveryDataContract(runtimeRoot, journal, state) {
+  assert(['apply', 'rollback'].includes(journal.kind), 'Unsupported interrupted operation type');
+  assertCanonicalReleaseId(journal.candidateReleaseId, 'Interrupted target release ID');
+  const candidate = verifyReleaseBundle(path.join(runtimeRoot, 'releases', journal.candidateReleaseId), {
+    allowLegacyMetricsRuntimeGeneration: true,
+    allowHistoricalDataContract: true,
+  });
+  assert(candidate.manifest.releaseId === journal.candidateReleaseId, 'Interrupted target bundle is misfiled');
+  assert(
+    candidate.manifest.dataContractVersion === journal.targetDataContractVersion,
+    'RECOVERY_DATA_CONTRACT_MISMATCH: journal target differs from verified bundle'
+  );
+  let stable = null;
+  if (journal.stableReleaseId !== null) {
+    assertCanonicalReleaseId(journal.stableReleaseId, 'Interrupted source release ID');
+    stable = verifyReleaseBundle(path.join(runtimeRoot, 'releases', journal.stableReleaseId), {
+      allowLegacyMetricsRuntimeGeneration: true,
+      allowHistoricalDataContract: true,
+    });
+    assert(stable.manifest.releaseId === journal.stableReleaseId, 'Interrupted source bundle is misfiled');
+    assert(
+      stable.manifest.dataContractVersion === journal.sourceDataContractVersion,
+      'RECOVERY_DATA_CONTRACT_MISMATCH: journal source differs from verified bundle'
+    );
+  } else {
+    assert(
+      journal.kind === 'apply' && journal.sourceDataContractVersion === null,
+      'Only a fresh apply may have no interrupted source'
+    );
+  }
+  assertDataContractCompatible(candidate, stable, 'RECOVERY');
+  if (state?.current) {
+    const current = verifiedStoredRelease(runtimeRoot, state.current, 'Recovery current release');
+    assertDataContractCompatible(candidate, current, 'RECOVERY');
+    assert(
+      [journal.candidateReleaseId, journal.stableReleaseId].includes(current.manifest.releaseId),
+      'Recovery state does not identify interrupted source or target'
+    );
+  } else {
+    assert(stable === null, 'Recovery source exists without current release state');
+  }
+  assertMetricsRollbackCompatible(candidate, stable);
+  return { candidate, stable };
+}
+
 function createOperationJournal(kind, candidate, stableRecord, redisIdentity) {
   return {
     schema: 1,
@@ -1218,6 +1331,8 @@ function createOperationJournal(kind, candidate, stableRecord, redisIdentity) {
     phase: 'prepared',
     candidateReleaseId: candidate.manifest.releaseId,
     stableReleaseId: stableRecord?.releaseId || null,
+    targetDataContractVersion: candidate.manifest.dataContractVersion,
+    sourceDataContractVersion: stableRecord?.dataContractVersion ?? null,
     redisIdentityBefore: redisIdentity,
     startedAt: new Date().toISOString(),
   };
@@ -1288,6 +1403,7 @@ async function reconcileInterruptedOperation({ runtimeRoot, envFile, baseUrl, ti
 
   const journal = pending.value;
   const state = readState(runtimeRoot);
+  validateRecoveryDataContract(runtimeRoot, journal, state.value);
   let desiredRecord = null;
   if (state.value?.current?.releaseId === journal.candidateReleaseId) desiredRecord = state.value.current;
   else if (journal.stableReleaseId && state.value?.current?.releaseId === journal.stableReleaseId) {
@@ -1350,10 +1466,11 @@ async function containFailedTransition({
 }) {
   let recovery;
   if (stableRecord?.releaseId) {
+    // Compatibility/integrity failure is manual intervention, not a reason to
+    // stop a compatible runtime through the containment fallback.
+    const stable = verifiedStoredRelease(runtimeRoot, stableRecord, 'Stable release');
+    assertDataContractCompatible(stable, candidate, 'RECOVERY');
     try {
-      const stableDir = path.join(runtimeRoot, 'releases', stableRecord.releaseId);
-      const stable = verifyReleaseBundle(stableDir, { allowLegacyMetricsRuntimeGeneration: true });
-      assertBundleMatchesRecord(stable, stableRecord, 'Stable release');
       recovery = await recoverStableApplication({ stable, envFile, baseUrl, timeoutMs });
       syncActiveReleaseLink(runtimeRoot, stableRecord.releaseId);
     } catch (recoveryFailure) {
@@ -1396,13 +1513,14 @@ async function applyRelease({ bundleDirectory, runtimeRoot, envFile, baseUrl, ti
   const release = acquireLock(resolvedRuntimeRoot);
   try {
     const privateEnv = assertPrivateEnvFile(envFile);
+    const source = verifyReleaseBundle(bundleDirectory);
+    validateApplyDataContract(source, resolvedRuntimeRoot);
     await reconcileInterruptedOperation({
       runtimeRoot: resolvedRuntimeRoot,
       envFile: privateEnv,
       baseUrl,
       timeoutMs,
     });
-    const source = verifyReleaseBundle(bundleDirectory);
     const bundle = storeBundle(source, resolvedRuntimeRoot);
     const state = readState(resolvedRuntimeRoot);
     if (state.value?.current) {
@@ -1503,6 +1621,8 @@ async function rollbackRelease({ runtimeRoot, envFile, baseUrl, timeoutMs = DEFA
   const release = acquireLock(resolvedRuntimeRoot);
   try {
     const privateEnv = assertPrivateEnvFile(envFile);
+    // An existing journal has its own artifact-bound preflight before recovery.
+    if (!readOperationJournal(resolvedRuntimeRoot).value) validateRollbackDataContract(resolvedRuntimeRoot);
     await reconcileInterruptedOperation({
       runtimeRoot: resolvedRuntimeRoot,
       envFile: privateEnv,
@@ -1512,10 +1632,7 @@ async function rollbackRelease({ runtimeRoot, envFile, baseUrl, timeoutMs = DEFA
     const state = readState(resolvedRuntimeRoot);
     assert(state.value?.current?.releaseId, 'No current release is recorded');
     assert(state.value?.previous?.releaseId, 'No previous release is available for rollback');
-    assert(
-      state.value.current.dataContractVersion === state.value.previous.dataContractVersion,
-      'Current and previous releases use different Redis data contracts'
-    );
+    validateRollbackDataContract(resolvedRuntimeRoot);
     assertMetricsRollbackCompatible(state.value.previous, state.value.current);
     const targetDir = path.join(resolvedRuntimeRoot, 'releases', state.value.previous.releaseId);
     const target = verifyReleaseBundle(targetDir, { allowLegacyMetricsRuntimeGeneration: true });

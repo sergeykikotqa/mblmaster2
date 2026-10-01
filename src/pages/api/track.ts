@@ -121,10 +121,10 @@ function sanitizeEventName(value: unknown): string {
 function sanitizePage(value: unknown): string {
   const page = sanitizeString(value, 200);
   if (!page) return '';
-  if (page.startsWith('/')) return page;
+  if (page.startsWith('/')) return page.split(/[?#]/, 1)[0];
   try {
     const parsed = new URL(page);
-    return `${parsed.pathname}${parsed.search}`;
+    return parsed.pathname;
   } catch {
     return '';
   }
@@ -455,7 +455,6 @@ async function notifyRumLcpAlert(params: {
     thresholdMs: Math.round(params.thresholdMs),
     metricId: params.metricId,
     rating: params.rating,
-    userAgent: params.userAgent.slice(0, 200),
     aggregate: {
       windowMs: params.aggregate.windowMs,
       windowSamples: params.aggregate.windowSamples,
@@ -612,7 +611,6 @@ export async function post({ request, clientAddress }: { request: Request; clien
       page,
       receivedAt,
       clientSentAt,
-      userAgent,
       rumMetricName: rumMetric?.metricName || '',
       rumMetricValue: rumMetric?.value ?? null,
       rumMetricRating: rumMetric?.rating || '',
@@ -643,7 +641,7 @@ export async function post({ request, clientAddress }: { request: Request; clien
       return jsonResponse(400, { success: false, code: 'INVALID_JSON' });
     }
 
-    console.error('[track] unhandled_error', error);
+    console.error('[track] unhandled_error', { code: 'UNHANDLED_TRACK_ERROR' });
     return jsonResponse(500, { success: false, code: 'INTERNAL_ERROR' });
   }
 }

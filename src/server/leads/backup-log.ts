@@ -7,14 +7,22 @@ const DEFAULT_DEV_BACKUP_FILE = path.resolve(process.cwd(), 'data', 'lead-backup
 const DEFAULT_PROD_BACKUP_FILE = '/tmp/lead-backup.ndjson';
 const REDACTED_VALUE = '[REDACTED]';
 const MAX_REDACTION_DEPTH = 8;
-const REDACTED_KEYS = new Set(['name', 'phone', 'message', 'ip']);
+const REDACTED_KEYS = new Set([
+  'name',
+  'phone',
+  'normalizedphone',
+  'phonenormalized',
+  'contactphone',
+  'message',
+  'comment',
+  'ip',
+  'rawip',
+  'useragent',
+  'referrer',
+]);
 
 function isBackupEnabled(): boolean {
   return parseBooleanEnv(process.env.CONTACT_LEAD_BACKUP_ENABLED, !import.meta.env.PROD);
-}
-
-function includeBackupPii(): boolean {
-  return parseBooleanEnv(process.env.CONTACT_LEAD_BACKUP_INCLUDE_PII, !import.meta.env.PROD);
 }
 
 function resolveBackupFilePath(): string {
@@ -43,7 +51,6 @@ export async function appendLeadBackup(entry: Record<string, unknown>): Promise<
 }
 
 function sanitizeBackupEntry(entry: Record<string, unknown>): Record<string, unknown> {
-  if (includeBackupPii()) return entry;
   return sanitizeUnknown(entry, 0) as Record<string, unknown>;
 }
 
@@ -64,7 +71,7 @@ function sanitizeUnknown(value: unknown, depth: number): unknown {
   const sanitized: Record<string, unknown> = {};
   for (const [rawKey, rawValue] of Object.entries(source)) {
     const key = String(rawKey || '').trim();
-    const normalizedKey = key.toLowerCase();
+    const normalizedKey = key.toLowerCase().replace(/[^a-z]/g, '');
     if (REDACTED_KEYS.has(normalizedKey)) {
       sanitized[key] = REDACTED_VALUE;
       continue;

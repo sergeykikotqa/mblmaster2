@@ -2,7 +2,7 @@ import { notifyLeadDeadLetter, notifyLeadRetryRateWarning } from './alerts';
 import { recordFallbackDeliveryMetric } from './metrics-fallback';
 import { recordWorkerCycleHeartbeat, toWorkerHeartbeatErrorCode } from './runtime-health';
 import { getLeadStore, type LeadStore } from './store';
-import type { DeadLetterEntry, DeliveryAttemptMetric, LeadRecord } from './types';
+import type { DeadLetterEntry, DeliveryAttemptMetric, LeadNotificationEnvelope, LeadRecord } from './types';
 import { deliverLeadWebhook } from './webhook';
 import { parseBooleanEnv } from '~/server/utils/auth';
 
@@ -49,7 +49,10 @@ function getRetryBaseDelaySec(): number {
 }
 
 function getLeadRecordTtlSec(): number {
-  return parsePositiveInt(process.env.CONTACT_LEAD_RECORD_TTL_SEC, DEFAULT_LEAD_RECORD_TTL_SEC, 0);
+  return Math.min(
+    DEFAULT_LEAD_RECORD_TTL_SEC,
+    parsePositiveInt(process.env.CONTACT_LEAD_RECORD_TTL_SEC, DEFAULT_LEAD_RECORD_TTL_SEC, 1)
+  );
 }
 
 function getDeadLetterTtlSec(): number {
@@ -121,20 +124,12 @@ function markAttempt(record: LeadRecord, nowMs: number): LeadRecord {
 }
 
 function withDeliveryMetadata(
-  payload: Record<string, unknown>,
-  metadata: Record<string, unknown>
-): Record<string, unknown> {
-  const currentDelivery =
-    payload.delivery && typeof payload.delivery === 'object' && !Array.isArray(payload.delivery)
-      ? payload.delivery
-      : {};
-
+  payload: LeadNotificationEnvelope,
+  metadata: LeadNotificationEnvelope['delivery']
+): LeadNotificationEnvelope {
   return {
     ...payload,
-    delivery: {
-      ...currentDelivery,
-      ...metadata,
-    },
+    delivery: metadata,
   };
 }
 
@@ -327,7 +322,7 @@ async function processLeadQueueCycle(limitOverride?: number): Promise<ProcessLea
         deliveredAtIso: string,
         reason: string,
         baseRecord: LeadRecord = current,
-        deliveredWebhookPayload: Record<string, unknown> = baseRecord.webhookPayload
+        deliveredWebhookPayload: LeadNotificationEnvelope = baseRecord.webhookPayload
       ): Promise<void> => {
         const recoveredRecord: LeadRecord = {
           ...baseRecord,

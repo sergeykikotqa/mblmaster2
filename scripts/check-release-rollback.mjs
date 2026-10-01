@@ -7,7 +7,11 @@ import path from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 
-import { METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID, writeReleaseChecksums } from './release-tool.mjs';
+import {
+  METRICS_RUNTIME_BOOTSTRAP_RELEASE_ID,
+  readDataContractVersion,
+  writeReleaseChecksums,
+} from './release-tool.mjs';
 
 const ROOT = process.cwd();
 const PREFIX = `mbl-o24-release-gate-${randomBytes(4).toString('hex')}`;
@@ -269,7 +273,7 @@ function fixturePolicy(repositories) {
   return {
     schema: 1,
     projectName: PREFIX,
-    dataContractVersion: 1,
+    dataContractVersion: readDataContractVersion(),
     metricsRuntimeGeneration: 2,
     applicationServices: ['mbl-web', 'mbl-worker-trigger', 'mbl-nginx'],
     statefulServices: ['mbl-redis'],
@@ -315,7 +319,7 @@ function createBundle(root, releaseId, images, repositories) {
     gitSha: releaseId,
     createdAt: new Date().toISOString(),
     canonicalOrigin: 'https://fixture.mbl.invalid',
-    dataContractVersion: 1,
+    dataContractVersion: readDataContractVersion(),
     metricsRuntimeGeneration: 2,
     platform: `${images.web.os}/${images.web.architecture}`,
     images,
@@ -705,6 +709,91 @@ async function main() {
     const storedPolicyAPath = path.join(storedBundleA, 'config', 'release-policy.json');
     const storedManifestA = JSON.parse(fs.readFileSync(storedManifestAPath, 'utf8'));
     const storedPolicyA = JSON.parse(fs.readFileSync(storedPolicyAPath, 'utf8'));
+    const storedBundleB = path.join(runtimeRoot, 'releases', RELEASE_B);
+    const storedManifestBPath = path.join(storedBundleB, 'manifest.json');
+    const storedPolicyBPath = path.join(storedBundleB, 'config', 'release-policy.json');
+    const storedManifestB = JSON.parse(fs.readFileSync(storedManifestBPath, 'utf8'));
+    const storedPolicyB = JSON.parse(fs.readFileSync(storedPolicyBPath, 'utf8'));
+    const applicationIds = () =>
+      ['mbl-web', 'mbl-worker-trigger', 'mbl-nginx'].map(
+        (service) => compose(bundleB, envFile, RELEASE_B, ['ps', '--quiet', service]).stdout
+      );
+    for (const [currentVersion, targetVersion] of [
+      [2, 1],
+      [1, 2],
+    ]) {
+      const contractState = structuredClone(compatibleState);
+      contractState.current.dataContractVersion = currentVersion;
+      contractState.previous.dataContractVersion = targetVersion;
+      writeJson(storedManifestAPath, { ...storedManifestA, dataContractVersion: targetVersion });
+      writeJson(storedPolicyAPath, { ...storedPolicyA, dataContractVersion: targetVersion });
+      writeJson(storedManifestBPath, { ...storedManifestB, dataContractVersion: currentVersion });
+      writeJson(storedPolicyBPath, { ...storedPolicyB, dataContractVersion: currentVersion });
+      writeReleaseChecksums(storedBundleA);
+      writeReleaseChecksums(storedBundleB);
+      writeJson(statePath, contractState);
+      const beforeIds = applicationIds();
+      const rejectedContract = runRelease('rollback', common, secretMarker, true);
+      assert(
+        rejectedContract.status !== 0 &&
+          /ROLLBACK_DATA_CONTRACT_MISMATCH/.test(`${rejectedContract.stdout}\n${rejectedContract.stderr}`),
+        'Cross-contract production rollback was not rejected'
+      );
+      assert(
+        JSON.stringify(applicationIds()) === JSON.stringify(beforeIds),
+        'Rejected rollback recreated application containers'
+      );
+      const unchanged = {
+        runtimeRoot,
+        expectedState: contractState,
+        bundle: bundleB,
+        envFile,
+        releaseId: RELEASE_B,
+        manifest: manifestB,
+        redisBefore,
+        volumeName,
+        queuedLeadId,
+        queuedMarker,
+        baseUrl,
+      };
+      await assertRejectedRollbackUnchanged(unchanged);
+      const journalPath = path.join(runtimeRoot, 'release-operation.json');
+      writeJson(journalPath, {
+        schema: 1,
+        operationId: 'isolated-cross-contract-recovery',
+        kind: 'rollback',
+        phase: 'prepared',
+        candidateReleaseId: RELEASE_A,
+        stableReleaseId: RELEASE_B,
+        targetDataContractVersion: targetVersion,
+        sourceDataContractVersion: currentVersion,
+        redisIdentityBefore: redisBefore,
+      });
+      const journalBefore = fs.readFileSync(journalPath, 'utf8');
+      const rejectedRecovery = runRelease('rollback', common, secretMarker, true);
+      assert(
+        rejectedRecovery.status !== 0 &&
+          /RECOVERY_DATA_CONTRACT_MISMATCH/.test(`${rejectedRecovery.stdout}\n${rejectedRecovery.stderr}`),
+        'Cross-contract production recovery was not rejected'
+      );
+      assert(fs.readFileSync(journalPath, 'utf8') === journalBefore, 'Blocked recovery changed diagnostic journal');
+      assert(
+        JSON.stringify(applicationIds()) === JSON.stringify(beforeIds),
+        'Blocked recovery recreated application containers'
+      );
+      // Remove only this test-owned injected journal after proving preservation.
+      fs.rmSync(journalPath);
+      await assertRejectedRollbackUnchanged(unchanged);
+    }
+    writeJson(storedManifestAPath, storedManifestA);
+    writeJson(storedPolicyAPath, storedPolicyA);
+    writeJson(storedManifestBPath, storedManifestB);
+    writeJson(storedPolicyBPath, storedPolicyB);
+    writeReleaseChecksums(storedBundleA);
+    writeReleaseChecksums(storedBundleB);
+    writeJson(statePath, compatibleState);
+    evidence.crossContractRollbackRejected = true;
+    evidence.crossContractRecoveryRejected = true;
     const legacyManifestA = structuredClone(storedManifestA);
     const legacyPolicyA = structuredClone(storedPolicyA);
     delete legacyManifestA.metricsRuntimeGeneration;

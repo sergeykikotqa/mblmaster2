@@ -918,12 +918,10 @@ const leadContext = {
     <Contact
       id="contact"
       title={contactSectionTitle}
-      subtitle="Опишите задачу, и мы подготовим расчет с учетом города, сроков и комплектации."
+      subtitle="Оставьте номер телефона — свяжемся и уточним задачу."
       tagline="Форма расчета"
       inputs={[
-        { type: 'text', name: 'name', label: 'Имя', required: true },
         { type: 'tel', name: 'phone', label: 'Телефон', required: true },
-        { type: 'textarea', name: 'message', label: 'Комментарий по проекту', required: false },
       ]}
       leadContext={leadContext}
     />

@@ -25,10 +25,8 @@
     const progressLabel = quiz.querySelector('[data-quiz-progress-label]');
     const status = quiz.querySelector('[data-quiz-status]');
     const contactForm = quiz.querySelector('form.lead-contact-form');
-    const messageInput = contactForm?.querySelector('textarea[name="message"]');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let currentStep = 0;
-    let messageEdited = false;
 
     const readState = () => {
       try {
@@ -73,16 +71,11 @@
         if (output instanceof HTMLElement) output.textContent = answers[key]?.label || 'Не выбрано';
       });
 
-      const summary = Object.entries(stepLabels)
-        .filter(([key]) => answers[key])
-        .map(([key, label]) => `${label}: ${answers[key].label}`);
       if (!(contactForm instanceof HTMLFormElement)) return;
 
       const detail = {
         service: serviceMap[answers.furniture?.value] || 'unknown',
       };
-      if (!messageEdited) detail.message = summary.length ? `Расчёт с главной:\n${summary.join('\n')}` : '';
-
       contactForm.dispatchEvent(new CustomEvent('mbl:lead-context-update', { detail }));
     };
 
@@ -157,11 +150,6 @@
       if (target.closest('[data-quiz-back]')) showStep(currentStep - 1, { focus: true });
     });
 
-    if (messageInput instanceof HTMLTextAreaElement) {
-      messageInput.addEventListener('input', (event) => {
-        if (event.isTrusted) messageEdited = true;
-      });
-    }
 
     restore();
     quiz.dataset.enhanced = 'true';

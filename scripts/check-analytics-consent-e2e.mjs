@@ -10,7 +10,6 @@ const playwrightCliPath = path.join(projectRoot, 'node_modules', '@playwright', 
 const testEnv = {
   ...process.env,
   PUBLIC_SITE_URL: 'https://mbl-r16.local.test',
-  PUBLIC_GA4_ID: 'G-R16SYNTHETIC',
   PUBLIC_YANDEX_METRIKA_ID: '12345678',
   PUBLIC_ENABLE_RUM_WEB_VITALS: 'true',
 };

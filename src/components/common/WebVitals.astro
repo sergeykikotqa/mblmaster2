@@ -34,7 +34,7 @@ const rumEnabled = String(import.meta.env.PUBLIC_ENABLE_RUM_WEB_VITALS ?? 'true'
         const body = JSON.stringify({
           event: eventName,
           payload,
-          page: window.location.pathname + window.location.search,
+          page: window.location.pathname,
           sentAt: new Date().toISOString(),
         });
 

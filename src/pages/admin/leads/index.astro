@@ -1,0 +1,66 @@
+---
+import AdminLayout from '~/layouts/AdminLayout.astro';
+import AdminSessionBar from '~/components/admin/AdminSessionBar.astro';
+import { getLeadStore } from '~/server/leads/store';
+
+export const prerender = false;
+
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+
+const requestedLimit = Number(Astro.url.searchParams.get('limit') || 25);
+const limit = Math.min(50, Math.max(1, Number.isFinite(requestedLimit) ? Math.floor(requestedLimit) : 25));
+let records: Awaited<ReturnType<ReturnType<typeof getLeadStore>['listRecentLeadRecords']>> = [];
+let loadError = '';
+try {
+  records = await getLeadStore().listRecentLeadRecords(limit);
+} catch {
+  loadError = 'Список заявок временно недоступен.';
+}
+---
+
+<AdminLayout title="Заявки">
+  <section class="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-[0.12em] text-[#7f5438]">Личный кабинет</p>
+        <h1 class="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">Новые заявки</h1>
+        <p class="mt-2 text-slate-600">Телефон доступен только на защищённой странице конкретной заявки.</p>
+      </div>
+      <a href="/admin" class="rounded-lg border border-[#d9c6b7] px-4 py-2 font-semibold text-slate-700">Назад</a>
+    </div>
+
+    <div class="mt-6"><AdminSessionBar /></div>
+
+    {loadError ? <p class="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">{loadError}</p> : null}
+    {
+      !loadError && records.length === 0 ? (
+        <p class="mt-6 rounded-xl border border-[#e8d8cb] bg-white p-5 text-slate-600">Заявок пока нет.</p>
+      ) : null
+    }
+    <ul class="mt-6 grid gap-3">
+      {
+        records.map((record) => (
+          <li class="rounded-xl border border-[#e8d8cb] bg-white p-5">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p class="font-semibold text-slate-900">Заявка #{record.leadId}</p>
+                <p class="mt-1 text-sm text-slate-600">
+                  {new Date(record.createdAt).toLocaleString('ru-RU')} · {record.context.service || 'услуга не указана'}{' '}
+                  · {record.status}
+                </p>
+                {record.context.pageSlug ? <p class="mt-1 text-xs text-slate-500">{record.context.pageSlug}</p> : null}
+              </div>
+              <a
+                href={`/admin/leads/${record.leadId}`}
+                class="rounded-lg bg-[#8b5a3c] px-4 py-2 font-semibold text-white hover:bg-[#7f5438]"
+              >
+                Открыть заявку
+              </a>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</AdminLayout>

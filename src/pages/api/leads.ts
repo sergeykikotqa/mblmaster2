@@ -1,7 +1,13 @@
 import { createHash, randomUUID } from 'crypto';
 
 import { getLeadStore, hasRedisLeadStoreConfig, isRedisRuntimeError } from '~/server/leads/store';
-import type { ContactSuccessResponse, EnqueueLeadResult, LeadRecord } from '~/server/leads/types';
+import type {
+  ContactSuccessResponse,
+  EnqueueLeadResult,
+  LeadBusinessContext,
+  LeadNotificationEnvelope,
+  LeadRecord,
+} from '~/server/leads/types';
 import { notifyBotProtectionDegraded, notifyLeadStoreDegraded } from '~/server/leads/alerts';
 import { hasWebhookSecretConfig, isWebhookConfigured } from '~/server/leads/webhook';
 import { appendLeadBackup } from '~/server/leads/backup-log';
@@ -13,10 +19,7 @@ import { isSmartCaptchaReady, isSmartCaptchaRequired, verifySmartCaptchaToken } 
 export const prerender = false;
 
 type ContactRequestBody = {
-  name?: string;
   phone?: string;
-  message?: string;
-  comment?: string;
   consent?: boolean | string;
   website?: string;
   smartCaptchaToken?: string;
@@ -24,12 +27,8 @@ type ContactRequestBody = {
   redirectTo?: string;
   errorRedirectTo?: string;
   _redirect?: string;
-  attribution?: Record<string, unknown> | string;
   formContext?: Record<string, unknown> | string;
-  city?: string;
-  district?: string;
   service?: string;
-  pageType?: string;
   pageSlug?: string;
   [key: string]: unknown;
 };
@@ -58,6 +57,7 @@ const DEFAULT_SMARTCAPTCHA_DEGRADED_ALERT_COOLDOWN_SEC = 900;
 const DEFAULT_LEAD_STORE_DEGRADED_ALERT_COOLDOWN_SEC = 900;
 const DEFAULT_QUEUE_MAX_DEPTH = 1000;
 const DEFAULT_QUEUE_BACKPRESSURE_RETRY_AFTER_SEC = 60;
+const LEAD_CONSENT_VERSION = 'phone-contact-v1';
 
 const isProduction = import.meta.env.PROD;
 let lastSmartCaptchaDegradedAlertAtMs = 0;
@@ -348,8 +348,66 @@ function resolveIdempotencyHash(request: Request): string {
   return hashForStorage(`attempt:${randomUUID()}`);
 }
 
-function resolvePayloadFingerprint(name: string, normalizedPhone: string, message: string): string {
-  return hashForStorage(`${name}|${normalizedPhone}|${message}`);
+function resolvePayloadFingerprint(normalizedPhone: string): string {
+  return hashForStorage(normalizedPhone);
+}
+
+function sanitizeContextToken(value: unknown, maxLength = 80): string {
+  return String(value || '')
+    .trim()
+    .slice(0, maxLength)
+    .replace(/[^a-zA-Z0-9/_:-]+/g, '');
+}
+
+function sanitizePageSlug(value: unknown): string {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw, 'https://local.invalid');
+    return `/${parsed.pathname.replace(/^\/+/, '')}`.slice(0, 200);
+  } catch {
+    return '';
+  }
+}
+
+function resolveLeadBusinessContext(body: ContactRequestBody): LeadBusinessContext {
+  const explicit = sanitizeMetaObject(body.formContext);
+  const dimensions = resolveFunnelDimensions({ pageSlug: sanitizePageSlug(explicit.pageSlug || body.pageSlug) });
+  const requestedService = sanitizeContextToken(explicit.service || body.service);
+  const service =
+    dimensions?.service ||
+    (['kuhni', 'shkafy', 'garderobnye', 'kitchen', 'wardrobe', 'closet'].includes(requestedService)
+      ? requestedService
+      : '');
+  const pageSlug = dimensions?.pageSlug || '';
+  const requestedPlacement = sanitizeContextToken(explicit.placement, 64);
+  const placement = ['section', 'form', 'modal', 'project-modal', 'home-quiz', 'hero', 'footer', 'contacts'].includes(
+    requestedPlacement
+  )
+    ? requestedPlacement
+    : '';
+  return {
+    ...(service ? { service } : {}),
+    ...(pageSlug ? { pageSlug } : {}),
+    ...(placement ? { placement } : {}),
+  };
+}
+
+function createNotificationEnvelope(
+  leadId: string,
+  createdAt: string,
+  context: LeadBusinessContext
+): LeadNotificationEnvelope {
+  return {
+    schemaVersion: '1.0',
+    event: 'lead.created',
+    notification: {
+      leadId,
+      createdAt,
+      ...(context.service ? { service: context.service } : {}),
+      adminPath: `/admin/leads/${leadId}`,
+    },
+  };
 }
 
 function resolveIdempotencyWindowSec(): number {
@@ -362,7 +420,10 @@ function resolveIdempotencyWindowSec(): number {
 }
 
 function resolveLeadRecordTtlSec(): number {
-  return parsePositiveInt(process.env.CONTACT_LEAD_RECORD_TTL_SEC, DEFAULT_LEAD_RECORD_TTL_SEC, 0);
+  return Math.min(
+    DEFAULT_LEAD_RECORD_TTL_SEC,
+    parsePositiveInt(process.env.CONTACT_LEAD_RECORD_TTL_SEC, DEFAULT_LEAD_RECORD_TTL_SEC, 1)
+  );
 }
 
 function resolveRateLimitMax(): number {
@@ -555,9 +616,7 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
       return fail(500, 'BOT_PROTECTION_NOT_CONFIGURED', 'Защита формы не настроена.');
     }
 
-    const name = (body.name || '').toString().trim();
     const phoneRaw = (body.phone || '').toString().trim();
-    const message = (body.message || body.comment || '').toString().trim();
     const website = (body.website || '').toString().trim();
     const consent = parseConsent(body.consent);
 
@@ -661,85 +720,41 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
       return fail(400, 'CONSENT_REQUIRED', 'Consent is required');
     }
 
-    if (name && (name.length < 2 || name.length > 80)) {
-      return fail(400, 'INVALID_NAME', 'Name must contain from 2 to 80 characters when provided');
-    }
-
     const phone = normalizePhone(phoneRaw);
     if (!phone) {
       return fail(400, 'INVALID_PHONE', 'Phone format is invalid');
     }
 
-    if (message.length > 2000) {
-      return fail(400, 'INVALID_MESSAGE', 'Message is too long');
-    }
-
-    const attribution = sanitizeMetaObject(body.attribution);
-    const inferredFormContext = sanitizeMetaObject({
-      city: body.city,
-      district: body.district,
-      service: body.service,
-      pageType: body.pageType,
-      pageSlug: body.pageSlug,
-    });
-    const explicitFormContext = sanitizeMetaObject(body.formContext);
-    const formContext = {
-      ...inferredFormContext,
-      ...explicitFormContext,
-    };
+    const formContext = resolveLeadBusinessContext(body);
     const funnelDimensions = resolveFunnelDimensions({
-      pageSlug: formContext.pageSlug || body.pageSlug || attribution.currentPath,
-      city: formContext.city || body.city,
-      district: formContext.district || body.district,
-      service: formContext.service || body.service,
-      pageType: formContext.pageType || body.pageType,
-      fallbackPage: attribution.currentPath,
+      pageSlug: formContext.pageSlug,
+      service: formContext.service,
     });
     const nowMs = Date.now();
     const receivedAt = new Date(nowMs).toISOString();
     const leadId = randomUUID();
     const idempotencyHash = resolveIdempotencyHash(request);
-    const payloadFingerprint = resolvePayloadFingerprint(name, phone, message);
+    const payloadFingerprint = resolvePayloadFingerprint(phone);
     const successResponse: ContactSuccessResponse = {
       success: true,
       leadId,
       receivedAt,
     };
 
-    const webhookPayload: Record<string, unknown> = {
-      schemaVersion: '2.0',
-      lead: {
-        leadId,
-        name,
-        phone,
-        message,
-        consent: true,
-        receivedAt,
-      },
-      attribution,
-      formContext,
-      technical: {
-        source: 'website',
-        webhookId: leadId,
-        userAgent: request.headers.get('user-agent') || '',
-        ip: rateLimitIdentity.ip,
-        rateLimitSource: rateLimitIdentity.rateLimitSource,
-        idempotencyHash,
-        payloadFingerprint,
-        botProtection: {
-          provider: 'smartcaptcha',
-          required: smartCaptchaRequired,
-          failureMode: 'closed',
-          bypassed: false,
-        },
-      },
-    };
+    const webhookPayload = createNotificationEnvelope(leadId, receivedAt, formContext);
 
     const leadRecord: LeadRecord = {
       leadId,
+      normalizedPhone: phone,
       receivedAt,
       idempotencyHash,
       payloadFingerprint,
+      consent: {
+        accepted: true,
+        version: LEAD_CONSENT_VERSION,
+        acceptedAt: receivedAt,
+      },
+      context: formContext,
       webhookPayload,
       status: 'pending',
       retryCount: 0,
@@ -797,8 +812,6 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
       leadId,
       status: 'pending',
       storage: leadStore.mode,
-      hasMessage: message.length > 0,
-      pageType: formContext.pageType || '',
       placement: formContext.placement || '',
       rateLimitSource: rateLimitIdentity.rateLimitSource,
     });
@@ -836,7 +849,7 @@ export async function post({ request, clientAddress }: ContactRouteContext) {
       return jsonError(500, 'LEAD_STORE_NOT_CONFIGURED', 'Redis lead store is not configured');
     }
 
-    console.error('[contact] unhandled_error', error);
+    console.error('[contact] unhandled_error', { code: 'UNHANDLED_CONTACT_ERROR' });
     if (shouldRedirectHtml) {
       const target = toAbsoluteRedirectUrl(
         withQueryParam(fallbackErrorRedirect, 'contact_error', 'INTERNAL_ERROR'),

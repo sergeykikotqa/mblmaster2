@@ -25,22 +25,12 @@
     const form = modal.querySelector('form.lead-contact-form');
     const formTitle = form?.querySelector('h3');
     const formCtaText = form?.querySelector('[data-btn-text]');
-    const messageInput = form?.querySelector('textarea[name="message"]');
     const submitButton = form?.querySelector('[data-submit-btn]');
     const formStatus = form?.querySelector('[data-form-status]');
     const submitFallback = form?.querySelector('[data-submit-fallback]');
     const submitFallbackCopy = form?.querySelector('[data-submit-fallback-copy]');
     const submitFallbackCall = form?.querySelector('[data-submit-fallback-call]');
-    const requiredFieldNames = [
-      'service',
-      'pageSlug',
-      'project_slug',
-      'project_name',
-      'project_area',
-      'project_price',
-      'project_service',
-      'project_href',
-    ];
+    const requiredFieldNames = ['service', 'pageSlug'];
     const hasRequiredFields =
       form instanceof HTMLFormElement &&
       requiredFieldNames.every((name) => form.querySelector(`input[name="${name}"]`) instanceof HTMLInputElement);
@@ -49,7 +39,6 @@
       title instanceof HTMLElement &&
       form instanceof HTMLFormElement &&
       formCtaText instanceof HTMLElement &&
-      messageInput instanceof HTMLTextAreaElement &&
       submitButton instanceof HTMLButtonElement &&
       formStatus instanceof HTMLElement &&
       submitFallback instanceof HTMLElement &&
@@ -316,16 +305,6 @@
       }
     };
 
-    const fillExtraFields = (data) => {
-      if (!(form instanceof HTMLFormElement)) return;
-      form.querySelectorAll('[data-extra-field]').forEach((input) => {
-        if (!(input instanceof HTMLInputElement)) return;
-        const key = input.getAttribute('data-extra-field') || input.name;
-        if (!key) return;
-        input.value = data[key] || '';
-      });
-    };
-
     const resolveTriggerImage = (trigger) => {
       const direct = (trigger.getAttribute('data-project-image') || '').trim();
       if (direct && !direct.startsWith('data:') && !direct.startsWith('blob:')) return direct;
@@ -377,10 +356,9 @@
       }
 
       const service = data.project_service || '';
-      const pagePath = data.project_page || `${window.location.pathname}${window.location.search || ''}`;
+      const pagePath = data.project_page || window.location.pathname;
       setFieldValue('service', service);
       setFieldValue('pageSlug', pagePath);
-      fillExtraFields(data);
 
       if (formTitle instanceof HTMLElement) {
         if (service === 'kuhni') formTitle.textContent = 'Рассчитать такую же кухню';

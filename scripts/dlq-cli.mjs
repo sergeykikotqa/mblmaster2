@@ -210,7 +210,10 @@ async function replayLead(
 
   const nowMs = Date.now();
   const nowIso = new Date(nowMs).toISOString();
-  const leadRecordTtlSec = parsePositiveInt(process.env.CONTACT_LEAD_RECORD_TTL_SEC, DEFAULT_LEAD_RECORD_TTL_SEC, 0);
+  const leadRecordTtlSec = Math.min(
+    DEFAULT_LEAD_RECORD_TTL_SEC,
+    parsePositiveInt(process.env.CONTACT_LEAD_RECORD_TTL_SEC, DEFAULT_LEAD_RECORD_TTL_SEC, 1)
+  );
 
   const rawRecord = await client.command('GET', keys.leadRecord(leadId));
   const current = parseJsonOrNull(rawRecord);
@@ -229,11 +232,7 @@ async function replayLead(
     lastErrorMessage: undefined,
   };
 
-  if (leadRecordTtlSec > 0) {
-    await client.command('SET', keys.leadRecord(leadId), JSON.stringify(nextRecord), 'EX', leadRecordTtlSec);
-  } else {
-    await client.command('SET', keys.leadRecord(leadId), JSON.stringify(nextRecord));
-  }
+  await client.command('SET', keys.leadRecord(leadId), JSON.stringify(nextRecord), 'EX', leadRecordTtlSec);
 
   await client.command('ZADD', keys.queue, nowMs, leadId);
 

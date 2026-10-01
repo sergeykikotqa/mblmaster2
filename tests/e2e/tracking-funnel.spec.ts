@@ -76,7 +76,7 @@ test.describe('Lead tracking funnel', () => {
     expect(dataLayerEvents).not.toContain('form_start');
 
     await phoneInput.fill('9123456789');
-    await form.locator('input[name="name"]').fill('Tracking Funnel');
+    await expect(form.locator('input[name="name"], textarea')).toHaveCount(0);
     await form.locator('input[name="consent"]').check();
     const widgetButton = form.locator('[data-smartcaptcha-widget] button');
     await expect(widgetButton).toBeVisible();
@@ -127,7 +127,7 @@ test.describe('Lead tracking funnel', () => {
 
     const form = page.locator('form.lead-contact-form').first();
     await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('input[name="name"]').fill('Blocked Case');
+    await expect(form.locator('input[name="name"], textarea')).toHaveCount(0);
     await form.locator('input[name="consent"]').check();
     await form.locator('[data-submit-btn]').click();
 
@@ -159,18 +159,24 @@ test.describe('Lead tracking funnel', () => {
       .map((entry) => String(entry.reason || ''));
 
     expect(submitAttemptIndex).toBeGreaterThan(-1);
-    // `name` is an optional field: an empty value is valid, so it must not raise a
-    // validation error. `phone` and `consent` stay required.
+    // Phone and consent stay required; the removed name must not create events.
     expect(validationReasons).toEqual(expect.arrayContaining(['phone', 'consent']));
     expect(validationReasons).not.toContain('name');
   });
 
-  test('emits a name validation_error for a non-empty name shorter than 2 characters', async ({ page }) => {
-    const leadApiRequests: string[] = [];
-    page.on('request', (request) => {
-      if (request.url().includes('/api/leads')) {
-        leadApiRequests.push(request.url());
-      }
+  test('successful phone-only submission never emits phone, lead identity or legacy field values', async ({ page }) => {
+    await mockSmartCaptcha(page);
+    let leadPosts = 0;
+    await page.route('**/api/leads', async (route) => {
+      leadPosts += 1;
+      const payload = route.request().postDataJSON();
+      expect(payload).not.toHaveProperty('name');
+      expect(payload).not.toHaveProperty('message');
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, leadId: 'PRIVATE_LEAD_ID' }),
+      });
     });
 
     await page.goto('/contacts');
@@ -181,15 +187,16 @@ test.describe('Lead tracking funnel', () => {
     });
 
     const form = page.locator('form.lead-contact-form').first();
-    const nameInput = form.locator('input[name="name"]');
-    const nameError = form.locator('[data-error-name]');
-    await expect(nameError).toBeHidden();
+    await expect(form.locator('input[name="name"], textarea, [data-error-name]')).toHaveCount(0);
+    await form.locator('input[name="pageSlug"]').evaluate((node) => {
+      (node as HTMLInputElement).value = '/contacts?private=PRIVATE_FORM_QUERY#PRIVATE_FRAGMENT';
+    });
 
-    // phone valid, consent given, but a non-empty name of 1 character is rejected.
     await form.locator('input[name="phone"]').fill('9123456789');
-    await nameInput.fill('А');
     await form.locator('input[name="consent"]').check();
+    await form.locator('[data-smartcaptcha-widget] button').click();
     await form.locator('[data-submit-btn]').click();
+    await expect(form.locator('[data-success-box]')).toBeVisible();
 
     const entries = await readDataLayer(page);
     const submitAttemptIndex = entries.findIndex((entry) => entry.event === 'form_submit_attempt');
@@ -198,16 +205,12 @@ test.describe('Lead tracking funnel', () => {
       .map((entry) => String(entry.reason || ''));
 
     expect(submitAttemptIndex).toBeGreaterThan(-1);
-    expect(validationReasons).toContain('name');
-    // phone and consent are valid here, so only the optional name may be rejected.
-    expect(validationReasons).not.toContain('phone');
-    expect(validationReasons).not.toContain('consent');
-    // the rejection is a client-side field check, so the lead API is never reached
-    // and the anti-bot step is not what stops the submit.
-    expect(leadApiRequests).toEqual([]);
+    expect(validationReasons).toEqual([]);
+    expect(leadPosts).toBe(1);
     expect(entries.find((entry) => entry.event === 'form_submit_blocked')).toBeFalsy();
-
-    await expect(nameError).toBeVisible();
-    await expect(nameInput).toHaveAttribute('aria-invalid', 'true');
+    expect(entries.find((entry) => entry.event === 'form_submit_success')).toBeTruthy();
+    expect(JSON.stringify(entries)).not.toMatch(
+      /9123456789|PRIVATE_LEAD_ID|PRIVATE_FORM_QUERY|PRIVATE_FRAGMENT|"open_id"|"opened_at"/
+    );
   });
 });

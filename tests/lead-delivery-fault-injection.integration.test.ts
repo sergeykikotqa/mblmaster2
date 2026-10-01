@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 
 import type { LeadStore } from '../src/server/leads/store';
 import type { ContactSuccessResponse, LeadRecord } from '../src/server/leads/types';
+import { notificationFixture, privateLeadFields } from './helpers/lead-v2';
 
 vi.mock('../src/server/leads/alerts', () => ({
   notifyLeadDeadLetter: vi.fn(async () => false),
@@ -37,14 +38,15 @@ let redisCommand: <T>(...args: Array<string | number>) => Promise<T>;
 let closeRedisClient: () => Promise<void>;
 let redisCleanupReady = false;
 
-function createLead(leadId: string, marker: string): LeadRecord {
+function createLead(leadId: string): LeadRecord {
   const now = new Date().toISOString();
   return {
     leadId,
     receivedAt: now,
     idempotencyHash: `idem-${leadId}`,
     payloadFingerprint: `fingerprint-${leadId}`,
-    webhookPayload: { lead: { leadId, message: marker } },
+    ...privateLeadFields(now),
+    webhookPayload: notificationFixture(leadId, now),
     status: 'pending',
     retryCount: 0,
     nextRetryAt: Date.now() - 1,
@@ -58,7 +60,13 @@ function successResponse(leadId: string): ContactSuccessResponse {
 }
 
 async function enqueue(leadId: string, marker: string): Promise<void> {
-  const leadRecord = createLead(leadId, marker);
+  const configured = await fetch(`${receiverBaseUrl}/control/configure`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ webhookId: leadId, mode: marker }),
+  });
+  expect(configured.status).toBe(200);
+  const leadRecord = createLead(leadId);
   expect(
     await store.enqueueLeadWithIdempotency({
       idempotencyHash: leadRecord.idempotencyHash,
@@ -191,44 +199,52 @@ test('R02-2B: claim loss after receiver acceptance cannot create a false deliver
   expect(await store.getQueueDepth()).toBe(0);
 }, 15_000);
 
-test('R02-6: DLQ replay preserves leadId, resets retry state and delivers after recovery', async () => {
-  const leadId = randomUUID();
-  await enqueue(leadId, '[r03-dlq]');
+test.each(['0', '999999999'])(
+  'R02-6: DLQ replay preserves leadId and bounded retention with TTL %s',
+  async (configuredTtl) => {
+    const leadId = randomUUID();
+    await enqueue(leadId, '[r03-dlq]');
 
-  expect(await processLeadQueue(1)).toMatchObject({ retried: 1 });
-  await store.scheduleLead(leadId, Date.now() - 1);
-  expect(await processLeadQueue(1)).toMatchObject({ failed: 1, deadLettered: 1 });
-  expect((await store.getLeadRecord(leadId))?.status).toBe('failed');
-  expect(await store.getQueueDepth()).toBe(0);
-  const dlqKey = `${redisPrefix}:delivery:dlq:v2`;
-  const dlqBefore = await redisCommand<string[]>('ZREVRANGE', dlqKey, 0, -1);
-  expect(dlqBefore.map((item) => JSON.parse(item).leadId)).toContain(leadId);
+    expect(await processLeadQueue(1)).toMatchObject({ retried: 1 });
+    await store.scheduleLead(leadId, Date.now() - 1);
+    expect(await processLeadQueue(1)).toMatchObject({ failed: 1, deadLettered: 1 });
+    expect((await store.getLeadRecord(leadId))?.status).toBe('failed');
+    expect(await store.getQueueDepth()).toBe(0);
+    const dlqKey = `${redisPrefix}:delivery:dlq:v2`;
+    const dlqBefore = await redisCommand<string[]>('ZREVRANGE', dlqKey, 0, -1);
+    expect(dlqBefore.map((item) => JSON.parse(item).leadId)).toContain(leadId);
 
-  const replay = await execFileAsync(process.execPath, ['scripts/dlq-cli.mjs', 'replay', `--lead-id=${leadId}`], {
-    cwd: process.cwd(),
-    env: {
-      ...process.env,
-      NODE_OPTIONS: '',
-      DLQ_CLI_ACTOR: 'mbl-r03-synthetic-operator',
-      DLQ_AUDIT_LOG_PATH: process.env.R03_AUDIT_LOG_PATH,
-    },
-  });
-  expect(replay.stdout).toContain(`replayed leadId=${leadId}`);
-  const replayedRecord = await store.getLeadRecord(leadId);
-  expect(replayedRecord).toMatchObject({ leadId, status: 'pending', retryCount: 0 });
-  expect(await store.getQueueDepth()).toBe(1);
-  const dlqAfter = await redisCommand<string[]>('ZREVRANGE', dlqKey, 0, -1);
-  expect(dlqAfter.map((item) => JSON.parse(item).leadId)).not.toContain(leadId);
+    const replay = await execFileAsync(process.execPath, ['scripts/dlq-cli.mjs', 'replay', `--lead-id=${leadId}`], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        NODE_OPTIONS: '',
+        CONTACT_LEAD_RECORD_TTL_SEC: configuredTtl,
+        DLQ_CLI_ACTOR: 'mbl-r03-synthetic-operator',
+        DLQ_AUDIT_LOG_PATH: process.env.R03_AUDIT_LOG_PATH,
+      },
+    });
+    expect(replay.stdout).toContain(`replayed leadId=${leadId}`);
+    const replayTtl = await redisCommand<number>('TTL', `${redisPrefix}:record:${leadId}`);
+    expect(replayTtl).toBeGreaterThan(0);
+    expect(replayTtl).toBeLessThanOrEqual(30 * 24 * 60 * 60);
+    const replayedRecord = await store.getLeadRecord(leadId);
+    expect(replayedRecord).toMatchObject({ leadId, status: 'pending', retryCount: 0 });
+    expect(await store.getQueueDepth()).toBe(1);
+    const dlqAfter = await redisCommand<string[]>('ZREVRANGE', dlqKey, 0, -1);
+    expect(dlqAfter.map((item) => JSON.parse(item).leadId)).not.toContain(leadId);
 
-  await receiverControl('/control/recover', leadId);
-  expect(await processLeadQueue(1)).toMatchObject({ delivered: 1 });
-  const stats = await receiverStats(leadId);
-  assertReceiverContract(stats, leadId, 3);
-  expect(stats.attempts.map((attempt) => attempt.status)).toEqual([503, 503, 200]);
-  expect(stats.actualAcceptances).toBe(1);
-  expect((await store.getLeadRecord(leadId))?.status).toBe('delivered');
-  expect(await store.getQueueDepth()).toBe(0);
-}, 15_000);
+    await receiverControl('/control/recover', leadId);
+    expect(await processLeadQueue(1)).toMatchObject({ delivered: 1 });
+    const stats = await receiverStats(leadId);
+    assertReceiverContract(stats, leadId, 3);
+    expect(stats.attempts.map((attempt) => attempt.status)).toEqual([503, 503, 200]);
+    expect(stats.actualAcceptances).toBe(1);
+    expect((await store.getLeadRecord(leadId))?.status).toBe('delivered');
+    expect(await store.getQueueDepth()).toBe(0);
+  },
+  15_000
+);
 
 test('R03-3: a live worker renews its processing lock while a POST outlives the base TTL', async () => {
   process.env.CONTACT_WEBHOOK_TIMEOUT_MS = '8000';

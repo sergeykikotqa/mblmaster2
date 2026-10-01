@@ -44,11 +44,13 @@ test.describe('Project CTA progressive enhancement', () => {
 
   test('opens the prepared modal for an ordinary click and preserves project context', async ({ page }) => {
     await page.goto(PROJECTS_PAGE);
-    const { cta, slug, service } = await expectContactHref(page);
+    const { cta, service } = await expectContactHref(page);
     const title = (await cta.getAttribute('data-project-title')) || '';
     expect(title).toBeTruthy();
 
-    const card = cta.locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " project-card ")]');
+    const card = cta.locator(
+      'xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " project-card ")]'
+    );
     await expect(card.locator('a.project-link')).toHaveAttribute('href', /^\/projects\//);
     await expect(card.locator('a.project-title-link')).toHaveAttribute('href', /^\/projects\//);
 
@@ -58,9 +60,10 @@ test.describe('Project CTA progressive enhancement', () => {
     await expect(modal).toBeVisible();
     await expect(modal.locator('[data-project-modal-title]')).toHaveText(title);
     expect(new URL(page.url()).pathname).toBe('/projects');
-    await expect(modal.locator('input[name="project_slug"]')).toHaveValue(slug);
-    await expect(modal.locator('input[name="project_name"]')).toHaveValue(title);
-    await expect(modal.locator('input[name="project_service"]')).toHaveValue(service);
+    await expect(modal.locator('input[name="pageSlug"]')).toHaveValue(
+      (await cta.getAttribute('data-project-page')) || '/projects'
+    );
+    await expect(modal.locator('input[name^="project_"], input[name="name"], textarea')).toHaveCount(0);
     await expect(modal.locator('input[name="service"]')).toHaveValue(service);
 
     await modal.locator('button[data-project-modal-close]').click();

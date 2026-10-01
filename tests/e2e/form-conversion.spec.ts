@@ -56,7 +56,7 @@ test.describe('Form conversion flow', () => {
     await expect(firstInput).toBeInViewport();
 
     await firstInput.fill('9123456789');
-    await form.locator('input[name="name"]').fill('Form E2E');
+    await expect(form.locator('input[name="name"], textarea')).toHaveCount(0);
     await form.locator('input[name="consent"]').check();
     await form.locator('[data-smartcaptcha-widget] button').click();
     const submitButton = form.locator('[data-submit-btn]');

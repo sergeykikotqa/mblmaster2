@@ -84,7 +84,7 @@ test('denial persists and does not block a successful synthetic lead submission'
 
   const form = page.locator('form.lead-contact-form').first();
   await form.locator('input[name="phone"]').fill('9123456789');
-  await form.locator('input[name="name"]').fill('Synthetic Denied');
+  await expect(form.locator('input[name="name"], textarea')).toHaveCount(0);
   await form.locator('input[name="consent"]').check();
   await form.locator('[data-smartcaptcha-widget] button').click();
   await form.locator('[data-submit-btn]').click();
@@ -101,11 +101,11 @@ test('denial persists and does not block a successful synthetic lead submission'
 
 test('grant loads bundled Web Vitals and external analytics, persists, and can be revoked', async ({ page }) => {
   const observed = await observeAnalytics(page);
-  await page.goto('/contacts', { waitUntil: 'networkidle' });
+  await page.goto('/contacts?utm_content=PRIVATE_QUERY_SENTINEL', { waitUntil: 'networkidle' });
   await waitForClient(page);
   await page.locator('[data-analytics-consent="accept"]').click();
 
-  await expect.poll(() => observed.externalRequests.length).toBe(2);
+  await expect.poll(() => observed.externalRequests.length).toBe(1);
   const form = page.locator('form.lead-contact-form').first();
   await form.locator('input[name="phone"]').focus();
   await form.locator('input[name="phone"]').fill('9123456789');
@@ -117,29 +117,42 @@ test('grant loads bundled Web Vitals and external analytics, persists, and can b
 
   await expect.poll(() => observed.trackEvents.some((entry) => entry.event === 'web_vital')).toBe(true);
   expect(observed.trackEvents.some((entry) => entry.event === 'form_focus')).toBe(true);
+  expect(JSON.stringify(observed.trackEvents)).not.toContain('9123456789');
+  expect(JSON.stringify(observed.trackEvents)).not.toContain('PRIVATE_QUERY_SENTINEL');
+  for (const entry of observed.trackEvents) {
+    expect(JSON.stringify(entry)).not.toMatch(/"open_id"|"opened_at"/);
+  }
+  const publicPhone = await page.evaluate(() => {
+    const link = document.querySelector<HTMLAnchorElement>('a[href^="tel:"]');
+    if (!link) throw new Error('Call CTA is required for privacy regression');
+    const href = link.getAttribute('href') || '';
+    link.addEventListener('click', (event) => event.preventDefault(), { once: true });
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    return href.replace(/^tel:/, '');
+  });
+  await expect.poll(() => observed.trackEvents.some((entry) => entry.event === 'call_click')).toBe(true);
+  const calls = observed.trackEvents.filter((entry) => entry.event === 'cta_click' || entry.event === 'call_click');
+  expect(JSON.stringify(calls)).not.toContain(publicPhone);
+  expect(JSON.stringify(calls).replace(/[^0-9]/g, '')).not.toContain(publicPhone.replace(/[^0-9]/g, ''));
+  const metrikaCalls = await page.evaluate(() => {
+    const ym = (window as Window & { ym?: { a?: IArguments[] } }).ym;
+    return (ym?.a || []).map((entry) => Array.from(entry));
+  });
+  const init = metrikaCalls.find((entry) => entry[1] === 'init');
+  expect(init?.[2]).toMatchObject({ webvisor: false, clickmap: false, trackLinks: false, defer: true });
+  expect(JSON.stringify(metrikaCalls)).not.toContain('9123456789');
+  expect(JSON.stringify(metrikaCalls)).not.toContain('PRIVATE_QUERY_SENTINEL');
   expect(observed.browserErrors.filter((message) => /web-vitals|module specifier/i.test(message))).toEqual([]);
 
   await page.evaluate(() => (window as ConsentWindow).__analyticsConsent?.setState?.('denied'));
   await page.evaluate(() => (window as ConsentWindow).__analyticsConsent?.setState?.('granted'));
   await page.waitForTimeout(100);
-  expect(observed.externalRequests.filter((url) => url.includes('googletagmanager.com'))).toHaveLength(1);
-  const gaCalls = await page.evaluate(() =>
-    ((window as Window & { dataLayer?: IArguments[] }).dataLayer || []).map((entry) => Array.from(entry))
-  );
-  expect(gaCalls.filter((entry) => entry[0] === 'config')).toHaveLength(1);
-  expect(
-    gaCalls.some(
-      (entry) =>
-        entry[0] === 'consent' &&
-        entry[1] === 'update' &&
-        (entry[2] as { analytics_storage?: string })?.analytics_storage === 'granted'
-    )
-  ).toBe(true);
+  expect(observed.externalRequests.filter((url) => url.includes('googletagmanager.com'))).toHaveLength(0);
 
   observed.externalRequests.length = 0;
   await page.reload({ waitUntil: 'networkidle' });
   expect(await page.evaluate(() => (window as ConsentWindow).__analyticsConsent?.getState?.())).toBe('granted');
-  await expect.poll(() => observed.externalRequests.length).toBe(2);
+  await expect.poll(() => observed.externalRequests.length).toBe(1);
 
   await page.evaluate(() => (window as ConsentWindow).__analyticsConsent?.setState?.('denied'));
   const countAfterRevocation = observed.trackEvents.length;

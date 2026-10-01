@@ -152,7 +152,6 @@ test.describe('Contact form', () => {
     await page.goto(CONTACTS_PAGE);
     const form = await getLeadForm(page);
     await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('input[name="name"]').fill('CI E2E');
     await form.locator('input[name="consent"]').check();
     await form.evaluate((formElement) => {
       for (const [name, value] of [
@@ -231,14 +230,13 @@ test.describe('Contact form', () => {
     await page.goto(CONTACTS_PAGE);
     const form = await getLeadForm(page);
     await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('input[name="name"]').fill('CI E2E');
     await form.locator('input[name="consent"]').check();
     await form.locator('[data-smartcaptcha-widget] button').click();
 
     await form.locator('[data-submit-btn]').click();
     await expect(form.locator('[data-form-status]')).toContainText('Не удалось получить подтверждение отправки');
 
-    await form.locator('textarea[name="message"]').fill('Обновлённое описание после тайм-аута');
+    await form.locator('input[name="phone"]').fill('9501234567');
     await page.evaluate(() => {
       (window as Window & { __smartCaptchaMock?: { issue(value?: string): void } }).__smartCaptchaMock?.issue(
         'mock-changed-payload-token'
@@ -271,7 +269,6 @@ test.describe('Contact form', () => {
     await page.goto(CONTACTS_PAGE);
     const form = await getLeadForm(page);
     await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('input[name="name"]').fill('CI E2E');
     await form.locator('input[name="consent"]').check();
     await form.locator('[data-smartcaptcha-widget] button').click();
 
@@ -285,7 +282,7 @@ test.describe('Contact form', () => {
     await expect(form.locator('[data-form-status]')).toContainText('Не удалось получить подтверждение отправки');
   });
 
-  test('creates a fresh idempotency key when a dynamic extra field changes', async ({ page }) => {
+  test('ignores arbitrary extra fields without changing the phone-only idempotency key', async ({ page }) => {
     await mockSmartCaptcha(page);
     await shortenSubmitTimeout(page);
     await allowLeadRequestToFinishAfterClientAbort(page);
@@ -320,7 +317,6 @@ test.describe('Contact form', () => {
       formElement.append(input);
     });
     await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('input[name="name"]').fill('CI E2E');
     await form.locator('input[name="consent"]').check();
     await form.locator('[data-smartcaptcha-widget] button').click();
 
@@ -339,8 +335,8 @@ test.describe('Contact form', () => {
 
     await expect(form.locator('[data-success-box]')).toBeVisible();
     expect(requestKeys).toHaveLength(2);
-    expect(requestKeys[1]).not.toBe(requestKeys[0]);
-    expect(projectVariants).toEqual(['corner', 'straight']);
+    expect(requestKeys[1]).toBe(requestKeys[0]);
+    expect(projectVariants).toEqual(['', '']);
 
     await page.waitForTimeout(200);
   });
@@ -360,7 +356,7 @@ test.describe('Contact form', () => {
       submitCalls += 1;
       requestKeys.push(route.request().headers()['x-idempotency-key'] || '');
       const payload = route.request().postDataJSON() as Record<string, unknown>;
-      messages.push(String(payload.message || ''));
+      messages.push(String(payload.phone || '').replace(/\D/g, ''));
       if (submitCalls === 1) {
         await firstResponseGate;
       }
@@ -374,14 +370,13 @@ test.describe('Contact form', () => {
     await page.goto(CONTACTS_PAGE);
     const form = await getLeadForm(page);
     await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('input[name="name"]').fill('CI E2E');
-    await form.locator('textarea[name="message"]').fill('Первоначальные данные');
+
     await form.locator('input[name="consent"]').check();
     await form.locator('[data-smartcaptcha-widget] button').click();
 
     const firstSubmit = form.locator('[data-submit-btn]').click();
     await expect.poll(() => submitCalls).toBe(1);
-    await form.locator('textarea[name="message"]').fill('Изменённые во время отправки данные');
+    await form.locator('input[name="phone"]').fill('9501234567');
     releaseFirstResponse();
     await firstSubmit;
 
@@ -391,7 +386,7 @@ test.describe('Contact form', () => {
     );
     await expect(form.locator('[data-success-box]')).toBeHidden();
     await expect(form.locator('[data-retry-btn]')).toBeVisible();
-    expect(messages).toEqual(['Первоначальные данные']);
+    expect(messages).toEqual(['79123456789']);
 
     await page.evaluate(() => {
       (window as Window & { __smartCaptchaMock?: { issue(value?: string): void } }).__smartCaptchaMock?.issue(
@@ -401,7 +396,7 @@ test.describe('Contact form', () => {
     await form.locator('[data-retry-btn]').click();
 
     await expect(form.locator('[data-success-box]')).toBeVisible();
-    expect(messages).toEqual(['Первоначальные данные', 'Изменённые во время отправки данные']);
+    expect(messages).toEqual(['79123456789', '79501234567']);
     expect(requestKeys).toHaveLength(2);
     expect(requestKeys[1]).not.toBe(requestKeys[0]);
   });
@@ -466,7 +461,7 @@ test.describe('Contact form', () => {
     expect(submitCalls).toBe(0);
   });
 
-  test('submits successfully with an empty optional name', async ({ page }) => {
+  test('submits only phone and consent without legacy name or message', async ({ page }) => {
     await mockSmartCaptcha(page);
     let submittedPayload: Record<string, unknown> | undefined;
 
@@ -481,36 +476,21 @@ test.describe('Contact form', () => {
 
     await page.goto(CONTACTS_PAGE);
     const form = await getLeadForm(page);
-    const nameInput = form.locator('input[name="name"]');
-    await expect(nameInput).not.toHaveAttribute('required', '');
-    await expect(nameInput).toHaveAttribute('maxlength', '80');
-    await expect(form.locator('label[for="lead-contact-name"]')).toContainText('необязательно');
+    await expect(form.locator('input[name="name"], textarea')).toHaveCount(0);
     await form.locator('input[name="phone"]').fill('9123456789');
     await form.locator('input[name="consent"]').check();
     await form.locator('[data-smartcaptcha-widget] button').click();
     await form.locator('[data-submit-btn]').click();
 
     await expect(form.locator('[data-success-box]')).toBeVisible();
-    expect(submittedPayload).toMatchObject({ name: '' });
+    expect(submittedPayload).not.toHaveProperty('name');
+    expect(submittedPayload).not.toHaveProperty('message');
   });
 
-  test('blocks a one-character optional name before POST', async ({ page }) => {
-    let submitCalls = 0;
-    await page.route('**/api/leads', async (route) => {
-      submitCalls += 1;
-      await route.abort();
-    });
-
+  test('has no legacy name, message or validation UI', async ({ page }) => {
     await page.goto(CONTACTS_PAGE);
     const form = await getLeadForm(page);
-    await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('input[name="name"]').fill('А');
-    await form.locator('input[name="consent"]').check();
-    await form.locator('[data-submit-btn]').click();
-
-    await expect(form.locator('[data-error-name]')).toBeVisible();
-    await expect(form.locator('[data-error-name]')).toContainText('от 2 до 80 символов');
-    expect(submitCalls).toBe(0);
+    await expect(form.locator('input[name="name"], textarea, [data-error-name]')).toHaveCount(0);
   });
 
   test('formats valid Russian numbers and preserves invalid long numbers without truncation', async ({ page }) => {
@@ -539,7 +519,6 @@ test.describe('Contact form', () => {
     }
 
     const invalidCases = ['7123456789', '8123456789', '791234567890', '891234567890', '91234567890'];
-    await form.locator('input[name="name"]').fill('CI E2E');
     await form.locator('input[name="consent"]').check();
     for (const raw of invalidCases) {
       await phoneInput.fill(raw);
@@ -574,7 +553,6 @@ test.describe('Contact form', () => {
 
     await phoneInput.fill('91234567890');
     await expect(phoneInput).toHaveValue('91234567890');
-    await form.locator('input[name="name"]').fill('CI E2E');
     await form.locator('input[name="consent"]').check();
     await form.locator('[data-submit-btn]').click();
     await expect(form.locator('[data-error-phone]')).toBeVisible();
@@ -601,7 +579,8 @@ test.describe('Contact form', () => {
       submitCalls += 1;
 
       const payload = route.request().postDataJSON() as Record<string, unknown>;
-      expect(payload.name).toBe('CI E2E');
+      expect(payload).not.toHaveProperty('name');
+      expect(payload).not.toHaveProperty('message');
       expect(payload.phone).toBe('+7 (912) 345-67-89');
       expect(payload.consent).toBe(true);
 
@@ -631,9 +610,7 @@ test.describe('Contact form', () => {
     await page.goto(CONTACTS_PAGE);
 
     const form = await getLeadForm(page);
-    await form.locator('input[name="name"]').fill('CI E2E');
     await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('textarea[name="message"]').fill('Нужен расчет кухни');
     await form.locator('input[name="consent"]').check();
 
     const widgetButton = form.locator('[data-smartcaptcha-widget] button');
@@ -671,7 +648,6 @@ test.describe('Contact form', () => {
 
     const form = await getLeadForm(page);
     await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('input[name="name"]').fill('CI E2E');
     await form.locator('input[name="consent"]').check();
 
     await expect(form.locator('[data-smartcaptcha-step]')).toBeVisible();
@@ -700,7 +676,6 @@ test.describe('Contact form', () => {
 
     const form = await getLeadForm(page);
     await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('input[name="name"]').fill('CI E2E');
     await form.locator('input[name="consent"]').check();
     await expect(form.locator('[data-smartcaptcha-step]')).toBeVisible();
 
@@ -742,7 +717,6 @@ test.describe('Contact form', () => {
     await page.goto(CONTACTS_PAGE);
     const form = await getLeadForm(page);
     await form.locator('input[name="phone"]').fill('9123456789');
-    await form.locator('input[name="name"]').fill('Mobile Mock');
     await form.locator('input[name="consent"]').check();
     const widgetButton = form.locator('[data-smartcaptcha-widget] button');
     await expect(widgetButton).toBeVisible();

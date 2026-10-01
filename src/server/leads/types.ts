@@ -7,12 +7,49 @@ export type ContactSuccessResponse = {
 
 export type LeadStatus = 'pending' | 'delivered' | 'failed';
 
+export type LeadConsent = {
+  accepted: true;
+  version: string;
+  acceptedAt: string;
+};
+
+export type LeadBusinessContext = {
+  service?: string;
+  pageSlug?: string;
+  placement?: string;
+};
+
+export type LeadNotification = {
+  leadId: string;
+  createdAt: string;
+  service?: string;
+  pageSlug?: string;
+  adminPath: string;
+};
+
+export type LeadNotificationEnvelope = {
+  schemaVersion: '1.0';
+  event: 'lead.created';
+  notification: LeadNotification;
+  delivery?: {
+    attempt: number;
+    retryCount: number;
+    maxRetries: number;
+    retryBaseDelaySec: number;
+    workerProcessedAt: string;
+  };
+};
+
 export type LeadRecord = {
   leadId: string;
+  normalizedPhone: string;
   receivedAt: string;
   idempotencyHash: string;
   payloadFingerprint: string;
-  webhookPayload: Record<string, unknown>;
+  consent: LeadConsent;
+  context: LeadBusinessContext;
+  /** Internal delivery field; contains only the PII-free v2 notification envelope. */
+  webhookPayload: LeadNotificationEnvelope;
   status: LeadStatus;
   retryCount: number;
   nextRetryAt: number;
@@ -33,7 +70,7 @@ export type DeadLetterEntry = {
   errorCode: string;
   errorStatus?: number;
   errorMessage?: string;
-  webhookPayload: Record<string, unknown>;
+  webhookPayload: LeadNotificationEnvelope;
 };
 
 export type DeliveryMetricStatus = 'success' | 'retry' | 'failed' | 'dlq';

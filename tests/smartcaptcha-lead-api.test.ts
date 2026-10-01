@@ -5,9 +5,7 @@ import { getLeadStore } from '~/server/leads/store';
 
 const TEST_HOST = 'mebel-irkutsk.ru';
 const BASE_PAYLOAD = {
-  name: 'Тестовая заявка',
   phone: '+7 (912) 345-67-89',
-  message: 'Локальный тест без реальных клиентских данных',
   consent: true,
   smartCaptchaToken: 'mock-once-token',
 };
@@ -107,7 +105,6 @@ test('same idempotency key with changed business payload returns a conflict', as
     {
       ...BASE_PAYLOAD,
       phone: '+7 (950) 555-01-02',
-      message: 'Изменённое содержание заявки',
       smartCaptchaToken: `second-${crypto.randomUUID()}`,
     },
     idempotencyKey
@@ -119,7 +116,22 @@ test('same idempotency key with changed business payload returns a conflict', as
   expect(await store.getQueueDepth()).toBe(initialDepth + 1);
 });
 
-test('accepts an omitted name and validates optional name length', async () => {
+test.each([undefined, false, 'false', 'malformed', {}, []])(
+  'server rejects missing, false or malformed consent: %j',
+  async (consent) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ status: 'ok', host: TEST_HOST }))
+    );
+    const store = getLeadStore();
+    const initialDepth = await store.getQueueDepth();
+    const rejected = await submit({ ...BASE_PAYLOAD, consent, smartCaptchaToken: crypto.randomUUID() });
+    expect(rejected).toMatchObject({ status: 400, body: { success: false, code: 'CONSENT_REQUIRED' } });
+    expect(await store.getQueueDepth()).toBe(initialDepth);
+  }
+);
+
+test('phone-only record ignores legacy PII, client timestamps and arbitrary metadata', async () => {
   const store = getLeadStore();
   const initialDepth = await store.getQueueDepth();
   vi.stubGlobal(
@@ -127,32 +139,32 @@ test('accepts an omitted name and validates optional name length', async () => {
     vi.fn(async () => Response.json({ status: 'ok', host: TEST_HOST }))
   );
 
-  const emptyName = await submit({
+  const accepted = await submit({
     ...BASE_PAYLOAD,
-    name: '',
-    smartCaptchaToken: `empty-name-${crypto.randomUUID()}`,
+    name: 'PRIVATE_NAME_SENTINEL',
+    message: 'PRIVATE_MESSAGE_SENTINEL',
+    ip: '192.0.2.99',
+    userAgent: 'PRIVATE_AGENT_SENTINEL',
+    consentAcceptedAt: '2000-01-01T00:00:00.000Z',
+    formContext: {
+      service: 'private-secret',
+      pageSlug: '/unknown/PRIVATE_PATH_SENTINEL?phone=123',
+      arbitrary: 'PRIVATE_METADATA_SENTINEL',
+    },
+    smartCaptchaToken: `phone-only-${crypto.randomUUID()}`,
   });
-  expect(emptyName).toMatchObject({ status: 200, body: { success: true } });
-
-  const oneCharacter = await submit({
-    ...BASE_PAYLOAD,
-    name: 'А',
-    smartCaptchaToken: `short-name-${crypto.randomUUID()}`,
+  expect(accepted).toMatchObject({ status: 200, body: { success: true } });
+  const record = await store.getLeadRecord(String(accepted.body.leadId));
+  expect(record?.normalizedPhone).toBe('+79123456789');
+  expect(record?.consent).toEqual({
+    accepted: true,
+    version: 'phone-contact-v1',
+    acceptedAt: accepted.body.receivedAt,
   });
-  expect(oneCharacter).toMatchObject({ status: 400, body: { success: false, code: 'INVALID_NAME' } });
-
-  const twoCharacters = await submit({
-    ...BASE_PAYLOAD,
-    name: 'Ян',
-    smartCaptchaToken: `valid-name-${crypto.randomUUID()}`,
-  });
-  expect(twoCharacters).toMatchObject({ status: 200, body: { success: true } });
-
-  const tooLong = await submit({
-    ...BASE_PAYLOAD,
-    name: 'А'.repeat(81),
-    smartCaptchaToken: `long-name-${crypto.randomUUID()}`,
-  });
-  expect(tooLong).toMatchObject({ status: 400, body: { success: false, code: 'INVALID_NAME' } });
-  expect(await store.getQueueDepth()).toBe(initialDepth + 2);
+  expect(record?.context).toEqual({});
+  expect(JSON.stringify(record)).not.toMatch(/PRIVATE_|192\.0\.2\.99|2000-01-01/);
+  expect(JSON.stringify(record?.webhookPayload)).not.toContain('+79123456789');
+  expect(record).not.toHaveProperty('name');
+  expect(record).not.toHaveProperty('message');
+  expect(await store.getQueueDepth()).toBe(initialDepth + 1);
 });

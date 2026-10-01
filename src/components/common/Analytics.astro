@@ -1,8 +1,0 @@
----
-import { ANALYTICS } from 'astrowind:config';
-import GoogleAnalytics from './GoogleAnalytics.astro';
-
-const googleAnalyticsId = ANALYTICS?.vendors?.googleAnalytics?.id || import.meta.env.PUBLIC_GA4_ID || null;
----
-
-{googleAnalyticsId ? <GoogleAnalytics id={String(googleAnalyticsId)} /> : null}

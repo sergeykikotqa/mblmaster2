@@ -618,11 +618,28 @@ async function main() {
     const payload = secondAttempt.payload;
 
     assert(payload && typeof payload === 'object', 'Webhook payload must be valid JSON object');
-    assert(payload?.lead?.leadId === contact.body.leadId, 'Webhook payload leadId does not match API response leadId');
-    assert(payload?.attribution?.utm_source === 'ci', 'Webhook payload attribution.utm_source is missing');
-    assert(payload?.attribution?.utm_medium === 'integration', 'Webhook payload attribution.utm_medium is missing');
-    assert(payload?.formContext?.formId === 'ci-webhook-form', 'Webhook payload formContext.formId is missing');
-    assert(payload?.formContext?.placement === 'ci-test', 'Webhook payload formContext.placement is missing');
+    for (const attempt of [firstAttempt, secondAttempt]) {
+      const envelope = attempt.payload;
+      assert(envelope?.notification?.leadId === contact.body.leadId, 'Webhook notification leadId differs from API');
+      assert(envelope.schemaVersion === '1.0' && envelope.event === 'lead.created', 'Invalid notification contract');
+      assert(envelope.notification.adminPath === `/admin/leads/${contact.body.leadId}`, 'Invalid protected admin path');
+      assert(Number.isFinite(Date.parse(envelope.notification.createdAt)), 'Notification timestamp is missing');
+      assert(
+        Object.keys(envelope).every((key) => ['schemaVersion', 'event', 'notification', 'delivery'].includes(key)),
+        'Unexpected transport field'
+      );
+      assert(
+        Object.keys(envelope.notification).every((key) =>
+          ['leadId', 'createdAt', 'adminPath', 'service'].includes(key)
+        ),
+        'Unexpected notification field'
+      );
+      assert(
+        !/phone|normalizedPhone|name|message|attribution|formContext|technical|userAgent|"ip"/i.test(attempt.rawBody),
+        'PII or legacy metadata appeared in a webhook attempt'
+      );
+      assert(!attempt.rawBody.includes('9123456789'), 'Private test phone appeared in webhook');
+    }
 
     const health = await fetchLeadPipelineHealth(adminToken);
     assert(

@@ -15,7 +15,6 @@ import CustomStyles from '~/components/CustomStyles.astro';
 import ApplyColorMode from '~/components/common/ApplyColorMode.astro';
 import Metadata from '~/components/common/Metadata.astro';
 import SiteVerification from '~/components/common/SiteVerification.astro';
-import Analytics from '~/components/common/Analytics.astro';
 import AnalyticsConsentBanner from '~/components/common/AnalyticsConsentBanner.astro';
 import YandexMetrika from '~/components/common/YandexMetrika.astro';
 import BasicScripts from '~/components/common/BasicScripts.astro';
@@ -64,7 +63,6 @@ const isE2E = String(import.meta.env.PUBLIC_E2E || '') === '1';
 const leadTrackingConfig = {
   enabled: isE2E ? true : String(import.meta.env.PUBLIC_ENABLE_LEAD_TRACKING ?? 'true') !== 'false',
   yandexMetrikaId: import.meta.env.PUBLIC_YANDEX_METRIKA_ID || '',
-  ga4Id: import.meta.env.PUBLIC_GA4_ID || '',
   trackEndpoint: '/api/track',
   formAbandonMs: Number(import.meta.env.PUBLIC_LEAD_FORM_ABANDON_MS || 60000),
   rumEnabled: String(import.meta.env.PUBLIC_ENABLE_RUM_WEB_VITALS ?? 'true') !== 'false',
@@ -124,7 +122,6 @@ const showMoneyPageStickyCta = isMoneyServicePage && Boolean(businessInfo.phoneH
         ></script>
       )
     }
-    <Analytics />
     <YandexMetrika />
     <LocalBusinessJsonLd offerCatalog={localBusinessOfferCatalog} />
     <BreadcrumbJsonLd title={resolvedMetadata.title} />

@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
+import { readBackupDataContractVersion } from './redis-backup.mjs';
+
 const ROOT = process.cwd();
 const PREFIX = `mbl-o24-backup-gate-${randomBytes(4).toString('hex')}`;
 const NETWORK = `${PREFIX}-network`;
@@ -264,6 +266,54 @@ function main() {
     evidence.restoreDurationMs = Date.now() - restoreStartedAt;
     const restoredRdb = path.join(paths.restore, 'drill', 'dump.rdb');
     assert(fs.existsSync(restoredRdb), 'Restore did not produce a validated RDB');
+    const restoredManifest = JSON.parse(
+      fs.readFileSync(path.join(paths.restore, 'drill', 'mbl-redis-backup.json'), 'utf8')
+    );
+    assert(
+      restoredManifest.dataContractVersion === readBackupDataContractVersion(),
+      'Backup contract differs from target policy'
+    );
+    assert(restoredManifest.releaseSha === paths.releaseSha, 'Backup lost immutable release SHA');
+
+    // Create an authenticated legacy fixture in this isolated Restic repository.
+    // The real restore CLI must reject it, not a test-side preflight.
+    const legacyDir = path.join(paths.restore, 'legacy-fixture');
+    fs.mkdirSync(legacyDir);
+    fs.copyFileSync(restoredRdb, path.join(legacyDir, 'dump.rdb'));
+    fs.writeFileSync(
+      path.join(legacyDir, 'mbl-redis-backup.json'),
+      JSON.stringify({ ...restoredManifest, dataContractVersion: 1 })
+    );
+    const legacyBackupArgs = backupRunArgs(
+      paths,
+      {
+        RESTIC_REPOSITORY_FILE: '/run/mbl-backup-secrets/repository',
+        RESTIC_PASSWORD_FILE: '/run/mbl-backup-secrets/password',
+      },
+      ['backup', '/restore/legacy-fixture', '--host', PREFIX, '--tag', 'mbl-redis', '--json']
+    );
+    legacyBackupArgs.splice(legacyBackupArgs.indexOf(IMAGE), 0, '--entrypoint', 'restic');
+    const legacyBackup = docker(legacyBackupArgs);
+    const legacySummary = legacyBackup.stdout
+      .split(/\r?\n/)
+      .map((line) => JSON.parse(line))
+      .find((entry) => entry.message_type === 'summary');
+    assert(legacySummary?.snapshot_id, 'Legacy fixture snapshot ID is missing');
+    const legacyRestore = docker(
+      backupRunArgs(paths, { MBL_BACKUP_RESTORE_CONFIRM: 'RESTORE_TO_ISOLATED_DIRECTORY' }, [
+        'restore',
+        '--snapshot',
+        legacySummary.snapshot_id,
+        '--target',
+        '/restore/rejected-v1',
+      ]),
+      { allowFailure: true }
+    );
+    assert(
+      legacyRestore.status !== 0 && legacyRestore.stderr.includes('BACKUP_DATA_CONTRACT_MISMATCH'),
+      'v1 backup was not rejected by production restore'
+    );
+    assert(!fs.existsSync(path.join(paths.restore, 'rejected-v1')), 'Incompatible restore produced usable output');
 
     const corruptDir = path.join(paths.restore, 'corrupt');
     fs.mkdirSync(corruptDir);
@@ -349,6 +399,8 @@ function main() {
       resticEncrypted: true,
       wrongPasswordRejected: true,
       corruptRdbRejected: true,
+      dataContractVersion: restoredManifest.dataContractVersion,
+      legacyContractRejected: true,
       restored: {
         deliveredLead: true,
         pendingLead: true,
