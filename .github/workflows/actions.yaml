@@ -1,13 +1,9 @@
 name: GitHub Actions
 
+# Paused by repository owner 2026-10-19: no scheduled/push/PR checks.
+# Retained for manual reactivation; do not delete test definitions.
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
-      - codex/o2-4-reliability
+  workflow_dispatch:
 
 jobs:
   build:

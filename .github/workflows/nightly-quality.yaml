@@ -1,8 +1,8 @@
 name: Full Audit
 
+# Paused by repository owner 2026-10-19: no scheduled/push/PR checks.
+# Retained for manual reactivation; do not delete test definitions.
 on:
-  schedule:
-    - cron: '0 3 * * *'
   workflow_dispatch:
 
 jobs:
