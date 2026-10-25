@@ -2,9 +2,9 @@ name: Full Audit
 
 # Paused by repository owner 2026-10-19: no scheduled/push/PR checks.
 # Retained for manual reactivation; do not delete test definitions.
-on:
-  workflow_dispatch:
-
+# GitHub Actions quota reserved for sergeykikotqa/koleypro only.
+# Disabled on this repository, including manual dispatch.
+on: {}
 jobs:
   nightly:
     runs-on: ubuntu-latest
