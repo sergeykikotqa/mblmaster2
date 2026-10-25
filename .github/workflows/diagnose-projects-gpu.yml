@@ -8,10 +8,10 @@ name: Diagnose Projects GPU
 #
 # This workflow must never run on main. It has no main trigger, and the job
 # asserts the branch before doing any work.
+# Reserve GitHub Actions minutes for sergeykikotqa/koleypro.
+# Historical branch: automatic events disabled; run manually only.
 on:
-  push:
-    branches:
-      - diagnostic/projects-gpu-trace
+  workflow_dispatch:
 
 permissions:
   contents: read
