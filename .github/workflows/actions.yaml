@@ -2,9 +2,9 @@ name: GitHub Actions
 
 # Reserve GitHub Actions minutes for sergeykikotqa/koleypro.
 # Historical branch: automatic events disabled; run manually only.
-on:
-  workflow_dispatch:
-
+# GitHub Actions quota reserved for sergeykikotqa/koleypro only.
+# Disabled on this repository, including manual dispatch.
+on: {}
 jobs:
   build:
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
