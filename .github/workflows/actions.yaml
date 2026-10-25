@@ -1,13 +1,9 @@
 name: GitHub Actions
 
+# Reserve GitHub Actions minutes for sergeykikotqa/koleypro.
+# Historical branch: automatic events disabled; run manually only.
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
-      - codex/o2-4-reliability
+  workflow_dispatch:
 
 jobs:
   build:
