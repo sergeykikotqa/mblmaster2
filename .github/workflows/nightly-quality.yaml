@@ -1,8 +1,8 @@
 name: Full Audit
 
+# Reserve GitHub Actions minutes for sergeykikotqa/koleypro.
+# Historical branch: automatic events disabled; run manually only.
 on:
-  schedule:
-    - cron: '0 3 * * *'
   workflow_dispatch:
 
 jobs:
