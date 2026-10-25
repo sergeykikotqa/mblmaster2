@@ -2,9 +2,9 @@ name: Full Audit
 
 # Reserve GitHub Actions minutes for sergeykikotqa/koleypro.
 # Historical branch: automatic events disabled; run manually only.
-on:
-  workflow_dispatch:
-
+# GitHub Actions quota reserved for sergeykikotqa/koleypro only.
+# Disabled on this repository, including manual dispatch.
+on: {}
 jobs:
   nightly:
     runs-on: ubuntu-latest
